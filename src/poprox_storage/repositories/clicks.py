@@ -1,0 +1,74 @@
+import json
+import logging
+from collections import defaultdict
+from typing import List
+
+from sqlalchemy import insert, select
+
+from poprox_concepts import Account, ClickHistory
+from poprox_serverless.aws import s3
+from poprox_serverless.aws.exceptions import PoproxAwsUtilitiesException
+from poprox_serverless.repositories.data_stores.db import DatabaseRepository
+from poprox_serverless.repositories.data_stores.s3 import S3Repository
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
+class S3ClicksRepository(S3Repository):
+    def __init__(self, bucket_name):
+        super().__init__(bucket_name)
+
+    def get_clicks_from_dev_file(self, file_key):
+        try:
+            click_data = json.loads(
+                s3.get_object(self.bucket_name, file_key).get("Body").read()
+            )
+        except PoproxAwsUtilitiesException:
+            logger.warning(
+                "No click log data found. Just going to go with random recommendations"
+            )
+            click_data = {}
+
+        return click_data
+
+
+class DbClicksRepository(DatabaseRepository):
+    def __init__(self, connection):
+        super().__init__(connection)
+        self.tables = self._load_tables("clicks")
+
+    def track_click_in_database(self, newsletter_id, account_id, article_id):
+        click_table = self.tables["clicks"]
+        with self.conn.begin():
+            stmt = insert(click_table).values(
+                newsletter_id=newsletter_id,
+                account_id=account_id,
+                article_id=article_id,
+            )
+            self.conn.execute(stmt)
+
+    def get_clicks(self, accounts: List[Account]) -> List[ClickHistory]:
+        click_table = self.tables["clicks"]
+
+        click_query = select(click_table.c.account_id, click_table.c.article_id).where(
+            click_table.c.account_id.in_([acct.account_id for acct in accounts])
+        )
+        click_result = self.conn.execute(click_query).fetchall()
+
+        clicked_articles = defaultdict(list)
+        for row in click_result:
+            clicked_articles[row[0]].append(row[1])
+
+        for account in accounts:
+            account_id = account.account_id
+            if account_id not in clicked_articles:
+                clicked_articles[account_id] = []
+
+        histories = []
+        for account_id, user_clicks in clicked_articles.items():
+            history = ClickHistory(account_id=account_id, article_ids=user_clicks)
+            histories.append(history)
+
+        return histories
