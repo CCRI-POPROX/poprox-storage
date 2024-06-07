@@ -6,7 +6,7 @@ from sqlalchemy import (
     Table,
 )
 
-from poprox_serverless.repositories.data_stores.db import DatabaseRepository
+from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 
 class DbNewsletterRepository(DatabaseRepository):

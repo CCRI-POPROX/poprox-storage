@@ -12,9 +12,9 @@ from sqlalchemy import (
 from tqdm import tqdm
 
 from poprox_concepts import Article, Mention, Entity
-from poprox_serverless.aws import s3, DEV_BUCKET_NAME
-from poprox_serverless.repositories.data_stores.db import DatabaseRepository
-from poprox_serverless.repositories.data_stores.s3 import S3Repository
+from poprox_storage.aws import s3, DEV_BUCKET_NAME
+from poprox_storage.repositories.data_stores.db import DatabaseRepository
+from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

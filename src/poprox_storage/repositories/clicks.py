@@ -6,10 +6,10 @@ from typing import List
 from sqlalchemy import insert, select
 
 from poprox_concepts import Account, ClickHistory
-from poprox_serverless.aws import s3
-from poprox_serverless.aws.exceptions import PoproxAwsUtilitiesException
-from poprox_serverless.repositories.data_stores.db import DatabaseRepository
-from poprox_serverless.repositories.data_stores.s3 import S3Repository
+from poprox_storage.aws import s3
+from poprox_storage.aws.exceptions import PoproxAwsUtilitiesException
+from poprox_storage.repositories.data_stores.db import DatabaseRepository
+from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 
 logger = logging.getLogger(__name__)

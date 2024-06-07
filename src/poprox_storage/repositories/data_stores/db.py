@@ -10,7 +10,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError, InternalError
 
-from poprox_serverless.aws import DB_ENGINE
+from poprox_storage.aws import DB_ENGINE
 
 
 logger = logging.getLogger(__name__)

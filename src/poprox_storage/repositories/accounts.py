@@ -12,7 +12,7 @@ from sqlalchemy import (
 )
 
 from poprox_concepts import Account
-from poprox_serverless.repositories.data_stores.db import DatabaseRepository
+from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 
 logger = logging.getLogger(__name__)

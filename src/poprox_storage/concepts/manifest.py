@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, PositiveInt
 
-from poprox_serverless.concepts.experiment import (
+from poprox_storage.concepts.experiment import (
     Experiment,
     Group,
     Phase,
