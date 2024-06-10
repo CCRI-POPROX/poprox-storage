@@ -18,7 +18,7 @@ dependencies = [
   "smart_open",
   "sqlalchemy",
   "tomli",
-  "git+https://github.com/CCRI-POPROX/poprox-concepts.git",
+  "poprox-concepts@git+https://github.com/CCRI-POPROX/poprox-concepts.git",
 ]
 
 [project.urls]
