@@ -1,0 +1,142 @@
+from __future__ import annotations
+
+from copy import deepcopy
+from datetime import date, timedelta
+from uuid import UUID
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, PositiveInt
+
+from poprox_storage.concepts.experiment import (
+    Experiment,
+    Group,
+    Phase,
+    Recommender,
+    Treatment,
+)
+
+
+class ManifestFile(BaseModel):
+    """
+    Parses and validates experiment manifest files that have
+    been converted from TOML to Dict[str,Any] (e.g. using tomli)
+    """
+
+    experiment: ManifestExperiment
+    users: ManifestGroupSpec
+    recommenders: dict[str, ManifestRecommender]
+    phases: ManifestPhases
+
+
+class ManifestExperiment(BaseModel):
+    id: UUID
+    description: str
+    duration: str
+    start_date: Optional[date] = None
+
+
+class ManifestPhases(BaseModel):
+    sequence: List[str]
+    phases: Dict[str, ManifestPhase]
+
+
+class ManifestPhase(BaseModel):
+    duration: str
+    assignments: Dict[str, ManifestPhaseAssignment]
+
+
+class ManifestPhaseAssignment(BaseModel):
+    recommender: str
+
+
+class ManifestRecommender(BaseModel):
+    endpoint: str
+
+
+class ManifestGroupSpec(BaseModel):
+    groups: dict[str, ManifestUserGroup]
+
+
+class ManifestUserGroup(BaseModel):
+    minimum_size: Optional[PositiveInt] = None
+    identical_to: Optional[str] = None
+
+
+def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
+    """
+    Converts parsed manifest file to domain concept objects
+
+    Resolves manifest fields into their corresponding domain
+    fields, including duration into dates and identical groups
+    into copies. Doesn't assign users to groups, which would
+    require additional information about the state of the system
+    beyond what's contained in the manifest.
+
+    Parameters
+    ----------
+    manifest : ManifestFile
+        A parsed experiment manifest as a Pydantic model
+
+    Returns
+    -------
+    Experiment
+        A transformed version of the manifest file as a domain object
+    """
+    start_date = manifest.experiment.start_date or (date.today() + timedelta(days=1))
+    end_date = start_date + convert_duration(manifest.experiment.duration)
+
+    experiment = Experiment(
+        start_date=start_date,
+        end_date=end_date,
+        description=manifest.experiment.description,
+        phases=[],
+    )
+
+    recommenders = {
+        rec_name: Recommender(name=rec_name, endpoint_url=recommender.endpoint)
+        for rec_name, recommender in manifest.recommenders.items()
+    }
+
+    groups = {}
+    for group_name, group in manifest.users.groups.items():
+        if group.identical_to:
+            new_group = deepcopy(groups[group.identical_to])
+            new_group.name = group_name
+            groups[group_name] = new_group
+        else:
+            groups[group_name] = Group(name=group_name, minimum_size=group.minimum_size)
+
+    phase_start = start_date
+    for phase_name in manifest.phases.sequence:
+        manifest_phase = manifest.phases.phases[phase_name]
+        duration = convert_duration(manifest_phase.duration)
+        phase_start = start_date + sum(
+            [phase.duration for phase in experiment.phases], start=timedelta(0)
+        )
+        phase_end = phase_start + duration
+        phase = Phase(
+            name=phase_name, start_date=phase_start, end_date=phase_end, treatments=[]
+        )
+        for group_name, assignment in manifest_phase.assignments.items():
+            recommender_name = assignment.recommender
+            phase.treatments.append(
+                Treatment(
+                    group=groups[group_name],
+                    recommender=recommenders[recommender_name],
+                )
+            )
+        experiment.phases.append(phase)
+
+    return experiment
+
+
+def convert_duration(duration: str) -> timedelta:
+    quantity, unit = duration.split(" ")
+    match unit:
+        case unit if "week" in unit:
+            duration = timedelta(weeks=int(quantity))
+        case unit if "day" in unit:
+            duration = timedelta(days=int(quantity))
+        case _:
+            raise ValueError(f"Unsupported duration unit: {unit}")
+    return duration
