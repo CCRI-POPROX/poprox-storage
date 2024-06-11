@@ -127,7 +127,7 @@ class DbAccountRepository(DatabaseRepository):
         subscription_tbl = self.tables["subscriptions"]
 
         create_query = subscription_tbl.insert().values(account_id=account_id)
-        if self.fetch_subscription(account_id) is None:
+        if self.fetch_subscription_for_account(account_id) is None:
             self.conn.execute(create_query)
 
     def end_subscription_for_account(self, account_id):
