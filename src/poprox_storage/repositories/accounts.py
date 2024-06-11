@@ -1,6 +1,7 @@
 import logging
 from datetime import date
 from typing import List, Optional
+from uuid import UUID
 
 import sqlalchemy
 from sqlalchemy import (
@@ -53,6 +54,16 @@ class DbAccountRepository(DatabaseRepository):
             return accounts[0]
         return None
 
+    def create_new_account(self, email: str) -> Account:
+        account_tbl = self.tables["accounts"]
+        query = (
+            sqlalchemy.insert(account_tbl)
+            .values(email=email)
+            .returning(account_tbl.c.account_id, account_tbl.c.email)
+        )
+        row = self.conn.execute(query).one_or_none()
+        return Account(account_id=row.account_id, email=row.email)
+
     def fetch_unassigned_accounts(self, start_date: date, end_date: date):
         account_tbl = self.tables["accounts"]
         allocation_tbl = self.tables["expt_allocations"]
@@ -96,7 +107,7 @@ class DbAccountRepository(DatabaseRepository):
 
         return self.fetch_accounts(account_ids)
 
-    def fetch_subscribed_accounts(self):
+    def fetch_subscribed_accounts(self) -> List[Account]:
         subscription_tbl = self.tables["subscriptions"]
 
         account_query = select(subscription_tbl.c.account_id).where(
@@ -104,3 +115,30 @@ class DbAccountRepository(DatabaseRepository):
         )
         account_ids = self._id_query(account_query)
         return self.fetch_accounts(account_ids)
+
+    def fetch_subscription_for_account(self, account_id: str) -> Optional[UUID]:
+        subscription_tbl = self.tables["subscriptions"]
+        query = subscription_tbl.select(subscription_tbl.c.subscription_id).where(
+            subscription_tbl.c.account_id == account_id,
+            subscription_tbl.c.ended == null(),
+        )
+        return self.conn.execute(query).one_or_none().subscription_id
+
+    def create_subscription_for_account(self, account_id: str):
+        subscription_tbl = self.tables["subscriptions"]
+
+        create_query = subscription_tbl.insert().values(account_id=account_id)
+        if self.fetch_subscription_for_account(account_id) is None:
+            self.conn.execute(create_query)
+
+    def end_subscription_for_account(self, account_id: str):
+        subscription_tbl = self.tables["subscriptions"]
+        delete_query = (
+            subscription_tbl.update()
+            .where(
+                subscription_tbl.c.account_id == account_id,
+                subscription_tbl.c.ended == null(),
+            )
+            .values(ended=sqlalchemy.text("NOW()"))
+        )
+        self.conn.execute(delete_query)
