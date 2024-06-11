@@ -1,8 +1,9 @@
+import datetime
 from uuid import UUID
 from typing import Dict, List, Optional
 
 import tomli
-from sqlalchemy import Connection, Table
+from sqlalchemy import Connection, Table, select, and_
 
 from poprox_concepts import Account
 from poprox_storage.concepts.experiment import (
@@ -80,6 +81,47 @@ class DbExperimentRepository(DatabaseRepository):
                     )
 
         return experiment_id
+
+    def find_recommenders_by_expt_groups(self, date=None):
+        groups_tbl = self.tables["groups"]
+        phases_tbl = self.tables["phases"]
+        recommenders_tbl = self.tables["recommenders"]
+        treatments_tbl = self.tables["treatments"]
+
+        # Find the groups and associated recommenders for the active experiment phases
+        date = date or datetime.date.today()
+
+        group_recommender_query = (
+            select(groups_tbl.c.group_id, recommenders_tbl.c.endpoint_url)
+            .join(treatments_tbl, treatments_tbl.c.group_id == groups_tbl.c.group_id)
+            .join(
+                recommenders_tbl,
+                recommenders_tbl.c.recommender_id == treatments_tbl.c.recommender_id,
+            )
+            .join(phases_tbl, phases_tbl.c.phase_id == treatments_tbl.c.phase_id)
+        ).where(
+            and_(
+                phases_tbl.c.start_date <= date,
+                date < phases_tbl.c.end_date,
+            )
+        )
+
+        result = self.conn.execute(group_recommender_query).fetchall()
+        recommender_lookup_by_group = {row[0]: row[1] for row in result}
+
+        return recommender_lookup_by_group
+
+    def find_accounts_by_expt_groups(self, group_ids):
+        allocations_tbl = self.tables["allocations"]
+
+        # Find accounts allocated to the groups that are assigned the active recommenders above
+        group_query = select(
+            allocations_tbl.c.account_id, allocations_tbl.c.group_id
+        ).where(allocations_tbl.c.group_id.in_(group_ids))
+        result = self.conn.execute(group_query).fetchall()
+        group_lookup_by_account = {row[0]: row[1] for row in result}
+
+        return group_lookup_by_account
 
 
 class S3ExperimentRepository(S3Repository):
