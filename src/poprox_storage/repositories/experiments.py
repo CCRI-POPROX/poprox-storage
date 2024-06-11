@@ -82,7 +82,31 @@ class DbExperimentRepository(DatabaseRepository):
 
         return experiment_id
 
-    def find_recommenders_by_expt_groups(self, date=None):
+    def get_active_expt_group_ids(
+        self, date: Optional[datetime.date] = None
+    ) -> List[UUID]:
+        groups_tbl = self.tables["groups"]
+        phases_tbl = self.tables["phases"]
+        treatments_tbl = self.tables["treatments"]
+
+        date = date or datetime.date.today()
+
+        groups_query = (
+            select(groups_tbl.c.group_id)
+            .join(treatments_tbl, treatments_tbl.c.group_id == groups_tbl.c.group_id)
+            .join(phases_tbl, phases_tbl.c.phase_id == treatments_tbl.c.phase_id)
+        ).where(
+            and_(
+                phases_tbl.c.start_date <= date,
+                date < phases_tbl.c.end_date,
+            )
+        )
+
+        return self._id_query(groups_query)
+
+    def get_active_expt_endpoint_urls(
+        self, date: Optional[datetime.date] = None
+    ) -> Dict[UUID, str]:
         groups_tbl = self.tables["groups"]
         phases_tbl = self.tables["phases"]
         recommenders_tbl = self.tables["recommenders"]
@@ -111,8 +135,12 @@ class DbExperimentRepository(DatabaseRepository):
 
         return recommender_lookup_by_group
 
-    def find_accounts_by_expt_groups(self, group_ids):
+    def get_active_expt_assignments(
+        self, date: Optional[datetime.date] = None
+    ) -> Dict[UUID, UUID]:
         allocations_tbl = self.tables["allocations"]
+
+        group_ids = self.get_active_expt_group_ids(date)
 
         # Find accounts allocated to the groups that are assigned the active recommenders above
         group_query = select(
