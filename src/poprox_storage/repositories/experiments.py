@@ -85,9 +85,9 @@ class DbExperimentRepository(DatabaseRepository):
     def get_active_expt_group_ids(
         self, date: Optional[datetime.date] = None
     ) -> List[UUID]:
-        groups_tbl = self.tables["groups"]
-        phases_tbl = self.tables["phases"]
-        treatments_tbl = self.tables["treatments"]
+        groups_tbl = self.tables["expt_groups"]
+        phases_tbl = self.tables["expt_phases"]
+        treatments_tbl = self.tables["expt_treatments"]
 
         date = date or datetime.date.today()
 
@@ -107,10 +107,10 @@ class DbExperimentRepository(DatabaseRepository):
     def get_active_expt_endpoint_urls(
         self, date: Optional[datetime.date] = None
     ) -> Dict[UUID, str]:
-        groups_tbl = self.tables["groups"]
-        phases_tbl = self.tables["phases"]
-        recommenders_tbl = self.tables["recommenders"]
-        treatments_tbl = self.tables["treatments"]
+        groups_tbl = self.tables["expt_groups"]
+        phases_tbl = self.tables["expt_phases"]
+        recommenders_tbl = self.tables["expt_recommenders"]
+        treatments_tbl = self.tables["expt_treatments"]
 
         # Find the groups and associated recommenders for the active experiment phases
         date = date or datetime.date.today()
@@ -138,7 +138,7 @@ class DbExperimentRepository(DatabaseRepository):
     def get_active_expt_assignments(
         self, date: Optional[datetime.date] = None
     ) -> Dict[UUID, UUID]:
-        allocations_tbl = self.tables["allocations"]
+        allocations_tbl = self.tables["expt_allocations"]
 
         group_ids = self.get_active_expt_group_ids(date)
 
