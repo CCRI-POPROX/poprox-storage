@@ -6,7 +6,7 @@ from sqlalchemy import (
     Connection,
 )
 
-from poprox_concepts import AccountInterest
+from poprox_concepts.domain import AccountInterest
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 logger = logging.getLogger(__name__)
