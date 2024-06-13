@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     Connection,
+    select,
 )
 
 from poprox_concepts.domain import AccountInterest
@@ -33,7 +34,6 @@ class DbAccountInterestRepository(DatabaseRepository):
                 "preference": preference,
                 "frequency": frequency,
             },
-            constraint="uq_account_interest_log",
         )
 
     def insert_topic_preferences(
@@ -58,15 +58,32 @@ class DbAccountInterestRepository(DatabaseRepository):
                 failed += 1
         return failed
 
+    def lookup_entity_by_name(self, entity_name: str) -> Optional[UUID]:
+        entity_tbl = self.tables["entities"]
+
+        query = select(entity_tbl.c.entity_id).where(entity_tbl.c.name == entity_name)
+        return self.conn.execute(query).one_or_none()
+
     def get_topic_preferences(self, account_id: UUID) -> List[AccountInterest]:
         current_interest_tbl = self.tables["account_current_interest_view"]
-        query = current_interest_tbl.select().where(
-            current_interest_tbl.c.account_id == account_id
+        entity_tbl = self.tables["entities"]
+        query = (
+            select(
+                current_interest_tbl.c.entity_id,
+                current_interest_tbl.c.preference,
+                current_interest_tbl.c.frequency,
+                entity_tbl.c.name,
+            )
+            .join(
+                entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id
+            )
+            .where(current_interest_tbl.c.account_id == account_id)
         )
         results = self.conn.execute(query).all()
         results = [
             AccountInterest(
                 account_id=account_id,
+                entity_name=row.name,
                 entity_id=row.entity_id,
                 preference=row.preference,
                 frequency=row.frequency,
