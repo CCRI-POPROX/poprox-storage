@@ -31,7 +31,7 @@ class DbAccountRepository(DatabaseRepository):
             "subscriptions",
         )
 
-    def fetch_accounts(self, account_ids: Optional[List[str]] = None) -> List[Account]:
+    def fetch_accounts(self, account_ids: Optional[List[UUID]] = None) -> List[Account]:
         account_tbl = self.tables["accounts"]
 
         query = select(account_tbl.c.account_id, account_tbl.c.email)
@@ -116,7 +116,7 @@ class DbAccountRepository(DatabaseRepository):
         account_ids = self._id_query(account_query)
         return self.fetch_accounts(account_ids)
 
-    def fetch_subscription_for_account(self, account_id: str) -> Optional[UUID]:
+    def fetch_subscription_for_account(self, account_id: UUID) -> Optional[UUID]:
         subscription_tbl = self.tables["subscriptions"]
         query = subscription_tbl.select(subscription_tbl.c.subscription_id).where(
             subscription_tbl.c.account_id == account_id,
@@ -124,14 +124,14 @@ class DbAccountRepository(DatabaseRepository):
         )
         return self.conn.execute(query).one_or_none().subscription_id
 
-    def create_subscription_for_account(self, account_id: str):
+    def create_subscription_for_account(self, account_id: UUID):
         subscription_tbl = self.tables["subscriptions"]
 
         create_query = subscription_tbl.insert().values(account_id=account_id)
         if self.fetch_subscription_for_account(account_id) is None:
             self.conn.execute(create_query)
 
-    def end_subscription_for_account(self, account_id: str):
+    def end_subscription_for_account(self, account_id: UUID):
         subscription_tbl = self.tables["subscriptions"]
         delete_query = (
             subscription_tbl.update()
