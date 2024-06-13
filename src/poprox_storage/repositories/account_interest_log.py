@@ -12,8 +12,6 @@ from poprox_storage.repositories.data_stores.db import DatabaseRepository
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-NEWS_FILE_KEY = "mockObjects/ap_scraped_data.json"
-
 
 class DbAccountInterestRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
