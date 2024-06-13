@@ -118,11 +118,14 @@ class DbAccountRepository(DatabaseRepository):
 
     def fetch_subscription_for_account(self, account_id: UUID) -> Optional[UUID]:
         subscription_tbl = self.tables["subscriptions"]
-        query = subscription_tbl.select(subscription_tbl.c.subscription_id).where(
+        query = subscription_tbl.select().where(
             subscription_tbl.c.account_id == account_id,
             subscription_tbl.c.ended == null(),
         )
-        return self.conn.execute(query).one_or_none().subscription_id
+        result = self.conn.execute(query).one_or_none()
+        if result:
+            result = result.subscription_id
+        return result
 
     def create_subscription_for_account(self, account_id: UUID):
         subscription_tbl = self.tables["subscriptions"]
