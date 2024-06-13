@@ -1,0 +1,93 @@
+import logging
+from typing import List, Optional
+from uuid import UUID
+
+from sqlalchemy import (
+    Connection,
+    select,
+)
+
+from poprox_concepts.domain import AccountInterest
+from poprox_storage.repositories.data_stores.db import DatabaseRepository
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
+class DbAccountInterestRepository(DatabaseRepository):
+    def __init__(self, connection: Connection):
+        super().__init__(connection)
+        self.tables = self._load_tables(
+            "account_interest_log", "entities", "account_current_interest_view"
+        )
+
+    def insert_topic_preference(
+        self, account_id: UUID, entity_id: UUID, preference: int, frequency: int
+    ) -> Optional[UUID]:
+        interest_log_tbl = self.tables["account_interest_log"]
+        return self._upsert_and_return_id(
+            self.conn,
+            interest_log_tbl,
+            {
+                "account_id": account_id,
+                "entity_id": entity_id,
+                "preference": preference,
+                "frequency": frequency,
+            },
+        )
+
+    def insert_topic_preferences(
+        self, account_id: UUID, interests: List[AccountInterest]
+    ) -> int:
+        failed = 0
+
+        for interest in interests:
+            try:
+                log_id = self.insert_topic_preference(
+                    account_id,
+                    interest.entity_id,
+                    interest.preference,
+                    interest.frequency,
+                )
+                if log_id is None:
+                    raise RuntimeError(
+                        f"Account Interest insert failed for account interest {interest}"
+                    )
+            except RuntimeError as exc:
+                logger.error(exc)
+                failed += 1
+        return failed
+
+    def lookup_entity_by_name(self, entity_name: str) -> Optional[UUID]:
+        entity_tbl = self.tables["entities"]
+
+        query = select(entity_tbl.c.entity_id).where(entity_tbl.c.name == entity_name)
+        return self.conn.execute(query).one_or_none()
+
+    def get_topic_preferences(self, account_id: UUID) -> List[AccountInterest]:
+        current_interest_tbl = self.tables["account_current_interest_view"]
+        entity_tbl = self.tables["entities"]
+        query = (
+            select(
+                current_interest_tbl.c.entity_id,
+                current_interest_tbl.c.preference,
+                current_interest_tbl.c.frequency,
+                entity_tbl.c.name,
+            )
+            .join(
+                entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id
+            )
+            .where(current_interest_tbl.c.account_id == account_id)
+        )
+        results = self.conn.execute(query).all()
+        results = [
+            AccountInterest(
+                account_id=account_id,
+                entity_name=row.name,
+                entity_id=row.entity_id,
+                preference=row.preference,
+                frequency=row.frequency,
+            )
+            for row in results
+        ]
+        return results
