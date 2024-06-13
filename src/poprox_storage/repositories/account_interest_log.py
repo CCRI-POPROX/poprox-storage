@@ -62,7 +62,10 @@ class DbAccountInterestRepository(DatabaseRepository):
         entity_tbl = self.tables["entities"]
 
         query = select(entity_tbl.c.entity_id).where(entity_tbl.c.name == entity_name)
-        return self.conn.execute(query).one_or_none()
+        result = self.conn.execute(query).one_or_none()
+        if result is not None:
+            result = result.entity_id
+        return result
 
     def get_topic_preferences(self, account_id: UUID) -> List[AccountInterest]:
         current_interest_tbl = self.tables["account_current_interest_view"]
