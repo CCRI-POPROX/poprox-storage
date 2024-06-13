@@ -6,7 +6,7 @@ from sqlalchemy import (
     Connection,
 )
 
-from poprox_concepts import Account_Interest
+from poprox_concepts import AccountInterest
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class DbAccountInterestRepository(DatabaseRepository):
         )
 
     def insert_topic_preferences(
-        self, account_id: UUID, interests: List[Account_Interest]
+        self, account_id: UUID, interests: List[AccountInterest]
     ) -> int:
         failed = 0
 
@@ -60,14 +60,14 @@ class DbAccountInterestRepository(DatabaseRepository):
                 failed += 1
         return failed
 
-    def get_topic_preferences(self, account_id: UUID) -> List[Account_Interest]:
+    def get_topic_preferences(self, account_id: UUID) -> List[AccountInterest]:
         current_interest_tbl = self.tables["account_current_interest_view"]
         query = current_interest_tbl.select().where(
             current_interest_tbl.c.account_id == account_id
         )
         results = self.conn.execute(query).all()
         results = [
-            Account_Interest(
+            AccountInterest(
                 account_id=account_id,
                 entity_id=row.entity_id,
                 preference=row.preference,
