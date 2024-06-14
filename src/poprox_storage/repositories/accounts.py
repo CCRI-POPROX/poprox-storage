@@ -29,6 +29,7 @@ class DbAccountRepository(DatabaseRepository):
             "expt_phases",
             "expt_treatments",
             "subscriptions",
+            "account_consent_log",
         )
 
     def fetch_accounts(self, account_ids: Optional[List[UUID]] = None) -> List[Account]:
@@ -153,3 +154,21 @@ class DbAccountRepository(DatabaseRepository):
             .values(ended=sqlalchemy.text("NOW()"))
         )
         self.conn.execute(delete_query)
+
+
+def record_consent(self, account_id: UUID, document_name: str):
+    consent_tbl = self.tables["account_consent_log"]
+    query = sqlalchemy.insert(consent_tbl).values(
+        account_id=account_id, document_name=document_name
+    )
+    self.conn.execute(query)
+
+
+def update_status(self, account_id: UUID, new_status: str):
+    account_tbl = self.tables["accounts"]
+    query = (
+        sqlalchemy.update(account_tbl)
+        .values(status=new_status)
+        .where(account_tbl.c.account_id == account_id)
+    )
+    self.conn.execute(query)
