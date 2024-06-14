@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Optional
 from uuid import UUID
 
@@ -82,3 +82,7 @@ class Phase(BaseModel):
     start_date: date
     end_date: date
     treatments: List[Treatment]
+
+    @property
+    def duration(self) -> timedelta:
+        return self.end_date - self.start_date

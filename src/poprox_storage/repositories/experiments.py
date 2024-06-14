@@ -37,6 +37,7 @@ class DbExperimentRepository(DatabaseRepository):
         self, experiment: Experiment, assignments: Dict[str, List[Account]] = None
     ):
         assignments = assignments or {}
+        self.conn.rollback()
         with self.conn.begin():
             experiment_id = insert_experiment(
                 self.conn, self.tables["experiments"], experiment
