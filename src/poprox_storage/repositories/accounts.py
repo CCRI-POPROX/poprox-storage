@@ -35,7 +35,7 @@ class DbAccountRepository(DatabaseRepository):
         account_tbl = self.tables["accounts"]
 
         query = select(account_tbl.c.account_id, account_tbl.c.email)
-        if account_ids is None:
+        if account_ids is not None:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
         elif len(account_ids) == 0:
             return []
