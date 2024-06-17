@@ -1,4 +1,5 @@
 from poprox_storage.repositories.accounts import DbAccountRepository
+from poprox_storage.repositories.account_interest_log import DbAccountInterestRepository
 from poprox_storage.repositories.articles import (
     DbArticleRepository,
     S3ArticleRepository,
@@ -13,6 +14,7 @@ from poprox_storage.repositories.newsletters import DbNewsletterRepository
 
 __all__ = [
     "DbAccountRepository",
+    "DbAccountInterestRepository",
     "DbArticleRepository",
     "DbClicksRepository",
     "DbExperimentRepository",
