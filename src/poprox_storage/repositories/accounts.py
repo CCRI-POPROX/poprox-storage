@@ -36,7 +36,7 @@ class DbAccountRepository(DatabaseRepository):
         account_tbl = self.tables["accounts"]
 
         query = select(
-            account_tbl.c.account_id, account_tbl.c.email, account_tbl.source
+            account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status
         )
         if account_ids is not None:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
@@ -45,7 +45,7 @@ class DbAccountRepository(DatabaseRepository):
         result = self.conn.execute(query).fetchall()
 
         return [
-            Account(account_id=rec.account_id, email=rec.email, source=rec.source)
+            Account(account_id=rec.account_id, email=rec.email, status=rec.status)
             for rec in result
         ]
 
@@ -67,11 +67,13 @@ class DbAccountRepository(DatabaseRepository):
         account_tbl = self.tables["accounts"]
         query = (
             sqlalchemy.insert(account_tbl)
-            .values(email=email, source=source)
-            .returning(account_tbl.c.account_id, account_tbl.c.email)
+            .values(email=email, source=source, status="new_account")
+            .returning(
+                account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status
+            )
         )
         row = self.conn.execute(query).one_or_none()
-        return Account(account_id=row.account_id, email=row.email, source=source)
+        return Account(account_id=row.account_id, email=row.email, status=row.status)
 
     def fetch_unassigned_accounts(self, start_date: date, end_date: date):
         account_tbl = self.tables["accounts"]
@@ -155,20 +157,18 @@ class DbAccountRepository(DatabaseRepository):
         )
         self.conn.execute(delete_query)
 
+    def record_consent(self, account_id: UUID, document_name: str):
+        consent_tbl = self.tables["account_consent_log"]
+        query = sqlalchemy.insert(consent_tbl).values(
+            account_id=account_id, document_name=document_name
+        )
+        self.conn.execute(query)
 
-def record_consent(self, account_id: UUID, document_name: str):
-    consent_tbl = self.tables["account_consent_log"]
-    query = sqlalchemy.insert(consent_tbl).values(
-        account_id=account_id, document_name=document_name
-    )
-    self.conn.execute(query)
-
-
-def update_status(self, account_id: UUID, new_status: str):
-    account_tbl = self.tables["accounts"]
-    query = (
-        sqlalchemy.update(account_tbl)
-        .values(status=new_status)
-        .where(account_tbl.c.account_id == account_id)
-    )
-    self.conn.execute(query)
+    def update_status(self, account_id: UUID, new_status: str):
+        account_tbl = self.tables["accounts"]
+        query = (
+            sqlalchemy.update(account_tbl)
+            .values(status=new_status)
+            .where(account_tbl.c.account_id == account_id)
+        )
+        self.conn.execute(query)
