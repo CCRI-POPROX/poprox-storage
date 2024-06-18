@@ -29,40 +29,51 @@ class DbAccountRepository(DatabaseRepository):
             "expt_phases",
             "expt_treatments",
             "subscriptions",
+            "account_consent_log",
         )
 
     def fetch_accounts(self, account_ids: Optional[List[UUID]] = None) -> List[Account]:
         account_tbl = self.tables["accounts"]
 
-        query = select(account_tbl.c.account_id, account_tbl.c.email)
+        query = select(
+            account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status
+        )
         if account_ids is not None:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
         elif len(account_ids) == 0:
             return []
         result = self.conn.execute(query).fetchall()
 
-        return [Account(account_id=rec[0], email=rec[1]) for rec in result]
+        return [
+            Account(account_id=rec.account_id, email=rec.email, status=rec.status)
+            for rec in result
+        ]
 
     def fetch_account_by_email(self, email: str) -> Optional[Account]:
         account_tbl = self.tables["accounts"]
-        query = sqlalchemy.select(account_tbl.c.account_id, account_tbl.c.email).where(
-            account_tbl.c.email == email
-        )
+        query = sqlalchemy.select(
+            account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status
+        ).where(account_tbl.c.email == email)
         result = self.conn.execute(query).fetchall()
-        accounts = [Account(account_id=row[0], email=row[1]) for row in result]
+        accounts = [
+            Account(account_id=row.account_id, email=row.email, status=row.status)
+            for row in result
+        ]
         if len(accounts) > 0:
             return accounts[0]
         return None
 
-    def create_new_account(self, email: str) -> Account:
+    def create_new_account(self, email: str, source: str) -> Account:
         account_tbl = self.tables["accounts"]
         query = (
             sqlalchemy.insert(account_tbl)
-            .values(email=email)
-            .returning(account_tbl.c.account_id, account_tbl.c.email)
+            .values(email=email, source=source, status="new_account")
+            .returning(
+                account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status
+            )
         )
         row = self.conn.execute(query).one_or_none()
-        return Account(account_id=row.account_id, email=row.email)
+        return Account(account_id=row.account_id, email=row.email, status=row.status)
 
     def fetch_unassigned_accounts(self, start_date: date, end_date: date):
         account_tbl = self.tables["accounts"]
@@ -145,3 +156,19 @@ class DbAccountRepository(DatabaseRepository):
             .values(ended=sqlalchemy.text("NOW()"))
         )
         self.conn.execute(delete_query)
+
+    def record_consent(self, account_id: UUID, document_name: str):
+        consent_tbl = self.tables["account_consent_log"]
+        query = sqlalchemy.insert(consent_tbl).values(
+            account_id=account_id, document_name=document_name
+        )
+        self.conn.execute(query)
+
+    def update_status(self, account_id: UUID, new_status: str):
+        account_tbl = self.tables["accounts"]
+        query = (
+            sqlalchemy.update(account_tbl)
+            .values(status=new_status)
+            .where(account_tbl.c.account_id == account_id)
+        )
+        self.conn.execute(query)
