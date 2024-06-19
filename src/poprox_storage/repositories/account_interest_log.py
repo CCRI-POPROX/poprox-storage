@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import (
     Connection,
     select,
+    func
 )
 
 from poprox_concepts.domain import AccountInterest
@@ -61,8 +62,11 @@ class DbAccountInterestRepository(DatabaseRepository):
     def lookup_entity_by_name(self, entity_name: str) -> Optional[UUID]:
         entity_tbl = self.tables["entities"]
 
-        query = select(entity_tbl.c.entity_id).where(entity_tbl.c.name == entity_name)
+        query = entity_tbl.select().filter(
+            func.lower(entity_tbl.c.name) == func.lower(entity_name)
+        )
         result = self.conn.execute(query).one_or_none()
+        
         if result is not None:
             result = result.entity_id
         return result
