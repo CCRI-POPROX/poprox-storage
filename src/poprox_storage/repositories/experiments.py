@@ -129,7 +129,7 @@ class DbExperimentRepository(DatabaseRepository):
 
         return recommender_lookup_by_group
 
-    def get_active_expt_assignments(self, date: datetime.date | None = None) -> dict[UUID, UUID]:
+    def get_active_expt_allocations(self, date: datetime.date | None = None) -> dict[UUID, UUID]:
         allocations_tbl = self.tables["expt_allocations"]
 
         group_ids = self.get_active_expt_group_ids(date)
