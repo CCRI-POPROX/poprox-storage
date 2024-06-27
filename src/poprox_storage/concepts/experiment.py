@@ -51,11 +51,7 @@ class Experiment(BaseModel):
             Unique experiment groups
         """
         return list(
-            {
-                treatment.group.name: treatment.group
-                for phase in self.phases
-                for treatment in phase.treatments
-            }.values()
+            {treatment.group.name: treatment.group for phase in self.phases for treatment in phase.treatments}.values()
         )
 
 
@@ -86,3 +82,9 @@ class Phase(BaseModel):
     @property
     def duration(self) -> timedelta:
         return self.end_date - self.start_date
+
+
+class Allocation(BaseModel):
+    allocation_id: UUID
+    account_id: UUID
+    group_id: UUID
