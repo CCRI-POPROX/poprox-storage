@@ -1,12 +1,13 @@
 import datetime
-from uuid import UUID
 from typing import Dict, List, Optional
+from uuid import UUID
 
 import tomli
-from sqlalchemy import Connection, Table, select, and_
-
 from poprox_concepts import Account
+from sqlalchemy import Connection, Table, and_, select
+
 from poprox_storage.concepts.experiment import (
+    Allocation,
     Experiment,
     Group,
     Phase,
@@ -33,15 +34,11 @@ class DbExperimentRepository(DatabaseRepository):
             "expt_treatments",
         )
 
-    def store_experiment(
-        self, experiment: Experiment, assignments: Dict[str, List[Account]] = None
-    ):
+    def store_experiment(self, experiment: Experiment, assignments: Dict[str, List[Account]] = None):
         assignments = assignments or {}
         self.conn.rollback()
         with self.conn.begin():
-            experiment_id = insert_experiment(
-                self.conn, self.tables["experiments"], experiment
-            )
+            experiment_id = insert_experiment(self.conn, self.tables["experiments"], experiment)
 
             for group in experiment.groups:
                 group.group_id = insert_expt_group(
@@ -83,9 +80,7 @@ class DbExperimentRepository(DatabaseRepository):
 
         return experiment_id
 
-    def get_active_expt_group_ids(
-        self, date: Optional[datetime.date] = None
-    ) -> List[UUID]:
+    def get_active_expt_group_ids(self, date: Optional[datetime.date] = None) -> List[UUID]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
         treatments_tbl = self.tables["expt_treatments"]
@@ -105,9 +100,7 @@ class DbExperimentRepository(DatabaseRepository):
 
         return self._id_query(groups_query)
 
-    def get_active_expt_endpoint_urls(
-        self, date: Optional[datetime.date] = None
-    ) -> Dict[UUID, str]:
+    def get_active_expt_endpoint_urls(self, date: Optional[datetime.date] = None) -> Dict[UUID, str]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
         recommenders_tbl = self.tables["expt_recommenders"]
@@ -136,19 +129,22 @@ class DbExperimentRepository(DatabaseRepository):
 
         return recommender_lookup_by_group
 
-    def get_active_expt_assignments(
-        self, date: Optional[datetime.date] = None
-    ) -> Dict[UUID, UUID]:
+    def get_active_expt_allocations(self, date: datetime.date | None = None) -> dict[UUID, Allocation]:
         allocations_tbl = self.tables["expt_allocations"]
 
         group_ids = self.get_active_expt_group_ids(date)
 
         # Find accounts allocated to the groups that are assigned the active recommenders above
         group_query = select(
-            allocations_tbl.c.account_id, allocations_tbl.c.group_id
+            allocations_tbl.c.allocation_id, allocations_tbl.c.account_id, allocations_tbl.c.group_id
         ).where(allocations_tbl.c.group_id.in_(group_ids))
         result = self.conn.execute(group_query).fetchall()
-        group_lookup_by_account = {row[0]: row[1] for row in result}
+        group_lookup_by_account = {
+            row.account_id: Allocation(
+                allocation_id=row.allocation_id, account_id=row.account_id, group_id=row.group_id
+            )
+            for row in result
+        }
 
         return group_lookup_by_account
 
