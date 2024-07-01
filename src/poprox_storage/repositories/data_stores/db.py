@@ -38,13 +38,10 @@ class DatabaseRepository:
         model,
         addl_fields: dict[str, Any] | None = None,
         *,
-        constraint_name: str | None = None,
+        constraint: str | None = None,
         exclude=None,
         commit: bool = True,
     ):
-        if not constraint_name:
-            constraint_name = "uq_" + table_name
-
         fields: dict[str, Any] = model.model_dump(exclude=exclude)
 
         if addl_fields:
@@ -54,7 +51,7 @@ class DatabaseRepository:
             self.conn,
             self.tables[table_name],
             fields,
-            constraint=constraint_name,
+            constraint=constraint,
             commit=commit,
         )
 
