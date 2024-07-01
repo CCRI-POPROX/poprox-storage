@@ -187,7 +187,7 @@ class S3ArticleRepository(S3Repository):
         files = sorted(response.get("Contents", []), key=lambda d: d["LastModified"], reverse=True)
 
         if days_back:
-            files = files[-days_back:]
+            files = files[:days_back]
 
         return [f["Key"] for f in files]
 
