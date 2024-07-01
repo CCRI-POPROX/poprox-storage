@@ -13,10 +13,7 @@ from poprox_storage.concepts.experiment import (
     Treatment,
 )
 from poprox_storage.concepts.manifest import ManifestFile
-from poprox_storage.repositories.data_stores.db import (
-    DatabaseRepository,
-    upsert_and_return_id,
-)
+from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 
@@ -147,7 +144,7 @@ class DbExperimentRepository(DatabaseRepository):
         experiments_table: Table,
         experiment: Experiment,
     ) -> UUID | None:
-        return upsert_and_return_id(
+        return self._upsert_and_return_id(
             conn,
             experiments_table,
             {
@@ -165,7 +162,7 @@ class DbExperimentRepository(DatabaseRepository):
         experiment_id: UUID,
         group: Group,
     ) -> UUID | None:
-        return upsert_and_return_id(
+        return self._upsert_and_return_id(
             conn,
             expt_groups_table,
             {
@@ -182,7 +179,7 @@ class DbExperimentRepository(DatabaseRepository):
         experiment_id: UUID,
         recommender: Recommender,
     ) -> UUID | None:
-        return upsert_and_return_id(
+        return self._upsert_and_return_id(
             conn,
             expt_recommenders_table,
             {
@@ -200,7 +197,7 @@ class DbExperimentRepository(DatabaseRepository):
         experiment_id: UUID,
         phase: Phase,
     ) -> UUID | None:
-        return upsert_and_return_id(
+        return self._upsert_and_return_id(
             conn,
             expt_phases_table,
             {
@@ -219,7 +216,7 @@ class DbExperimentRepository(DatabaseRepository):
         phase_id: UUID,
         treatment: Treatment,
     ) -> UUID | None:
-        return upsert_and_return_id(
+        return self._upsert_and_return_id(
             conn,
             expt_treatments_table,
             {
@@ -237,7 +234,7 @@ class DbExperimentRepository(DatabaseRepository):
         account_id: UUID,
         group_id: UUID,
     ) -> UUID | None:
-        return upsert_and_return_id(
+        return self._upsert_and_return_id(
             conn,
             expt_allocations_table,
             {

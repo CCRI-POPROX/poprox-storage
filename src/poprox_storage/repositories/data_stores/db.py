@@ -36,44 +36,27 @@ class DatabaseRepository:
         self,
         conn,
         table,
-        values: Dict[str, Any],
-        constraint: str = None,
+        values: dict[str, Any],
+        constraint: str | None = None,
+        *,
         commit: bool = True,
-    ) -> Optional[UUID]:
-        """
-        This proxy method exists so that repository code only has to import
-        this base class and not the function below. The function will get
-        absorbed into this class once the callers have been updated to use
-        repositories.
-        """
-        return upsert_and_return_id(conn, table, values, constraint, commit)
+    ) -> UUID | None:
+        try:
+            insert_stmt = insert(table).values(**values)
+            if constraint:
+                insert_stmt = insert_stmt.on_conflict_do_update(constraint=constraint, set_=values)
+            insert_stmt = insert_stmt.returning(table.primary_key.columns)
+            results = conn.execute(insert_stmt)
+            id_value = results.first()[0]
 
+            if commit:
+                conn.commit()
+        except (IntegrityError, InternalError) as exc:
+            id_value = None
+            if commit:
+                logger.error(exc)
+                conn.rollback()
+            else:
+                raise
 
-def upsert_and_return_id(
-    conn,
-    table,
-    values: Dict[str, Any],
-    constraint: str = None,
-    commit: bool = True,
-) -> Optional[UUID]:
-    try:
-        insert_stmt = insert(table).values(**values)
-        if constraint:
-            insert_stmt = insert_stmt.on_conflict_do_update(
-                constraint=constraint, set_=values
-            )
-        insert_stmt = insert_stmt.returning(table.primary_key.columns)
-        results = conn.execute(insert_stmt)
-        id_value = results.first()[0]
-
-        if commit:
-            conn.commit()
-    except (IntegrityError, InternalError) as exc:
-        id_value = None
-        if commit:
-            logger.error(exc)
-            conn.rollback()
-        else:
-            raise
-
-    return id_value
+        return id_value
