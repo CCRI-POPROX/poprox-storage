@@ -233,38 +233,43 @@ def extract_articles(news_file_content) -> list[Article]:
         num_items += len(items)
         for item in items:
             if item["item"]["type"] == "text":
-                article = item["item"]
-                editorial_role = article.get("editorialrole", "not specified")
+                ap_item = item["item"]
+                editorial_role = ap_item.get("editorialrole", "not specified")
 
-                extracted_article = create_ap_article(article)
+                extracted_article = create_ap_article(ap_item)
                 if extracted_article.url and editorial_role == "FullStory":
                     articles.append(extracted_article)
 
     return articles
 
 
-def create_ap_article(article):
-    links = article.get("links", [])
+def create_ap_article(ap_item):
+    links = ap_item.get("links", [])
     canonical_link = [link["href"] for link in links if link["rel"] == "canonical"]
     if canonical_link:
         canonical_link = canonical_link[0]
 
-    subjects = article.get("subject", [])
+    subjects = ap_item.get("subject", [])
     mentions = []
     for subject in subjects:
         if len(subject["name"]) > 1:
             mention = create_ap_subject_mention(subject)
             mentions.append(mention)
 
-    article = Article(
-        title=article["headline"],
-        content=article["headline_extended"],
+    item_id = ap_item.get("altids", {}).get("itemid", None)
+
+    ap_item = Article(
+        title=ap_item["headline"],
+        content=ap_item["headline_extended"],
         url=canonical_link or None,
-        published_at=article["firstcreated"],
+        published_at=ap_item["firstcreated"],
         mentions=mentions,
+        source="AP",
+        external_id=item_id,
+        raw_data=ap_item,
     )
 
-    return article
+    return ap_item
 
 
 def create_ap_subject_mention(subject) -> Mention:
