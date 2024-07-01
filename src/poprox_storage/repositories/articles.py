@@ -184,9 +184,10 @@ class S3ArticleRepository(S3Repository):
         """
         response = self.s3_client.list_objects_v2(Bucket=DEV_BUCKET_NAME, Prefix=prefix)
 
-        files = sorted(
-            response.get("Contents", []), key=lambda d: d["LastModified"], reverse=True
-        )
+        files = sorted(response.get("Contents", []), key=lambda d: d["LastModified"], reverse=True)
+
+        if days_back:
+            files = files[-days_back:]
 
         return [f["Key"] for f in files]
 
