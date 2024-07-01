@@ -39,7 +39,8 @@ class DbExperimentRepository(DatabaseRepository):
             for group in experiment.groups:
                 group.group_id = self._insert_expt_group(experiment_id, group)
                 for account in assignments.get(group.name, []):
-                    self._insert_expt_assignment(account.account_id, group)
+                    allocation = Allocation(account_id=account.account_id, group_id=group.group_id)
+                    self._insert_expt_allocation(allocation)
 
             for recommender in experiment.recommenders:
                 recommender.recommender_id = self._insert_expt_recommender(
@@ -180,16 +181,13 @@ class DbExperimentRepository(DatabaseRepository):
             commit=False,
         )
 
-    def _insert_expt_assignment(
+    def _insert_expt_allocation(
         self,
-        account_id: UUID,
-        group: Group,
+        allocation: Allocation,
     ) -> UUID | None:
         return self._insert_model(
             "expt_allocations",
-            group,
-            {"account_id": account_id},
-            exclude={"name", "minimum_size"},
+            allocation,
             commit=False,
         )
 
