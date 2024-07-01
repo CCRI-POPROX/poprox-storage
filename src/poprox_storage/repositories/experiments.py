@@ -33,45 +33,23 @@ class DbExperimentRepository(DatabaseRepository):
         assignments = assignments or {}
         self.conn.rollback()
         with self.conn.begin():
-            experiment_id = self.insert_experiment(self.conn, self.tables["experiments"], experiment)
+            experiment_id = self.insert_experiment(experiment)
 
             for group in experiment.groups:
-                group.group_id = self.insert_expt_group(
-                    self.conn,
-                    self.tables["expt_groups"],
-                    experiment_id,
-                    group,
-                )
+                group.group_id = self.insert_expt_group(experiment_id, group)
                 for account in assignments.get(group.name, []):
-                    self.insert_expt_assignment(
-                        self.conn,
-                        self.tables["expt_allocations"],
-                        account.account_id,
-                        group.group_id,
-                    )
+                    self.insert_expt_assignment(account.account_id, group)
 
             for recommender in experiment.recommenders:
                 recommender.recommender_id = self.insert_expt_recommender(
-                    self.conn,
-                    self.tables["expt_recommenders"],
                     experiment_id,
                     recommender,
                 )
 
             for phase in experiment.phases:
-                phase.phase_id = self.insert_expt_phase(
-                    self.conn,
-                    self.tables["expt_phases"],
-                    experiment_id,
-                    phase,
-                )
+                phase.phase_id = self.insert_expt_phase(experiment_id, phase)
                 for treatment in phase.treatments:
-                    self.insert_expt_treatment(
-                        self.conn,
-                        self.tables["expt_treatments"],
-                        phase.phase_id,
-                        treatment,
-                    )
+                    self.insert_expt_treatment(phase.phase_id, treatment)
 
         return experiment_id
 
@@ -138,109 +116,74 @@ class DbExperimentRepository(DatabaseRepository):
 
         return group_lookup_by_account
 
-    def insert_experiment(
-        self,
-        conn: Connection,
-        experiments_table: Table,
-        experiment: Experiment,
-    ) -> UUID | None:
-        return self._upsert_and_return_id(
-            conn,
-            experiments_table,
-            {
-                "description": experiment.description,
-                "start_date": experiment.start_date,
-                "end_date": experiment.end_date,
-            },
-            commit=False,
-        )
+    def insert_experiment(self, experiment: Experiment) -> UUID | None:
+        return self._insert_model("experiments", experiment, exclude={"phases"}, commit=False)
 
     def insert_expt_group(
         self,
-        conn: Connection,
-        expt_groups_table: Table,
         experiment_id: UUID,
         group: Group,
     ) -> UUID | None:
-        return self._upsert_and_return_id(
-            conn,
-            expt_groups_table,
-            {
-                "experiment_id": experiment_id,
-                "group_name": group.name,
-            },
-            commit=False,
+        return self._insert_model(
+            "expt_groups", group, {"experiment_id": experiment_id}, exclude={"minimum_size"}, commit=False
         )
 
     def insert_expt_recommender(
         self,
-        conn: Connection,
-        expt_recommenders_table: Table,
         experiment_id: UUID,
         recommender: Recommender,
     ) -> UUID | None:
-        return self._upsert_and_return_id(
-            conn,
-            expt_recommenders_table,
+        return self._insert_model(
+            "expt_recommenders",
+            recommender,
             {
-                "experiment_id": experiment_id,
                 "recommender_name": recommender.name,
-                "endpoint_url": recommender.endpoint_url,
+                "experiment_id": experiment_id,
             },
+            exclude={"name"},
             commit=False,
         )
 
     def insert_expt_phase(
         self,
-        conn: Connection,
-        expt_phases_table: Table,
         experiment_id: UUID,
         phase: Phase,
     ) -> UUID | None:
-        return self._upsert_and_return_id(
-            conn,
-            expt_phases_table,
-            {
-                "experiment_id": experiment_id,
-                "phase_name": phase.name,
-                "start_date": phase.start_date,
-                "end_date": phase.end_date,
-            },
+        return self._insert_model(
+            "expt_phases",
+            phase,
+            {"phase_name": phase.name, "experiment_id": experiment_id},
+            exclude={"name", "treatments"},
             commit=False,
         )
 
     def insert_expt_treatment(
         self,
-        conn: Connection,
-        expt_treatments_table: Table,
         phase_id: UUID,
         treatment: Treatment,
     ) -> UUID | None:
-        return self._upsert_and_return_id(
-            conn,
-            expt_treatments_table,
+        return self._insert_model(
+            "expt_treatments",
+            treatment,
             {
                 "phase_id": phase_id,
                 "group_id": treatment.group.group_id,
                 "recommender_id": treatment.recommender.recommender_id,
             },
+            exclude={"group", "recommender"},
             commit=False,
         )
 
     def insert_expt_assignment(
         self,
-        conn: Connection,
-        expt_allocations_table: Table,
         account_id: UUID,
-        group_id: UUID,
+        group: Group,
     ) -> UUID | None:
-        return self._upsert_and_return_id(
-            conn,
-            expt_allocations_table,
-            {
-                "account_id": account_id,
-                "group_id": group_id,
-            },
+        return self._insert_model(
+            "expt_allocations",
+            group,
+            {"account_id": account_id},
+            exclude={"name", "minimum_size"},
             commit=False,
         )
 

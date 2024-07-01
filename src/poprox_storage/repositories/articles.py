@@ -139,48 +139,14 @@ class DbArticleRepository(DatabaseRepository):
 
         return failed
 
-    def insert_article(self, article: Article) -> Optional[UUID]:
-        article_table = self.tables["articles"]
-        return self._upsert_and_return_id(
-            self.conn,
-            article_table,
-            {
-                "title": article.title,
-                "content": article.content,
-                "url": article.url,
-                "published_at": article.published_at,
-            },
-            constraint="uq_articles",
-        )
+    def insert_article(self, article: Article) -> UUID | None:
+        return self._insert_model("articles", article)
 
-    def insert_entity(self, entity: Entity) -> Optional[UUID]:
-        entity_table = self.tables["entities"]
-        return self._upsert_and_return_id(
-            self.conn,
-            entity_table,
-            {
-                "name": entity.name,
-                "entity_type": entity.entity_type,
-                "source": entity.source,
-                "external_id": entity.external_id,
-                "raw_data": entity.raw_data,
-            },
-            constraint="uq_entities",
-        )
+    def insert_entity(self, entity: Entity) -> UUID | None:
+        return self._insert_model("entities", entity)
 
-    def insert_mention(self, mention: Mention) -> Optional[UUID]:
-        mention_table = self.tables["mentions"]
-        return self._upsert_and_return_id(
-            self.conn,
-            mention_table,
-            {
-                "article_id": mention.article_id,
-                "entity_id": mention.entity.entity_id,
-                "source": mention.source,
-                "relevance": mention.relevance,
-            },
-            constraint="uq_mentions",
-        )
+    def insert_mention(self, mention: Mention) -> UUID | None:
+        return self._insert_model("mentions", mention, exclude={"entity"})
 
     def _get_articles(self, article_table, where_clause=None) -> List[Article]:
         query = article_table.select()
