@@ -6,6 +6,7 @@ from poprox_concepts import Account
 from sqlalchemy import Connection, Table, and_, select
 
 from poprox_storage.concepts.experiment import (
+    Allocation,
     Experiment,
     Group,
     Phase,
@@ -102,17 +103,22 @@ class DbExperimentRepository(DatabaseRepository):
 
         return recommender_lookup_by_group
 
-    def get_active_expt_assignments(self, date: datetime.date | None = None) -> dict[UUID, UUID]:
+    def get_active_expt_allocations(self, date: datetime.date | None = None) -> dict[UUID, Allocation]:
         allocations_tbl = self.tables["expt_allocations"]
 
         group_ids = self.get_active_expt_group_ids(date)
 
         # Find accounts allocated to the groups that are assigned the active recommenders above
-        group_query = select(allocations_tbl.c.account_id, allocations_tbl.c.group_id).where(
-            allocations_tbl.c.group_id.in_(group_ids)
-        )
+        group_query = select(
+            allocations_tbl.c.allocation_id, allocations_tbl.c.account_id, allocations_tbl.c.group_id
+        ).where(allocations_tbl.c.group_id.in_(group_ids))
         result = self.conn.execute(group_query).fetchall()
-        group_lookup_by_account = {row[0]: row[1] for row in result}
+        group_lookup_by_account = {
+            row.account_id: Allocation(
+                allocation_id=row.allocation_id, account_id=row.account_id, group_id=row.group_id
+            )
+            for row in result
+        }
 
         return group_lookup_by_account
 

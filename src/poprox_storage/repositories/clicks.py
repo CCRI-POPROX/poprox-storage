@@ -1,16 +1,15 @@
 import json
 import logging
 from collections import defaultdict
-from typing import List
-
-from sqlalchemy import insert, select
+from uuid import UUID
 
 from poprox_concepts import Account, ClickHistory
+from sqlalchemy import insert, select
+
 from poprox_storage.aws import s3
 from poprox_storage.aws.exceptions import PoproxAwsUtilitiesException
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -22,13 +21,9 @@ class S3ClicksRepository(S3Repository):
 
     def get_clicks_from_dev_file(self, file_key):
         try:
-            click_data = json.loads(
-                s3.get_object(self.bucket_name, file_key).get("Body").read()
-            )
+            click_data = json.loads(s3.get_object(self.bucket_name, file_key).get("Body").read())
         except PoproxAwsUtilitiesException:
-            logger.warning(
-                "No click log data found. Just going to go with random recommendations"
-            )
+            logger.warning("No click log data found. Just going to go with random recommendations")
             click_data = {}
 
         return click_data
@@ -49,7 +44,7 @@ class DbClicksRepository(DatabaseRepository):
             )
             self.conn.execute(stmt)
 
-    def get_clicks(self, accounts: List[Account]) -> List[ClickHistory]:
+    def get_clicks(self, accounts: list[Account]) -> dict[UUID, ClickHistory]:
         click_table = self.tables["clicks"]
 
         click_query = select(click_table.c.account_id, click_table.c.article_id).where(
@@ -66,9 +61,8 @@ class DbClicksRepository(DatabaseRepository):
             if account_id not in clicked_articles:
                 clicked_articles[account_id] = []
 
-        histories = []
+        histories = {}
         for account_id, user_clicks in clicked_articles.items():
-            history = ClickHistory(account_id=account_id, article_ids=user_clicks)
-            histories.append(history)
+            histories[account_id] = ClickHistory(account_id=None, article_ids=user_clicks)
 
         return histories
