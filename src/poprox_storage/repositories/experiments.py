@@ -33,23 +33,23 @@ class DbExperimentRepository(DatabaseRepository):
         assignments = assignments or {}
         self.conn.rollback()
         with self.conn.begin():
-            experiment_id = self.insert_experiment(experiment)
+            experiment_id = self._insert_experiment(experiment)
 
             for group in experiment.groups:
-                group.group_id = self.insert_expt_group(experiment_id, group)
+                group.group_id = self._insert_expt_group(experiment_id, group)
                 for account in assignments.get(group.name, []):
-                    self.insert_expt_assignment(account.account_id, group)
+                    self._insert_expt_assignment(account.account_id, group)
 
             for recommender in experiment.recommenders:
-                recommender.recommender_id = self.insert_expt_recommender(
+                recommender.recommender_id = self._insert_expt_recommender(
                     experiment_id,
                     recommender,
                 )
 
             for phase in experiment.phases:
-                phase.phase_id = self.insert_expt_phase(experiment_id, phase)
+                phase.phase_id = self._insert_expt_phase(experiment_id, phase)
                 for treatment in phase.treatments:
-                    self.insert_expt_treatment(phase.phase_id, treatment)
+                    self._insert_expt_treatment(phase.phase_id, treatment)
 
         return experiment_id
 
@@ -116,10 +116,10 @@ class DbExperimentRepository(DatabaseRepository):
 
         return group_lookup_by_account
 
-    def insert_experiment(self, experiment: Experiment) -> UUID | None:
+    def _insert_experiment(self, experiment: Experiment) -> UUID | None:
         return self._insert_model("experiments", experiment, exclude={"phases"}, commit=False)
 
-    def insert_expt_group(
+    def _insert_expt_group(
         self,
         experiment_id: UUID,
         group: Group,
@@ -128,7 +128,7 @@ class DbExperimentRepository(DatabaseRepository):
             "expt_groups", group, {"experiment_id": experiment_id}, exclude={"minimum_size"}, commit=False
         )
 
-    def insert_expt_recommender(
+    def _insert_expt_recommender(
         self,
         experiment_id: UUID,
         recommender: Recommender,
@@ -144,7 +144,7 @@ class DbExperimentRepository(DatabaseRepository):
             commit=False,
         )
 
-    def insert_expt_phase(
+    def _insert_expt_phase(
         self,
         experiment_id: UUID,
         phase: Phase,
@@ -157,7 +157,7 @@ class DbExperimentRepository(DatabaseRepository):
             commit=False,
         )
 
-    def insert_expt_treatment(
+    def _insert_expt_treatment(
         self,
         phase_id: UUID,
         treatment: Treatment,
@@ -174,7 +174,7 @@ class DbExperimentRepository(DatabaseRepository):
             commit=False,
         )
 
-    def insert_expt_assignment(
+    def _insert_expt_assignment(
         self,
         account_id: UUID,
         group: Group,
