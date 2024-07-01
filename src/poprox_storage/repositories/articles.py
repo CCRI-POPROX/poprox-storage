@@ -112,7 +112,7 @@ class DbArticleRepository(DatabaseRepository):
         else:
             return None
 
-    def insert_articles(self, articles: list[Article], *, progress=False):
+    def insert_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
 
         if progress:
@@ -124,11 +124,12 @@ class DbArticleRepository(DatabaseRepository):
                 if article_id is None:
                     msg = f"Article insert failed for article {article}"
                     raise RuntimeError(msg)
-                for mention in article.mentions:
-                    entity_id = self.insert_entity(mention.entity)
-                    mention.article_id = article_id
-                    mention.entity.entity_id = entity_id
-                    mention.mention_id = self.insert_mention(mention)
+                if mentions:
+                    for mention in article.mentions:
+                        entity_id = self.insert_entity(mention.entity)
+                        mention.article_id = article_id
+                        mention.entity.entity_id = entity_id
+                        mention.mention_id = self.insert_mention(mention)
             except RuntimeError as exc:
                 logger.error(exc)
                 failed += 1
