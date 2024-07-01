@@ -1,18 +1,17 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import List, Optional
 from uuid import UUID
 
 import boto3
+from poprox_concepts import Article, Entity, Mention
 from sqlalchemy import (
-    select,
     Connection,
+    select,
 )
 from tqdm import tqdm
 
-from poprox_concepts import Article, Mention, Entity
-from poprox_storage.aws import s3, DEV_BUCKET_NAME
+from poprox_storage.aws import DEV_BUCKET_NAME, s3
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -32,25 +31,25 @@ class DbArticleRepository(DatabaseRepository):
             "impressions",
         )
 
-    def get_todays_articles(self) -> List[Article]:
+    def get_todays_articles(self) -> list[Article]:
         article_table = self.tables["articles"]
         return self._get_articles(
             article_table,
             article_table.c.published_at > datetime.now() - timedelta(days=1),
         )
 
-    def get_past_articles(self) -> List[Article]:
+    def get_past_articles(self) -> list[Article]:
         article_table = self.tables["articles"]
         return self._get_articles(
             article_table,
             article_table.c.published_at < datetime.now() - timedelta(days=1),
         )
 
-    def get_articles_by_id(self, ids: List[UUID]) -> List[Article]:
+    def get_articles_by_id(self, ids: list[UUID]) -> list[Article]:
         article_table = self.tables["articles"]
         return self._get_articles(article_table, article_table.c.article_id.in_(ids))
 
-    def get_article_mentions(self, articles: List[Article]) -> List[Article]:
+    def get_article_mentions(self, articles: list[Article]) -> list[Article]:
         article_lookup = {article.article_id: article for article in articles}
         article_ids = [article.article_id for article in articles]
 
@@ -96,15 +95,11 @@ class DbArticleRepository(DatabaseRepository):
         return_val = list(article_lookup.values())
         return return_val
 
-    def lookup_article_by_url(
-        self, article_url: str, newsletter_id: UUID = None
-    ) -> Optional[UUID]:
+    def lookup_article_by_url(self, article_url: str, newsletter_id: UUID | None = None) -> UUID | None:
         impression_table = self.tables["impressions"]
         article_table = self.tables["articles"]
 
-        article_query = select(article_table.c.article_id).where(
-            article_table.c.url == article_url
-        )
+        article_query = select(article_table.c.article_id).where(article_table.c.url == article_url)
         if newsletter_id:
             article_query = article_query.join(
                 impression_table,
@@ -117,7 +112,7 @@ class DbArticleRepository(DatabaseRepository):
         else:
             return None
 
-    def insert_articles(self, articles: List[Article], progress=False):
+    def insert_articles(self, articles: list[Article], *, progress=False):
         failed = 0
 
         if progress:
@@ -127,7 +122,8 @@ class DbArticleRepository(DatabaseRepository):
             try:
                 article_id = self.insert_article(article)
                 if article_id is None:
-                    raise RuntimeError(f"Article insert failed for article {article}")
+                    msg = f"Article insert failed for article {article}"
+                    raise RuntimeError(msg)
                 for mention in article.mentions:
                     entity_id = self.insert_entity(mention.entity)
                     mention.article_id = article_id
@@ -148,7 +144,7 @@ class DbArticleRepository(DatabaseRepository):
     def insert_mention(self, mention: Mention) -> UUID | None:
         return self._insert_model("mentions", mention, exclude={"entity"}, constraint="uq_mentions")
 
-    def _get_articles(self, article_table, where_clause=None) -> List[Article]:
+    def _get_articles(self, article_table, where_clause=None) -> list[Article]:
         query = article_table.select()
         if where_clause is not None:
             query = query.where(where_clause)
@@ -208,12 +204,8 @@ class S3ArticleRepository(S3Repository):
 
         return articles
 
-    def get_historical_articles(self) -> List[Article]:
-        response = (
-            s3.get_object(bucket_name=DEV_BUCKET_NAME, key=NEWS_FILE_KEY)
-            .get("Body")
-            .read()
-        )
+    def get_historical_articles(self) -> list[Article]:
+        response = s3.get_object(bucket_name=DEV_BUCKET_NAME, key=NEWS_FILE_KEY).get("Body").read()
         raw_articles = json.loads(response)
         articles = [
             Article(
@@ -231,7 +223,7 @@ class S3ArticleRepository(S3Repository):
         return articles
 
 
-def extract_articles(news_file_content) -> List[Article]:
+def extract_articles(news_file_content) -> list[Article]:
     lines = news_file_content.splitlines()
     articles = []
     num_items = 0
