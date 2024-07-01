@@ -32,6 +32,17 @@ class DatabaseRepository:
         result = self.conn.execute(query).fetchall()
         return [row[0] for row in result]
 
+    def _insert_model(self, table_name: str, model, *, constraint_name: str | None = None, exclude=None):
+        if not constraint_name:
+            constraint_name = "uq_" + table_name
+
+        return self._upsert_and_return_id(
+            self.conn,
+            self.tables[table_name],
+            model.model_dump(exclude=exclude),
+            constraint=constraint_name,
+        )
+
     def _upsert_and_return_id(
         self,
         conn,
