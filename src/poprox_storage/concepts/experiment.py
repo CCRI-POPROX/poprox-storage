@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, PositiveInt
 
 
 class Experiment(BaseModel):
-    experiment_id: Optional[UUID] = None
+    experiment_id: UUID | None = None
     description: str
     start_date: date
     end_date: date
-    phases: List[Phase]
+    phases: list[Phase]
 
     @property
     def recommenders(self):
@@ -61,23 +60,23 @@ class Treatment(BaseModel):
 
 
 class Group(BaseModel):
-    group_id: Optional[UUID] = None
+    group_id: UUID | None = None
     name: str
     minimum_size: PositiveInt
 
 
 class Recommender(BaseModel):
-    recommender_id: Optional[UUID] = None
+    recommender_id: UUID | None = None
     name: str
     endpoint_url: str
 
 
 class Phase(BaseModel):
-    phase_id: Optional[UUID] = None
+    phase_id: UUID | None = None
     name: str
     start_date: date
     end_date: date
-    treatments: List[Treatment]
+    treatments: list[Treatment]
 
     @property
     def duration(self) -> timedelta:
@@ -85,6 +84,6 @@ class Phase(BaseModel):
 
 
 class Allocation(BaseModel):
-    allocation_id: UUID
+    allocation_id: UUID | None = None
     account_id: UUID
     group_id: UUID
