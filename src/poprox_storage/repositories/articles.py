@@ -136,13 +136,13 @@ class DbArticleRepository(DatabaseRepository):
         return failed
 
     def insert_article(self, article: Article) -> UUID | None:
-        return self._insert_model("articles", article, constraint="uq_articles")
+        return self._insert_model("articles", article, exclude={"article_id", "mentions"}, constraint="uq_articles")
 
     def insert_entity(self, entity: Entity) -> UUID | None:
-        return self._insert_model("entities", entity, constraint="uq_entities")
+        return self._insert_model("entities", entity, exclude={"entity_id"}, constraint="uq_entities")
 
     def insert_mention(self, mention: Mention) -> UUID | None:
-        return self._insert_model("mentions", mention, exclude={"entity"}, constraint="uq_mentions")
+        return self._insert_model("mentions", mention, exclude={"mention_id", "entity"}, constraint="uq_mentions")
 
     def _get_articles(self, article_table, where_clause=None) -> list[Article]:
         query = article_table.select()
