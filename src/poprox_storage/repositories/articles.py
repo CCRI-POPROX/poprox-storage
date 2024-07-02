@@ -112,7 +112,7 @@ class DbArticleRepository(DatabaseRepository):
         else:
             return None
 
-    def insert_articles(self, articles: list[Article], *, progress=False):
+    def insert_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
 
         if progress:
@@ -124,11 +124,12 @@ class DbArticleRepository(DatabaseRepository):
                 if article_id is None:
                     msg = f"Article insert failed for article {article}"
                     raise RuntimeError(msg)
-                for mention in article.mentions:
-                    entity_id = self.insert_entity(mention.entity)
-                    mention.article_id = article_id
-                    mention.entity.entity_id = entity_id
-                    mention.mention_id = self.insert_mention(mention)
+                if mentions:
+                    for mention in article.mentions:
+                        entity_id = self.insert_entity(mention.entity)
+                        mention.article_id = article_id
+                        mention.entity.entity_id = entity_id
+                        mention.mention_id = self.insert_mention(mention)
             except RuntimeError as exc:
                 logger.error(exc)
                 failed += 1
@@ -136,13 +137,13 @@ class DbArticleRepository(DatabaseRepository):
         return failed
 
     def insert_article(self, article: Article) -> UUID | None:
-        return self._insert_model("articles", article, constraint="uq_articles")
+        return self._insert_model("articles", article, exclude={"article_id", "mentions"}, constraint="uq_articles")
 
     def insert_entity(self, entity: Entity) -> UUID | None:
-        return self._insert_model("entities", entity, constraint="uq_entities")
+        return self._insert_model("entities", entity, exclude={"entity_id"}, constraint="uq_entities")
 
     def insert_mention(self, mention: Mention) -> UUID | None:
-        return self._insert_model("mentions", mention, exclude={"entity"}, constraint="uq_mentions")
+        return self._insert_model("mentions", mention, exclude={"mention_id", "entity"}, constraint="uq_mentions")
 
     def _get_articles(self, article_table, where_clause=None) -> list[Article]:
         query = article_table.select()
@@ -184,9 +185,10 @@ class S3ArticleRepository(S3Repository):
         """
         response = self.s3_client.list_objects_v2(Bucket=DEV_BUCKET_NAME, Prefix=prefix)
 
-        files = sorted(
-            response.get("Contents", []), key=lambda d: d["LastModified"], reverse=True
-        )
+        files = sorted(response.get("Contents", []), key=lambda d: d["LastModified"], reverse=True)
+
+        if days_back:
+            files = files[:days_back]
 
         return [f["Key"] for f in files]
 
@@ -233,38 +235,43 @@ def extract_articles(news_file_content) -> list[Article]:
         num_items += len(items)
         for item in items:
             if item["item"]["type"] == "text":
-                article = item["item"]
-                editorial_role = article.get("editorialrole", "not specified")
+                ap_item = item["item"]
+                editorial_role = ap_item.get("editorialrole", "not specified")
 
-                extracted_article = create_ap_article(article)
+                extracted_article = create_ap_article(ap_item)
                 if extracted_article.url and editorial_role == "FullStory":
                     articles.append(extracted_article)
 
     return articles
 
 
-def create_ap_article(article):
-    links = article.get("links", [])
+def create_ap_article(ap_item):
+    links = ap_item.get("links", [])
     canonical_link = [link["href"] for link in links if link["rel"] == "canonical"]
     if canonical_link:
         canonical_link = canonical_link[0]
 
-    subjects = article.get("subject", [])
+    subjects = ap_item.get("subject", [])
     mentions = []
     for subject in subjects:
         if len(subject["name"]) > 1:
             mention = create_ap_subject_mention(subject)
             mentions.append(mention)
 
-    article = Article(
-        title=article["headline"],
-        content=article["headline_extended"],
+    item_id = ap_item.get("altids", {}).get("itemid", None)
+
+    ap_item = Article(
+        title=ap_item["headline"],
+        content=ap_item["headline_extended"],
         url=canonical_link or None,
-        published_at=article["firstcreated"],
+        published_at=ap_item["firstcreated"],
         mentions=mentions,
+        source="AP",
+        external_id=item_id,
+        raw_data=ap_item,
     )
 
-    return article
+    return ap_item
 
 
 def create_ap_subject_mention(subject) -> Mention:
