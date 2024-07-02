@@ -1,5 +1,4 @@
 import datetime
-from typing import Dict, List, Optional
 from uuid import UUID
 
 import tomli
@@ -15,17 +14,14 @@ from poprox_storage.concepts.experiment import (
     Treatment,
 )
 from poprox_storage.concepts.manifest import ManifestFile
-from poprox_storage.repositories.data_stores.db import (
-    DatabaseRepository,
-    upsert_and_return_id,
-)
+from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 
 class DbExperimentRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
-        self.tables: Dict[str, Table] = self._load_tables(
+        self.tables: dict[str, Table] = self._load_tables(
             "experiments",
             "expt_allocations",
             "expt_groups",
@@ -34,53 +30,32 @@ class DbExperimentRepository(DatabaseRepository):
             "expt_treatments",
         )
 
-    def store_experiment(self, experiment: Experiment, assignments: Dict[str, List[Account]] = None):
+    def store_experiment(self, experiment: Experiment, assignments: dict[str, list[Account]] | None = None):
         assignments = assignments or {}
         self.conn.rollback()
         with self.conn.begin():
-            experiment_id = insert_experiment(self.conn, self.tables["experiments"], experiment)
+            experiment_id = self._insert_experiment(experiment)
 
             for group in experiment.groups:
-                group.group_id = insert_expt_group(
-                    self.conn,
-                    self.tables["expt_groups"],
-                    experiment_id,
-                    group,
-                )
+                group.group_id = self._insert_expt_group(experiment_id, group)
                 for account in assignments.get(group.name, []):
-                    insert_expt_assignment(
-                        self.conn,
-                        self.tables["expt_allocations"],
-                        account.account_id,
-                        group.group_id,
-                    )
+                    allocation = Allocation(account_id=account.account_id, group_id=group.group_id)
+                    self._insert_expt_allocation(allocation)
 
             for recommender in experiment.recommenders:
-                recommender.recommender_id = insert_expt_recommender(
-                    self.conn,
-                    self.tables["expt_recommenders"],
+                recommender.recommender_id = self._insert_expt_recommender(
                     experiment_id,
                     recommender,
                 )
 
             for phase in experiment.phases:
-                phase.phase_id = insert_expt_phase(
-                    self.conn,
-                    self.tables["expt_phases"],
-                    experiment_id,
-                    phase,
-                )
+                phase.phase_id = self._insert_expt_phase(experiment_id, phase)
                 for treatment in phase.treatments:
-                    insert_expt_treatment(
-                        self.conn,
-                        self.tables["expt_treatments"],
-                        phase.phase_id,
-                        treatment,
-                    )
+                    self._insert_expt_treatment(phase.phase_id, treatment)
 
         return experiment_id
 
-    def get_active_expt_group_ids(self, date: Optional[datetime.date] = None) -> List[UUID]:
+    def get_active_expt_group_ids(self, date: datetime.date | None = None) -> list[UUID]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
         treatments_tbl = self.tables["expt_treatments"]
@@ -100,7 +75,7 @@ class DbExperimentRepository(DatabaseRepository):
 
         return self._id_query(groups_query)
 
-    def get_active_expt_endpoint_urls(self, date: Optional[datetime.date] = None) -> Dict[UUID, str]:
+    def get_active_expt_endpoint_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
         recommenders_tbl = self.tables["expt_recommenders"]
@@ -148,6 +123,74 @@ class DbExperimentRepository(DatabaseRepository):
 
         return group_lookup_by_account
 
+    def _insert_experiment(self, experiment: Experiment) -> UUID | None:
+        return self._insert_model("experiments", experiment, exclude={"phases"}, commit=False)
+
+    def _insert_expt_group(
+        self,
+        experiment_id: UUID,
+        group: Group,
+    ) -> UUID | None:
+        return self._insert_model(
+            "expt_groups", group, {"experiment_id": experiment_id}, exclude={"minimum_size"}, commit=False
+        )
+
+    def _insert_expt_recommender(
+        self,
+        experiment_id: UUID,
+        recommender: Recommender,
+    ) -> UUID | None:
+        return self._insert_model(
+            "expt_recommenders",
+            recommender,
+            {
+                "recommender_name": recommender.name,
+                "experiment_id": experiment_id,
+            },
+            exclude={"name"},
+            commit=False,
+        )
+
+    def _insert_expt_phase(
+        self,
+        experiment_id: UUID,
+        phase: Phase,
+    ) -> UUID | None:
+        return self._insert_model(
+            "expt_phases",
+            phase,
+            {"phase_name": phase.name, "experiment_id": experiment_id},
+            exclude={"name", "treatments"},
+            commit=False,
+        )
+
+    def _insert_expt_treatment(
+        self,
+        phase_id: UUID,
+        treatment: Treatment,
+    ) -> UUID | None:
+        return self._insert_model(
+            "expt_treatments",
+            treatment,
+            {
+                "phase_id": phase_id,
+                "group_id": treatment.group.group_id,
+                "recommender_id": treatment.recommender.recommender_id,
+            },
+            exclude={"group", "recommender"},
+            commit=False,
+        )
+
+    def _insert_expt_allocation(
+        self,
+        allocation: Allocation,
+    ) -> UUID | None:
+        return self._insert_model(
+            "expt_allocations",
+            allocation,
+            commit=False,
+        )
+
 
 class S3ExperimentRepository(S3Repository):
     def fetch_manifest(self, manifest_file_key) -> ManifestFile:
@@ -162,109 +205,3 @@ class S3ExperimentRepository(S3Repository):
         manifest_dict["phases"] = phases
 
         return ManifestFile.model_validate(manifest_dict)
-
-
-def insert_experiment(
-    conn: Connection,
-    experiments_table: Table,
-    experiment: Experiment,
-) -> Optional[UUID]:
-    return upsert_and_return_id(
-        conn,
-        experiments_table,
-        {
-            "description": experiment.description,
-            "start_date": experiment.start_date,
-            "end_date": experiment.end_date,
-        },
-        commit=False,
-    )
-
-
-def insert_expt_group(
-    conn: Connection,
-    expt_groups_table: Table,
-    experiment_id: UUID,
-    group: Group,
-) -> Optional[UUID]:
-    return upsert_and_return_id(
-        conn,
-        expt_groups_table,
-        {
-            "experiment_id": experiment_id,
-            "group_name": group.name,
-        },
-        commit=False,
-    )
-
-
-def insert_expt_recommender(
-    conn: Connection,
-    expt_recommenders_table: Table,
-    experiment_id: UUID,
-    recommender: Recommender,
-):
-    return upsert_and_return_id(
-        conn,
-        expt_recommenders_table,
-        {
-            "experiment_id": experiment_id,
-            "recommender_name": recommender.name,
-            "endpoint_url": recommender.endpoint_url,
-        },
-        commit=False,
-    )
-
-
-def insert_expt_phase(
-    conn: Connection,
-    expt_phases_table: Table,
-    experiment_id: UUID,
-    phase: Phase,
-):
-    return upsert_and_return_id(
-        conn,
-        expt_phases_table,
-        {
-            "experiment_id": experiment_id,
-            "phase_name": phase.name,
-            "start_date": phase.start_date,
-            "end_date": phase.end_date,
-        },
-        commit=False,
-    )
-
-
-def insert_expt_treatment(
-    conn: Connection,
-    expt_treatments_table: Table,
-    phase_id: UUID,
-    treatment: Treatment,
-):
-    return upsert_and_return_id(
-        conn,
-        expt_treatments_table,
-        {
-            "phase_id": phase_id,
-            "group_id": treatment.group.group_id,
-            "recommender_id": treatment.recommender.recommender_id,
-        },
-        commit=False,
-    )
-
-
-def insert_expt_assignment(
-    conn: Connection,
-    expt_allocations_table: Table,
-    account_id: UUID,
-    group_id: UUID,
-):
-    return upsert_and_return_id(
-        conn,
-        expt_allocations_table,
-        {
-            "account_id": account_id,
-            "group_id": group_id,
-        },
-        commit=False,
-    )
