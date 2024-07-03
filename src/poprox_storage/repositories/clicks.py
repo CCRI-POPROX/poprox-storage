@@ -63,6 +63,6 @@ class DbClicksRepository(DatabaseRepository):
 
         histories = {}
         for account_id, user_clicks in clicked_articles.items():
-            histories[account_id] = ClickHistory(account_id=None, article_ids=user_clicks)
+            histories[account_id] = ClickHistory(article_ids=user_clicks)
 
         return histories
