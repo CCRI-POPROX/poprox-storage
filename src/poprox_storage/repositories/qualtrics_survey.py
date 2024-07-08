@@ -26,7 +26,7 @@ logger.setLevel(logging.DEBUG)
 NEWS_FILE_KEY = "mockObjects/ap_scraped_data.json"
 
 
-class DbArticleRepository(DatabaseRepository):
+class DbQualtricsSurveyRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
         self.tables = self._load_tables(
@@ -72,7 +72,7 @@ class DbArticleRepository(DatabaseRepository):
         return self._upsert_and_return_id(
             self.conn,
             survey_instance_table,
-            {"survey_id": survey.survey_id, "account_Id": account_id},
+            {"survey_id": survey.survey_id, "account_id": account_id},
         )
 
     def create_or_update_survey_response(
@@ -82,6 +82,10 @@ class DbArticleRepository(DatabaseRepository):
         return self._upsert_and_return_id(
             self.conn,
             survey_responses_table,
-            response.model_dump(),
+            {
+                "survey_instance_id": response.survey_instance_id,
+                "qualtrics_response_id": response.qualtrics_response_id,
+                "raw": response.raw,
+            },
             constraint="uq_qualtrics_response_id",
         )

@@ -10,7 +10,7 @@ class Qualtrics_survey(BaseModel):
     survey_id: UUID | None = None
     qualtrics_id: str
     base_url: str
-    continuation_token: str
+    continuation_token: str | None
     active: bool
 
 
