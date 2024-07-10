@@ -143,7 +143,13 @@ class DbArticleRepository(DatabaseRepository):
         return self._insert_model("entities", entity, exclude={"entity_id"}, constraint="uq_entities")
 
     def insert_mention(self, mention: Mention) -> UUID | None:
-        return self._insert_model("mentions", mention, exclude={"mention_id", "entity"}, constraint="uq_mentions")
+        return self._insert_model(
+            "mentions",
+            mention,
+            exclude={"mention_id", "entity"},
+            addl_fields={"entity_id": mention.entity.entity_id},
+            constraint="uq_mentions",
+        )
 
     def _get_articles(self, article_table, where_clause=None) -> list[Article]:
         query = article_table.select()
