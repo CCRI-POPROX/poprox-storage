@@ -85,7 +85,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             {
                 "survey_instance_id": response.survey_instance_id,
                 "qualtrics_response_id": response.qualtrics_response_id,
-                "raw": response.raw,
+                "raw_data": response.raw_data,
             },
             constraint="uq_qualtrics_response_id",
         )

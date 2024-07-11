@@ -141,7 +141,7 @@ def test_create_survey_response(pg_url: str):
         survey_response = QualtricsSurveyResponse(
             survey_instance_id=survey_instance_id,
             qualtrics_response_id="R_1pKcm3b4BQjh6zF",
-            raw=raw_data,
+            raw_data=raw_data,
         )
         repo.create_or_update_survey_response(survey_response)
         results = conn.execute(
@@ -150,7 +150,7 @@ def test_create_survey_response(pg_url: str):
         assert 1 == len(results)
         assert survey_instance_id == results[0].survey_instance_id
         assert "R_1pKcm3b4BQjh6zF" == results[0].qualtrics_response_id
-        assert raw_data == results[0].raw
+        assert raw_data == results[0].raw_data
 
 
 def test_update_survey_response(pg_url: str):
@@ -185,10 +185,10 @@ def test_update_survey_response(pg_url: str):
         survey_response = QualtricsSurveyResponse(
             survey_instance_id=survey_instance_id,
             qualtrics_response_id="R_1pKcm3b4BQjh6zF",
-            raw=raw_data,
+            raw_data=raw_data,
         )
         repo.create_or_update_survey_response(survey_response)
-        survey_response.raw = {"test": "yay"}
+        survey_response.raw_data = {"test": "yay"}
         repo.create_or_update_survey_response(survey_response)
 
         results = conn.execute(
@@ -197,4 +197,4 @@ def test_update_survey_response(pg_url: str):
         assert 1 == len(results)
         assert survey_instance_id == results[0].survey_instance_id
         assert "R_1pKcm3b4BQjh6zF" == results[0].qualtrics_response_id
-        assert {"test": "yay"} == results[0].raw
+        assert {"test": "yay"} == results[0].raw_data

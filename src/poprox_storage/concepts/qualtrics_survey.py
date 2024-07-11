@@ -24,4 +24,4 @@ class QualtricsSurveyResponse(BaseModel):
     survey_response_id: UUID | None = None
     survey_instance_id: UUID
     qualtrics_response_id: str
-    raw: Dict
+    raw_data: Dict
