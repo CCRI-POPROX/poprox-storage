@@ -32,17 +32,23 @@ class DbArticleRepository(DatabaseRepository):
         )
 
     def get_todays_articles(self) -> list[Article]:
-        article_table = self.tables["articles"]
-        return self._get_articles(
-            article_table,
-            article_table.c.published_at > datetime.now() - timedelta(days=1),
-        )
+        return self.get_articles_since(days_ago=1)
 
     def get_past_articles(self) -> list[Article]:
+        return self.get_articles_before(days_ago=1)
+
+    def get_articles_since(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         return self._get_articles(
             article_table,
-            article_table.c.published_at < datetime.now() - timedelta(days=1),
+            article_table.c.published_at > datetime.now() - timedelta(days=days_ago),
+        )
+
+    def get_articles_before(self, days_ago=1) -> list[Article]:
+        article_table = self.tables["articles"]
+        return self._get_articles(
+            article_table,
+            article_table.c.published_at < datetime.now() - timedelta(days=days_ago),
         )
 
     def get_articles_by_id(self, ids: list[UUID]) -> list[Article]:
@@ -158,12 +164,13 @@ class DbArticleRepository(DatabaseRepository):
         result = self.conn.execute(query).fetchall()
         return [
             Article(
-                article_id=article[0],
-                title=article[1],
-                content=article[2],
-                url=article[3],
+                article_id=row.article_id,
+                title=row.title,
+                content=row.content,
+                url=row.url,
+                raw_data=row.raw_data,
             )
-            for article in result
+            for row in result
         ]
 
 
