@@ -6,6 +6,7 @@ import boto3
 from poprox_concepts.domain import Image
 from sqlalchemy import (
     Connection,
+    select,
 )
 from tqdm import tqdm
 
@@ -42,6 +43,23 @@ class DbImageRepository(DatabaseRepository):
 
     def insert_image(self, image: Image) -> UUID | None:
         return self._insert_model("images", image, exclude={"image_id"}, constraint="uq_images")
+
+    def fetch_image_by_external_id(self, external_id: str) -> Image | None:
+        image_table = self.tables["images"]
+
+        image_query = select(image_table).where(image_table.c.external_id == external_id)
+
+        result = self.conn.execute(image_query).first()
+        if not result:
+            return None
+        else:
+            return Image(
+                image_id=result.image_id,
+                url=result.url,
+                source=result.source,
+                external_id=result.external_id,
+                raw_data=result.raw_data,
+            )
 
 
 class S3ImageRepository(S3Repository):
