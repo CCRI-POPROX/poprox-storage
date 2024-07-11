@@ -13,9 +13,9 @@ from tqdm import tqdm
 
 from poprox_concepts import Article, Mention, Entity
 from poprox_storage.concepts.qualtrics_survey import (
-    Qualtrics_survey_instance,
-    Qualtrics_survey,
-    Qualtrics_survey_response,
+    QualtricsSurveyInstance,
+    QualtricsSurvey,
+    QualtricsSurveyResponse,
 )
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -35,7 +35,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             "qualtrics_survey_responses",
         )
 
-    def get_active_surveys(self) -> List[Qualtrics_survey]:
+    def get_active_surveys(self) -> List[QualtricsSurvey]:
         survey_table = self.tables["qualtrics_surveys"]
         query = select(
             survey_table.c.survey_id,
@@ -46,7 +46,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         ).where(survey_table.c.active == True)
         results = self.conn.execute(query).fetchall()
         return [
-            Qualtrics_survey(
+            QualtricsSurvey(
                 survey_id=row.survey_id,
                 qualtrics_id=row.qualtrics_id,
                 base_url=row.base_url,
@@ -56,7 +56,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             for row in results
         ]
 
-    def update_survey(self, survey: Qualtrics_survey) -> Optional[UUID]:
+    def update_survey(self, survey: QualtricsSurvey) -> Optional[UUID]:
         survey_table = self.tables["qualtrics_surveys"]
         return self._upsert_and_return_id(
             self.conn,
@@ -66,7 +66,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         )
 
     def create_survey_instance(
-        self, survey: Qualtrics_survey, account_id: UUID
+        self, survey: QualtricsSurvey, account_id: UUID
     ) -> Optional[UUID]:
         survey_instance_table = self.tables["qualtrics_survey_instances"]
         return self._upsert_and_return_id(
@@ -76,7 +76,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         )
 
     def create_or_update_survey_response(
-        self, response: Qualtrics_survey_response
+        self, response: QualtricsSurveyResponse
     ) -> Optional[UUID]:
         survey_responses_table = self.tables["qualtrics_survey_responses"]
         return self._upsert_and_return_id(

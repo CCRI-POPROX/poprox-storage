@@ -6,7 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
-class Qualtrics_survey(BaseModel):
+class QualtricsSurvey(BaseModel):
     survey_id: UUID | None = None
     qualtrics_id: str
     base_url: str
@@ -14,13 +14,13 @@ class Qualtrics_survey(BaseModel):
     active: bool
 
 
-class Qualtrics_survey_instance(BaseModel):
+class QualtricsSurveyInstance(BaseModel):
     survey_instance_id: UUID | None = None
     survey_instance_id: UUID
     account_id: UUID
 
 
-class Qualtrics_survey_response(BaseModel):
+class QualtricsSurveyResponse(BaseModel):
     survey_response_id: UUID | None = None
     survey_instance_id: UUID
     qualtrics_response_id: str
