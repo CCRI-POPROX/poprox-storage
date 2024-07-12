@@ -1,6 +1,0 @@
-configargparse
-sqlalchemy_utils
-yarl
-python-dotenv
-alembic
-pytest

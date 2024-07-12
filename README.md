@@ -8,10 +8,16 @@
 **Table of Contents**
 
 - [Installation](#installation)
-- [License](#license)
+
 
 ## Installation
 
 ```console
 pip install poprox-storage
+```
+
+### Dev Dependencies
+
+```console
+pip install .[dev]
 ```

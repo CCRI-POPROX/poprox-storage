@@ -21,6 +21,17 @@ dependencies = [
   "poprox-concepts@git+https://github.com/CCRI-POPROX/poprox-concepts.git",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "alembic",
+  "sqlalchemy_utils",
+  "yarl",
+  "python-dotenv",
+  "configargparse",
+  "coverage[toml]>=6.5",
+  "pytest",
+]
+
 [project.urls]
 Documentation = "https://github.com/ccri-poprox/poprox-storage#readme"
 Issues = "https://github.com/ccri-poprox/poprox-storage/issues"
@@ -33,7 +44,16 @@ allow-direct-references = true
 path = "src/poprox_storage/__about__.py"
 
 [tool.hatch.envs.default]
-dependencies = ["coverage[toml]>=6.5", "pytest"]
+dependencies = [
+  "alembic",
+  "sqlalchemy_utils",
+  "yarl",
+  "python-dotenv",
+  "configargparse",
+  "coverage[toml]>=6.5",
+  "pytest",
+]
+
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
