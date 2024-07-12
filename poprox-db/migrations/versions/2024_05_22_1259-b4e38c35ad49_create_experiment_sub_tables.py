@@ -8,9 +8,8 @@ Create Date: 2024-05-22 12:59:44.142662
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "b4e38c35ad49"
@@ -30,9 +29,7 @@ def upgrade() -> None:
         ),
         sa.Column("group_name", sa.String, nullable=False),
         sa.Column("experiment_id", sa.UUID, nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")
-        ),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
 
     op.create_foreign_key(
@@ -43,9 +40,7 @@ def upgrade() -> None:
         ["experiment_id"],
     )
 
-    op.create_unique_constraint(
-        "uq_expt_groups_name_experiment", "expt_groups", ("group_name", "experiment_id")
-    )
+    op.create_unique_constraint("uq_expt_groups_name_experiment", "expt_groups", ("group_name", "experiment_id"))
 
     op.create_table(
         "expt_phases",
@@ -59,9 +54,7 @@ def upgrade() -> None:
         sa.Column("experiment_id", sa.UUID, nullable=False),
         sa.Column("start_date", sa.Date, nullable=False),
         sa.Column("end_date", sa.Date, nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")
-        ),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
 
     op.create_foreign_key(
@@ -72,9 +65,7 @@ def upgrade() -> None:
         ["experiment_id"],
     )
 
-    op.create_unique_constraint(
-        "uq_expt_phases_name_experiment", "expt_phases", ("phase_name", "experiment_id")
-    )
+    op.create_unique_constraint("uq_expt_phases_name_experiment", "expt_phases", ("phase_name", "experiment_id"))
 
     op.create_table(
         "expt_recommenders",
@@ -87,9 +78,7 @@ def upgrade() -> None:
         sa.Column("recommender_name", sa.String, nullable=False),
         sa.Column("endpoint_url", sa.String, nullable=False),
         sa.Column("experiment_id", sa.UUID, nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")
-        ),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
 
     op.create_foreign_key(
@@ -108,20 +97,14 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        "fk_expt_recommenders_experiment_id", "expt_recommenders", type_="foreignkey"
-    )
+    op.drop_constraint("fk_expt_recommenders_experiment_id", "expt_recommenders", type_="foreignkey")
     op.drop_constraint("uq_expt_recommenders_name_experiment", "expt_recommenders")
     op.drop_table("expt_recommenders")
 
-    op.drop_constraint(
-        "fk_expt_phases_experiment_id", "expt_phases", type_="foreignkey"
-    )
+    op.drop_constraint("fk_expt_phases_experiment_id", "expt_phases", type_="foreignkey")
     op.drop_constraint("uq_expt_phases_name_experiment", "expt_phases")
     op.drop_table("expt_phases")
 
-    op.drop_constraint(
-        "fk_expt_groups_experiment_id", "expt_groups", type_="foreignkey"
-    )
+    op.drop_constraint("fk_expt_groups_experiment_id", "expt_groups", type_="foreignkey")
     op.drop_constraint("uq_expt_groups_name_experiment", "expt_groups")
     op.drop_table("expt_groups")

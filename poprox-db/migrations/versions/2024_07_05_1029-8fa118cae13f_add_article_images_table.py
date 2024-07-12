@@ -8,10 +8,9 @@ Create Date: 2024-07-05 10:29:25.409736
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
-
 
 # revision identifiers, used by Alembic.
 revision: str = "8fa118cae13f"
@@ -33,9 +32,7 @@ def upgrade() -> None:
         sa.Column("source", sa.String, nullable=True),
         sa.Column("external_id", sa.String, nullable=True),
         sa.Column("raw_data", JSONB, nullable=True),
-        sa.Column(
-            "created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")
-        ),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
 
     op.create_unique_constraint("uq_images", "images", ("source", "external_id"))

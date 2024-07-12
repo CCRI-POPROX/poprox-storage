@@ -8,9 +8,8 @@ Create Date: 2024-05-07 09:30:20.103281
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "519655a72d7c"
@@ -29,18 +28,12 @@ def upgrade() -> None:
         sa.Column("newsletter_id", sa.UUID, nullable=False),
         sa.Column("article_id", sa.UUID, nullable=False),
         sa.Column("position", sa.Integer, nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")
-        ),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
 
-    op.create_unique_constraint(
-        "uq_newsletter_position", "impression", ("newsletter_id", "position")
-    )
+    op.create_unique_constraint("uq_newsletter_position", "impression", ("newsletter_id", "position"))
 
-    op.create_check_constraint(
-        "ch_position_positive", "impression", sa.sql.column("position") > 0
-    )
+    op.create_check_constraint("ch_position_positive", "impression", sa.sql.column("position") > 0)
 
     op.create_foreign_key(
         "fk_impression_newsletter",

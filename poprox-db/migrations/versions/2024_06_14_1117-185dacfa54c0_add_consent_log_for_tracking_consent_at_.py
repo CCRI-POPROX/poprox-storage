@@ -8,9 +8,8 @@ Create Date: 2024-06-14 11:17:07.191039
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "185dacfa54c0"
@@ -33,9 +32,7 @@ def upgrade() -> None:
         # different _versions_ of our consent documents. Secondly, it
         # lets this table be used for other consent documents (than a poprox-wide one) in the
         sa.Column("document_name", sa.String, nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")
-        ),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
 
     op.create_foreign_key(

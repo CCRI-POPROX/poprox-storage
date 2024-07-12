@@ -1,14 +1,11 @@
-import pytest
-from sqlalchemy import create_engine
-
 import os
 import uuid
-from collections import namedtuple
 from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Optional, Union
 
+import pytest
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 from configargparse import Namespace
@@ -22,9 +19,7 @@ PROJECT_NAME = PROJECT_PATH.stem
 DEFAULT_PG_URL = f"postgresql://postgres:{db_password}@127.0.0.1:5435/poprox"
 
 
-def make_alembic_config(
-    cmd_opts: Union[Namespace, SimpleNamespace], base_path: str = PROJECT_PATH
-) -> Config:
+def make_alembic_config(cmd_opts: Union[Namespace, SimpleNamespace], base_path: str = PROJECT_PATH) -> Config:
     # Replace path to alembic.ini file to absolute
     if not os.path.isabs(cmd_opts.config):
         cmd_opts.config = os.path.join(base_path, cmd_opts.config)
@@ -34,9 +29,7 @@ def make_alembic_config(
     # Replace path to alembic folder to absolute
     alembic_location = config.get_main_option("script_location")
     if not os.path.isabs(alembic_location):
-        config.set_main_option(
-            "script_location", os.path.join(base_path, alembic_location)
-        )
+        config.set_main_option("script_location", os.path.join(base_path, alembic_location))
     if cmd_opts.pg_url:
         config.set_main_option("sqlalchemy.url", cmd_opts.pg_url)
 
