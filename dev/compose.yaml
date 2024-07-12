@@ -1,0 +1,34 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# The `db-data` volume persists the database data between container
+# restarts. The `db-password` secret is used to set the database
+# password. You must create `db/password.txt` and add a password of
+# your choosing to it before running `docker compose up`.
+services:
+  db:
+    restart: always
+    image: postgres
+    user: postgres
+    secrets:
+      - db-password
+    environment:
+      - POSTGRES_DB=poprox
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+    ports:
+        - "127.0.0.1:5433:5432"
+
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    volumes:
+      - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
+
+secrets:
+  db-password:
+    file: db/password.txt
