@@ -168,6 +168,10 @@ class DbArticleRepository(DatabaseRepository):
                 title=row.title,
                 content=row.content,
                 url=row.url,
+                preview_image_id=row.preview_image_id,
+                published_at=row.published_at,
+                source=row.source,
+                external_id=row.external_id,
                 raw_data=row.raw_data,
             )
             for row in result
