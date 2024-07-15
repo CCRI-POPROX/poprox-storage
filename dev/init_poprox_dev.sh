@@ -14,7 +14,7 @@ export POPROX_DB_NAME='poprox'
 docker compose up -d --wait
 
 cd ../poprox-db
-alembic upgrade head
+alembic upgrade heads
 
 # TODO: add dummy data to alembic
 
