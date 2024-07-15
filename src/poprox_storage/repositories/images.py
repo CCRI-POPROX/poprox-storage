@@ -42,12 +42,33 @@ class DbImageRepository(DatabaseRepository):
         return failed
 
     def insert_image(self, image: Image) -> UUID | None:
-        return self._insert_model("images", image, exclude={"image_id"}, constraint="uq_images")
+        return self._insert_model(
+            "images", image, exclude={"image_id"}, constraint="uq_images"
+        )
 
     def fetch_image_by_external_id(self, external_id: str) -> Image | None:
         image_table = self.tables["images"]
 
-        image_query = select(image_table).where(image_table.c.external_id == external_id)
+        image_query = select(image_table).where(
+            image_table.c.external_id == external_id
+        )
+
+        result = self.conn.execute(image_query).first()
+        if not result:
+            return None
+        else:
+            return Image(
+                image_id=result.image_id,
+                url=result.url,
+                source=result.source,
+                external_id=result.external_id,
+                raw_data=result.raw_data,
+            )
+
+    def fetch_image_by_id(self, image_id: str) -> Image | None:
+        image_table = self.tables["images"]
+
+        image_query = select(image_table).where(image_table.c.image_id == image_id)
 
         result = self.conn.execute(image_query).first()
         if not result:
@@ -86,7 +107,9 @@ class S3ImageRepository(S3Repository):
         """
         response = self.s3_client.list_objects_v2(Bucket=DEV_BUCKET_NAME, Prefix=prefix)
 
-        files = sorted(response.get("Contents", []), key=lambda d: d["LastModified"], reverse=True)
+        files = sorted(
+            response.get("Contents", []), key=lambda d: d["LastModified"], reverse=True
+        )
 
         if days_back:
             files = files[:days_back]
@@ -125,5 +148,7 @@ def create_ap_image(ap_item):
     item_id = ap_item.get("altids", {}).get("itemid", None)
 
     preview_url = ap_item.get("renditions", {}).get("preview", {}).get("href", None)
-    ap_image = Image(url=preview_url, source="AP", external_id=item_id, raw_data=ap_item)
+    ap_image = Image(
+        url=preview_url, source="AP", external_id=item_id, raw_data=ap_item
+    )
     return ap_image
