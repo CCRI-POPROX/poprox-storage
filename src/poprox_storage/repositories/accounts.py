@@ -63,7 +63,7 @@ class DbAccountRepository(DatabaseRepository):
             return accounts[0]
         return None
 
-    def create_new_account(self, email: str, source: str) -> Account:
+    def store_new_account(self, email: str, source: str) -> Account:
         account_tbl = self.tables["accounts"]
         query = (
             sqlalchemy.insert(account_tbl)
@@ -74,6 +74,7 @@ class DbAccountRepository(DatabaseRepository):
         )
         row = self.conn.execute(query).one_or_none()
         return Account(account_id=row.account_id, email=row.email, status=row.status)
+
 
     def fetch_unassigned_accounts(self, start_date: date, end_date: date):
         account_tbl = self.tables["accounts"]
@@ -138,14 +139,14 @@ class DbAccountRepository(DatabaseRepository):
             result = result.subscription_id
         return result
 
-    def create_subscription_for_account(self, account_id: UUID):
+    def store_subscription_for_account(self, account_id: UUID):
         subscription_tbl = self.tables["subscriptions"]
 
         create_query = subscription_tbl.insert().values(account_id=account_id)
         if self.fetch_subscription_for_account(account_id) is None:
             self.conn.execute(create_query)
 
-    def end_subscription_for_account(self, account_id: UUID):
+    def remove_subscription_for_account(self, account_id: UUID):
         subscription_tbl = self.tables["subscriptions"]
         delete_query = (
             subscription_tbl.update()
@@ -157,7 +158,7 @@ class DbAccountRepository(DatabaseRepository):
         )
         self.conn.execute(delete_query)
 
-    def record_consent(self, account_id: UUID, document_name: str):
+    def store_consent(self, account_id: UUID, document_name: str):
         consent_tbl = self.tables["account_consent_log"]
         query = sqlalchemy.insert(consent_tbl).values(
             account_id=account_id, document_name=document_name
@@ -172,3 +173,8 @@ class DbAccountRepository(DatabaseRepository):
             .where(account_tbl.c.account_id == account_id)
         )
         self.conn.execute(query)
+
+    create_new_account = store_new_account
+    create_subscription_for_account = store_subscription_for_account
+    end_subscription_for_account = remove_subscription_for_account
+    record_consent = store_consent
