@@ -35,13 +35,14 @@ class DbClicksRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables("clicks")
 
-    def track_click_in_database(self, newsletter_id, account_id, article_id):
+    def track_click_in_database(self, newsletter_id, account_id, article_id, created_at):
         click_table = self.tables["clicks"]
         with self.conn.begin():
             stmt = insert(click_table).values(
                 newsletter_id=newsletter_id,
                 account_id=account_id,
                 article_id=article_id,
+                created_at=created_at
             )
             self.conn.execute(stmt)
 
@@ -68,7 +69,7 @@ class DbClicksRepository(DatabaseRepository):
 
         return histories
 
-    def get_clicks_within_timestamp(self, accounts: list[Account], start_time, end_time) -> dict[UUID, list[Click]]:
+    def get_clicks_between(self, accounts: list[Account], start_time, end_time) -> dict[UUID, list[Click]]:
         click_table = self.tables["clicks"]
 
         click_query = select(click_table.c.account_id, click_table.c.article_id, click_table.c.created_at).where(
@@ -82,7 +83,7 @@ class DbClicksRepository(DatabaseRepository):
 
         clicked_articles = defaultdict(list)
         for row in click_result:
-            clicked_articles[row[0]].append(Click(article_id=row[1], timestamp=row[2]))
+            clicked_articles[row.account_id].append(Click(article_id=row.article_id, timestamp=row.created_at))
         
         for account in accounts:
             account_id = account.account_id
