@@ -17,7 +17,7 @@ class DbNewsletterRepository(DatabaseRepository):
             "impressions",
         )
 
-    def log_newsletter_content(
+    def store_newsletter(
         self, newsletter_id, account_id, recommended_articles, article_html
     ):
         # TODO: Add the email title to the newsletter table
@@ -40,3 +40,5 @@ class DbNewsletterRepository(DatabaseRepository):
                     position=1 + position,
                 )
                 self.conn.execute(stmt)
+
+    log_newsletter_content = store_newsletter
