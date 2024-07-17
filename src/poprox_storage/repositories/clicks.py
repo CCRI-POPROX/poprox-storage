@@ -34,7 +34,7 @@ class DbClicksRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables("clicks")
 
-    def track_click_in_database(self, newsletter_id, account_id, article_id):
+    def store_click(self, newsletter_id, account_id, article_id):
         click_table = self.tables["clicks"]
         with self.conn.begin():
             stmt = insert(click_table).values(
@@ -44,7 +44,7 @@ class DbClicksRepository(DatabaseRepository):
             )
             self.conn.execute(stmt)
 
-    def get_clicks(self, accounts: list[Account]) -> dict[UUID, ClickHistory]:
+    def fetch_clicks(self, accounts: list[Account]) -> dict[UUID, ClickHistory]:
         click_table = self.tables["clicks"]
 
         click_query = select(click_table.c.account_id, click_table.c.article_id).where(
@@ -66,3 +66,6 @@ class DbClicksRepository(DatabaseRepository):
             histories[account_id] = ClickHistory(article_ids=user_clicks)
 
         return histories
+
+    track_click_in_database = store_click
+    get_clicks = fetch_clicks
