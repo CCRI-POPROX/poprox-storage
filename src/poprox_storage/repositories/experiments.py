@@ -55,7 +55,7 @@ class DbExperimentRepository(DatabaseRepository):
 
         return experiment_id
 
-    def get_active_expt_group_ids(self, date: datetime.date | None = None) -> list[UUID]:
+    def fetch_active_expt_group_ids(self, date: datetime.date | None = None) -> list[UUID]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
         treatments_tbl = self.tables["expt_treatments"]
@@ -75,7 +75,7 @@ class DbExperimentRepository(DatabaseRepository):
 
         return self._id_query(groups_query)
 
-    def get_active_expt_endpoint_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
+    def fetch_active_expt_endpoint_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
         recommenders_tbl = self.tables["expt_recommenders"]
@@ -104,7 +104,8 @@ class DbExperimentRepository(DatabaseRepository):
 
         return recommender_lookup_by_group
 
-    def get_active_expt_allocations(self, date: datetime.date | None = None) -> dict[UUID, Allocation]:
+
+    def fetch_active_expt_allocations(self, date: datetime.date | None = None) -> dict[UUID, Allocation]:
         allocations_tbl = self.tables["expt_allocations"]
 
         group_ids = self.get_active_expt_group_ids(date)
@@ -122,6 +123,10 @@ class DbExperimentRepository(DatabaseRepository):
         }
 
         return group_lookup_by_account
+
+    get_active_expt_group_ids = fetch_active_expt_group_ids
+    get_active_expt_endpoint_urls = fetch_active_expt_endpoint_urls
+    get_active_expt_allocations = fetch_active_expt_allocations
 
     def _insert_experiment(self, experiment: Experiment) -> UUID | None:
         return self._insert_model("experiments", experiment, exclude={"phases"}, commit=False)
