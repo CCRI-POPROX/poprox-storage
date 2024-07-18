@@ -35,7 +35,7 @@ class DbClicksRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables("clicks")
 
-    def track_click_in_database(self, newsletter_id, account_id, article_id, created_at):
+    def track_click_in_database(self, newsletter_id, account_id, article_id, created_at=None):
         click_table = self.tables["clicks"]
         with self.conn.begin():
             stmt = insert(click_table).values(
