@@ -1,24 +1,16 @@
-import json
 import logging
-from datetime import datetime, timedelta
-from typing import List, Optional
 from uuid import UUID
 
-import boto3
 from sqlalchemy import (
-    select,
     Connection,
+    select,
 )
-from tqdm import tqdm
 
-from poprox_concepts import Article, Mention, Entity
 from poprox_storage.concepts.qualtrics_survey import (
-    QualtricsSurveyInstance,
     QualtricsSurvey,
     QualtricsSurveyResponse,
 )
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
-from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -35,7 +27,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             "qualtrics_survey_responses",
         )
 
-    def get_active_surveys(self) -> List[QualtricsSurvey]:
+    def get_active_surveys(self) -> list[QualtricsSurvey]:
         survey_table = self.tables["qualtrics_surveys"]
         query = select(
             survey_table.c.survey_id,
@@ -43,7 +35,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             survey_table.c.base_url,
             survey_table.c.continuation_token,
             survey_table.c.active,
-        ).where(survey_table.c.active == True)
+        ).where(survey_table.c.active)
         results = self.conn.execute(query).fetchall()
         return [
             QualtricsSurvey(
@@ -56,7 +48,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             for row in results
         ]
 
-    def update_survey(self, survey: QualtricsSurvey) -> Optional[UUID]:
+    def update_survey(self, survey: QualtricsSurvey) -> UUID | None:
         survey_table = self.tables["qualtrics_surveys"]
         return self._upsert_and_return_id(
             self.conn,
@@ -65,9 +57,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             constraint="uq_qualtrics_id",
         )
 
-    def create_survey_instance(
-        self, survey: QualtricsSurvey, account_id: UUID
-    ) -> Optional[UUID]:
+    def create_survey_instance(self, survey: QualtricsSurvey, account_id: UUID) -> UUID | None:
         survey_instance_table = self.tables["qualtrics_survey_instances"]
         return self._upsert_and_return_id(
             self.conn,
@@ -75,9 +65,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             {"survey_id": survey.survey_id, "account_id": account_id},
         )
 
-    def create_or_update_survey_response(
-        self, response: QualtricsSurveyResponse
-    ) -> Optional[UUID]:
+    def create_or_update_survey_response(self, response: QualtricsSurveyResponse) -> UUID | None:
         survey_responses_table = self.tables["qualtrics_survey_responses"]
         return self._upsert_and_return_id(
             self.conn,

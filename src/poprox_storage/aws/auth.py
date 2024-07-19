@@ -12,9 +12,7 @@ class Auth:
         aws_session_token=None,
         region_name=None,
     ) -> Session:
-        return cls.__get_boto3_session(
-            aws_access_key_id, aws_secret_access_key, aws_session_token, region_name
-        )
+        return cls.__get_boto3_session(aws_access_key_id, aws_secret_access_key, aws_session_token, region_name)
 
     @classmethod
     def __get_boto3_session(

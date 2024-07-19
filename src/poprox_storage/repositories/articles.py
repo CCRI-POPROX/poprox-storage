@@ -4,13 +4,13 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 import boto3
-from poprox_concepts import Article, Entity, Mention
 from sqlalchemy import (
     Connection,
     select,
 )
 from tqdm import tqdm
 
+from poprox_concepts import Article, Entity, Mention
 from poprox_storage.aws import DEV_BUCKET_NAME, s3
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository

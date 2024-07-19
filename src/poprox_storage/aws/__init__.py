@@ -5,8 +5,8 @@ from sqlalchemy import (
     create_engine,
 )
 
-from .auth import Auth
-from .s3 import S3
+from poprox_storage.aws.auth import Auth
+from poprox_storage.aws.s3 import S3
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

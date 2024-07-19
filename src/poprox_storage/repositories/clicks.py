@@ -3,10 +3,10 @@ import logging
 from collections import defaultdict
 from uuid import UUID
 
+from sqlalchemy import and_, insert, select
+
 from poprox_concepts import Account, ClickHistory
 from poprox_concepts.domain.click import Click
-from sqlalchemy import insert, select, and_
-
 from poprox_storage.aws import s3
 from poprox_storage.aws.exceptions import PoproxAwsUtilitiesException
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -39,10 +39,7 @@ class DbClicksRepository(DatabaseRepository):
         click_table = self.tables["clicks"]
         with self.conn.begin():
             stmt = insert(click_table).values(
-                newsletter_id=newsletter_id,
-                account_id=account_id,
-                article_id=article_id,
-                created_at=created_at
+                newsletter_id=newsletter_id, account_id=account_id, article_id=article_id, created_at=created_at
             )
             self.conn.execute(stmt)
 
@@ -76,7 +73,7 @@ class DbClicksRepository(DatabaseRepository):
             and_(
                 click_table.c.account_id.in_([acct.account_id for acct in accounts]),
                 click_table.c.created_at >= start_time,
-                click_table.c.created_at <= end_time
+                click_table.c.created_at <= end_time,
             )
         )
         click_result = self.conn.execute(click_query).fetchall()
@@ -84,12 +81,12 @@ class DbClicksRepository(DatabaseRepository):
         clicked_articles = defaultdict(list)
         for row in click_result:
             clicked_articles[row.account_id].append(Click(article_id=row.article_id, timestamp=row.created_at))
-        
+
         for account in accounts:
             account_id = account.account_id
             if account_id not in clicked_articles:
                 clicked_articles[account_id] = []
-        
+
         histories = {}
         for account_id, user_clicks in clicked_articles.items():
             histories[account_id] = user_clicks
