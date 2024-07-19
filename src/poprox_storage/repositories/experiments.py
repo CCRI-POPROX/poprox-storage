@@ -2,9 +2,9 @@ import datetime
 from uuid import UUID
 
 import tomli
-from poprox_concepts import Account
 from sqlalchemy import Connection, Table, and_, select
 
+from poprox_concepts import Account
 from poprox_storage.concepts.experiment import (
     Allocation,
     Experiment,

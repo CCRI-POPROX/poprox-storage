@@ -3,9 +3,9 @@ import logging
 from collections import defaultdict
 from uuid import UUID
 
-from poprox_concepts import Account, ClickHistory
 from sqlalchemy import insert, select
 
+from poprox_concepts import Account, ClickHistory
 from poprox_storage.aws import s3
 from poprox_storage.aws.exceptions import PoproxAwsUtilitiesException
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
