@@ -23,7 +23,7 @@ class DbImageRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables("images")
 
-    def insert_images(self, images: list[Image], *, progress=False):
+    def store_images(self, images: list[Image], *, progress=False):
         failed = 0
 
         if progress:
@@ -41,8 +41,11 @@ class DbImageRepository(DatabaseRepository):
 
         return failed
 
-    def insert_image(self, image: Image) -> UUID | None:
+    def store_image(self, image: Image) -> UUID | None:
         return self._insert_model("images", image, exclude={"image_id"}, constraint="uq_images")
+
+    insert_images = store_images
+    insert_image = store_image
 
     def fetch_image_by_external_id(self, external_id: str) -> Image | None:
         image_table = self.tables["images"]
@@ -84,7 +87,7 @@ class S3ImageRepository(S3Repository):
         super().__init__(bucket_name)
         self.s3_client = boto3.client("s3")
 
-    def list_image_files(self, prefix, days_back=None):
+    def fetch_image_file_keys(self, prefix, days_back=None):
         """
         Retrieve the names of AP image files from S3 in sorted order
 
@@ -110,11 +113,11 @@ class S3ImageRepository(S3Repository):
 
         return [f["Key"] for f in files]
 
-    def get_images_from_file(self, file_key):
+    def fetch_images_from_file(self, file_key):
         file_contents = self._get_s3_file(file_key)
         return extract_images(file_contents)
 
-    def get_images_from_files(self, file_keys):
+    def fetch_images_from_files(self, file_keys):
         images = []
 
         for key in file_keys:
@@ -122,6 +125,10 @@ class S3ImageRepository(S3Repository):
             images.extend(extracted)
 
         return images
+
+    list_image_files = fetch_image_file_keys
+    get_images_from_file = fetch_images_from_file
+    get_images_from_files = fetch_images_from_files
 
 
 def extract_images(img_file_content) -> list[Image]:

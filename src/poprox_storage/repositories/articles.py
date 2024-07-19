@@ -31,31 +31,31 @@ class DbArticleRepository(DatabaseRepository):
             "impressions",
         )
 
-    def get_todays_articles(self) -> list[Article]:
+    def fetch_todays_articles(self) -> list[Article]:
         return self.get_articles_since(days_ago=1)
 
-    def get_past_articles(self) -> list[Article]:
+    def fetch_past_articles(self) -> list[Article]:
         return self.get_articles_before(days_ago=1)
 
-    def get_articles_since(self, days_ago=1) -> list[Article]:
+    def fetch_articles_since(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         return self._get_articles(
             article_table,
             article_table.c.published_at > datetime.now() - timedelta(days=days_ago),
         )
 
-    def get_articles_before(self, days_ago=1) -> list[Article]:
+    def fetch_articles_before(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         return self._get_articles(
             article_table,
             article_table.c.published_at < datetime.now() - timedelta(days=days_ago),
         )
 
-    def get_articles_by_id(self, ids: list[UUID]) -> list[Article]:
+    def fetch_articles_by_id(self, ids: list[UUID]) -> list[Article]:
         article_table = self.tables["articles"]
         return self._get_articles(article_table, article_table.c.article_id.in_(ids))
 
-    def get_article_mentions(self, articles: list[Article]) -> list[Article]:
+    def fetch_article_mentions(self, articles: list[Article]) -> list[Article]:
         article_lookup = {article.article_id: article for article in articles}
         article_ids = [article.article_id for article in articles]
 
@@ -101,7 +101,7 @@ class DbArticleRepository(DatabaseRepository):
         return_val = list(article_lookup.values())
         return return_val
 
-    def lookup_article_by_url(self, article_url: str, newsletter_id: UUID | None = None) -> UUID | None:
+    def fetch_article_by_url(self, article_url: str, newsletter_id: UUID | None = None) -> UUID | None:
         impression_table = self.tables["impressions"]
         article_table = self.tables["articles"]
 
@@ -118,7 +118,15 @@ class DbArticleRepository(DatabaseRepository):
         else:
             return None
 
-    def insert_articles(self, articles: list[Article], *, mentions=False, progress=False):
+    get_todays_articles = fetch_todays_articles
+    get_past_articles = fetch_past_articles
+    get_articles_since = fetch_articles_since
+    get_articles_before = fetch_articles_before
+    get_articles_by_id = fetch_articles_by_id
+    get_article_mentions = fetch_article_mentions
+    lookup_article_by_url = fetch_article_by_url
+
+    def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
 
         if progress:
@@ -142,13 +150,13 @@ class DbArticleRepository(DatabaseRepository):
 
         return failed
 
-    def insert_article(self, article: Article) -> UUID | None:
+    def store_article(self, article: Article) -> UUID | None:
         return self._insert_model("articles", article, exclude={"article_id", "mentions"}, constraint="uq_articles")
 
-    def insert_entity(self, entity: Entity) -> UUID | None:
+    def store_entity(self, entity: Entity) -> UUID | None:
         return self._insert_model("entities", entity, exclude={"entity_id"}, constraint="uq_entities")
 
-    def insert_mention(self, mention: Mention) -> UUID | None:
+    def store_mention(self, mention: Mention) -> UUID | None:
         return self._insert_model(
             "mentions",
             mention,
@@ -156,6 +164,11 @@ class DbArticleRepository(DatabaseRepository):
             addl_fields={"entity_id": mention.entity.entity_id},
             constraint="uq_mentions",
         )
+
+    insert_articles = store_articles
+    insert_article = store_article
+    insert_entity = store_entity
+    insert_mention = store_mention
 
     def _get_articles(self, article_table, where_clause=None) -> list[Article]:
         query = article_table.select()
@@ -183,7 +196,7 @@ class S3ArticleRepository(S3Repository):
         super().__init__(bucket_name)
         self.s3_client = boto3.client("s3")
 
-    def list_news_files(self, prefix, days_back=None):
+    def fetch_news_files(self, prefix, days_back=None):
         """
         Retrieve the names of AP news files from S3 in sorted order
 
@@ -209,12 +222,12 @@ class S3ArticleRepository(S3Repository):
 
         return [f["Key"] for f in files]
 
-    def get_articles_from_file(self, file_key):
+    def fetch_articles_from_file(self, file_key):
         file_contents = self._get_s3_file(file_key)
         articles = extract_articles(file_contents)
         return articles
 
-    def get_articles_from_files(self, file_keys):
+    def fetch_articles_from_files(self, file_keys):
         articles = []
 
         for key in file_keys:
@@ -223,7 +236,7 @@ class S3ArticleRepository(S3Repository):
 
         return articles
 
-    def get_historical_articles(self) -> list[Article]:
+    def fetch_historical_articles(self) -> list[Article]:
         response = s3.get_object(bucket_name=DEV_BUCKET_NAME, key=NEWS_FILE_KEY).get("Body").read()
         raw_articles = json.loads(response)
         articles = [
@@ -240,6 +253,11 @@ class S3ArticleRepository(S3Repository):
         ]
 
         return articles
+
+    list_news_files = fetch_news_files
+    get_articles_from_file = fetch_articles_from_file
+    get_articles_from_files = fetch_articles_from_files
+    get_historical_articles = fetch_historical_articles
 
 
 def extract_articles(news_file_content) -> list[Article]:

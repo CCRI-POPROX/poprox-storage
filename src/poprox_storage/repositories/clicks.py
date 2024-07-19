@@ -35,7 +35,7 @@ class DbClicksRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables("clicks")
 
-    def track_click_in_database(self, newsletter_id, account_id, article_id, created_at=None):
+    def store_click(self, newsletter_id, account_id, article_id, created_at=None):
         click_table = self.tables["clicks"]
         with self.conn.begin():
             stmt = insert(click_table).values(
@@ -43,7 +43,7 @@ class DbClicksRepository(DatabaseRepository):
             )
             self.conn.execute(stmt)
 
-    def get_clicks(self, accounts: list[Account]) -> dict[UUID, ClickHistory]:
+    def fetch_clicks(self, accounts: list[Account]) -> dict[UUID, ClickHistory]:
         click_table = self.tables["clicks"]
 
         click_query = select(click_table.c.account_id, click_table.c.article_id).where(
@@ -66,7 +66,7 @@ class DbClicksRepository(DatabaseRepository):
 
         return histories
 
-    def get_clicks_between(self, accounts: list[Account], start_time, end_time) -> dict[UUID, list[Click]]:
+    def fetch_clicks_between(self, accounts: list[Account], start_time, end_time) -> dict[UUID, list[Click]]:
         click_table = self.tables["clicks"]
 
         click_query = select(click_table.c.account_id, click_table.c.article_id, click_table.c.created_at).where(
@@ -92,3 +92,7 @@ class DbClicksRepository(DatabaseRepository):
             histories[account_id] = user_clicks
 
         return histories
+
+    track_click_in_database = store_click
+    get_clicks = fetch_clicks
+    get_clicks_between = fetch_clicks_between

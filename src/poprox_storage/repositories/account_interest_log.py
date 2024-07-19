@@ -15,9 +15,7 @@ class DbAccountInterestRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables("account_interest_log", "entities", "account_current_interest_view")
 
-    def insert_topic_preference(
-        self, account_id: UUID, entity_id: UUID, preference: int, frequency: int
-    ) -> UUID | None:
+    def store_topic_preference(self, account_id: UUID, entity_id: UUID, preference: int, frequency: int) -> UUID | None:
         interest_log_tbl = self.tables["account_interest_log"]
         return self._upsert_and_return_id(
             self.conn,
@@ -30,7 +28,7 @@ class DbAccountInterestRepository(DatabaseRepository):
             },
         )
 
-    def insert_topic_preferences(self, account_id: UUID, interests: list[AccountInterest]) -> int:
+    def store_topic_preferences(self, account_id: UUID, interests: list[AccountInterest]) -> int:
         failed = 0
 
         for interest in interests:
@@ -49,7 +47,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                 failed += 1
         return failed
 
-    def lookup_entity_by_name(self, entity_name: str) -> UUID | None:
+    def fetch_entity_by_name(self, entity_name: str) -> UUID | None:
         entity_tbl = self.tables["entities"]
 
         query = entity_tbl.select().filter(func.lower(entity_tbl.c.name) == func.lower(entity_name))
@@ -59,7 +57,7 @@ class DbAccountInterestRepository(DatabaseRepository):
             result = result.entity_id
         return result
 
-    def get_topic_preferences(self, account_id: UUID) -> list[AccountInterest]:
+    def fetch_topic_preferences(self, account_id: UUID) -> list[AccountInterest]:
         current_interest_tbl = self.tables["account_current_interest_view"]
         entity_tbl = self.tables["entities"]
         query = (
@@ -84,3 +82,8 @@ class DbAccountInterestRepository(DatabaseRepository):
             for row in results
         ]
         return results
+
+    insert_topic_preference = store_topic_preference
+    insert_topic_preferences = store_topic_preferences
+    lookup_entity_by_name = fetch_entity_by_name
+    get_topic_preferences = fetch_topic_preferences

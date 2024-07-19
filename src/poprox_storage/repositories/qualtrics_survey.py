@@ -27,7 +27,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             "qualtrics_survey_responses",
         )
 
-    def get_active_surveys(self) -> list[QualtricsSurvey]:
+    def fetch_active_surveys(self) -> list[QualtricsSurvey]:
         survey_table = self.tables["qualtrics_surveys"]
         query = select(
             survey_table.c.survey_id,
@@ -48,6 +48,8 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             for row in results
         ]
 
+    get_active_surveys = fetch_active_surveys
+
     def update_survey(self, survey: QualtricsSurvey) -> UUID | None:
         survey_table = self.tables["qualtrics_surveys"]
         return self._upsert_and_return_id(
@@ -57,7 +59,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             constraint="uq_qualtrics_id",
         )
 
-    def create_survey_instance(self, survey: QualtricsSurvey, account_id: UUID) -> UUID | None:
+    def store_survey_instance(self, survey: QualtricsSurvey, account_id: UUID) -> UUID | None:
         survey_instance_table = self.tables["qualtrics_survey_instances"]
         return self._upsert_and_return_id(
             self.conn,
@@ -65,7 +67,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             {"survey_id": survey.survey_id, "account_id": account_id},
         )
 
-    def create_or_update_survey_response(self, response: QualtricsSurveyResponse) -> UUID | None:
+    def store_survey_response(self, response: QualtricsSurveyResponse) -> UUID | None:
         survey_responses_table = self.tables["qualtrics_survey_responses"]
         return self._upsert_and_return_id(
             self.conn,
@@ -77,3 +79,6 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             },
             constraint="uq_qualtrics_response_id",
         )
+
+    create_survey_instance = store_survey_instance
+    create_or_update_survey_response = store_survey_response
