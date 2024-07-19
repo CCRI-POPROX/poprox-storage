@@ -3,13 +3,13 @@ import logging
 from uuid import UUID
 
 import boto3
-from poprox_concepts.domain import Image
 from sqlalchemy import (
     Connection,
     select,
 )
 from tqdm import tqdm
 
+from poprox_concepts.domain import Image
 from poprox_storage.aws import DEV_BUCKET_NAME
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -40,21 +40,17 @@ class DbImageRepository(DatabaseRepository):
                 failed += 1
 
         return failed
-    
+
     def store_image(self, image: Image) -> UUID | None:
-        return self._insert_model(
-            "images", image, exclude={"image_id"}, constraint="uq_images"
-        )
-    
+        return self._insert_model("images", image, exclude={"image_id"}, constraint="uq_images")
+
     insert_images = store_images
     insert_image = store_image
 
     def fetch_image_by_external_id(self, external_id: str) -> Image | None:
         image_table = self.tables["images"]
 
-        image_query = select(image_table).where(
-            image_table.c.external_id == external_id
-        )
+        image_query = select(image_table).where(image_table.c.external_id == external_id)
 
         result = self.conn.execute(image_query).first()
         if not result:
@@ -110,9 +106,7 @@ class S3ImageRepository(S3Repository):
         """
         response = self.s3_client.list_objects_v2(Bucket=DEV_BUCKET_NAME, Prefix=prefix)
 
-        files = sorted(
-            response.get("Contents", []), key=lambda d: d["LastModified"], reverse=True
-        )
+        files = sorted(response.get("Contents", []), key=lambda d: d["LastModified"], reverse=True)
 
         if days_back:
             files = files[:days_back]
@@ -131,7 +125,7 @@ class S3ImageRepository(S3Repository):
             images.extend(extracted)
 
         return images
-    
+
     list_image_files = fetch_image_file_keys
     get_images_from_file = fetch_images_from_file
     get_images_from_files = fetch_images_from_files
@@ -155,7 +149,5 @@ def create_ap_image(ap_item):
     item_id = ap_item.get("altids", {}).get("itemid", None)
 
     preview_url = ap_item.get("renditions", {}).get("preview", {}).get("href", None)
-    ap_image = Image(
-        url=preview_url, source="AP", external_id=item_id, raw_data=ap_item
-    )
+    ap_image = Image(url=preview_url, source="AP", external_id=item_id, raw_data=ap_item)
     return ap_image

@@ -4,13 +4,13 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 import boto3
-from poprox_concepts import Article, Entity, Mention
 from sqlalchemy import (
     Connection,
     select,
 )
 from tqdm import tqdm
 
+from poprox_concepts import Article, Entity, Mention
 from poprox_storage.aws import DEV_BUCKET_NAME, s3
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -164,7 +164,7 @@ class DbArticleRepository(DatabaseRepository):
             addl_fields={"entity_id": mention.entity.entity_id},
             constraint="uq_mentions",
         )
-    
+
     insert_articles = store_articles
     insert_article = store_article
     insert_entity = store_entity
@@ -221,7 +221,7 @@ class S3ArticleRepository(S3Repository):
             files = files[:days_back]
 
         return [f["Key"] for f in files]
-    
+
     def fetch_articles_from_file(self, file_key):
         file_contents = self._get_s3_file(file_key)
         articles = extract_articles(file_contents)
@@ -253,7 +253,7 @@ class S3ArticleRepository(S3Repository):
         ]
 
         return articles
-    
+
     list_news_files = fetch_news_files
     get_articles_from_file = fetch_articles_from_file
     get_articles_from_files = fetch_articles_from_files

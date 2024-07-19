@@ -1,9 +1,7 @@
-from typing import Dict
-
 from sqlalchemy import (
-    insert,
     Connection,
     Table,
+    insert,
 )
 
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -12,14 +10,12 @@ from poprox_storage.repositories.data_stores.db import DatabaseRepository
 class DbNewsletterRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
-        self.tables: Dict[str, Table] = self._load_tables(
+        self.tables: dict[str, Table] = self._load_tables(
             "newsletters",
             "impressions",
         )
 
-    def store_newsletter(
-        self, newsletter_id, account_id, recommended_articles, article_html
-    ):
+    def store_newsletter(self, newsletter_id, account_id, recommended_articles, article_html):
         # TODO: Add the email title to the newsletter table
         newsletter_table = self.tables["newsletters"]
         impression_table = self.tables["impressions"]

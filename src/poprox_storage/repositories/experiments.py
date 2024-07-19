@@ -2,9 +2,9 @@ import datetime
 from uuid import UUID
 
 import tomli
-from poprox_concepts import Account
 from sqlalchemy import Connection, Table, and_, select
 
+from poprox_concepts import Account
 from poprox_storage.concepts.experiment import (
     Allocation,
     Experiment,
@@ -103,7 +103,6 @@ class DbExperimentRepository(DatabaseRepository):
         recommender_lookup_by_group = {row[0]: row[1] for row in result}
 
         return recommender_lookup_by_group
-
 
     def fetch_active_expt_allocations(self, date: datetime.date | None = None) -> dict[UUID, Allocation]:
         allocations_tbl = self.tables["expt_allocations"]

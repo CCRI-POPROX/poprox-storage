@@ -21,3 +21,17 @@ pip install poprox-storage
 ```console
 pip install .[dev]
 ```
+
+### Running the tests
+
+Start the dev database and load the database schema with:
+
+```console:
+source dev/init_poprox_dev.sh
+```
+
+Then run the tests with:
+
+```console
+pytest tests/
+```
