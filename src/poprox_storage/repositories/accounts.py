@@ -1,20 +1,18 @@
 import logging
 from datetime import date
-from typing import List, Optional
 from uuid import UUID
 
 import sqlalchemy
 from sqlalchemy import (
+    Connection,
     and_,
     null,
     or_,
     select,
-    Connection,
 )
 
 from poprox_concepts import Account
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,33 +30,25 @@ class DbAccountRepository(DatabaseRepository):
             "account_consent_log",
         )
 
-    def fetch_accounts(self, account_ids: Optional[List[UUID]] = None) -> List[Account]:
+    def fetch_accounts(self, account_ids: list[UUID] | None = None) -> list[Account]:
         account_tbl = self.tables["accounts"]
 
-        query = select(
-            account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status
-        )
+        query = select(account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status)
         if account_ids is not None:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
         elif len(account_ids) == 0:
             return []
         result = self.conn.execute(query).fetchall()
 
-        return [
-            Account(account_id=rec.account_id, email=rec.email, status=rec.status)
-            for rec in result
-        ]
+        return [Account(account_id=rec.account_id, email=rec.email, status=rec.status) for rec in result]
 
-    def fetch_account_by_email(self, email: str) -> Optional[Account]:
+    def fetch_account_by_email(self, email: str) -> Account | None:
         account_tbl = self.tables["accounts"]
-        query = sqlalchemy.select(
-            account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status
-        ).where(account_tbl.c.email == email)
+        query = sqlalchemy.select(account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status).where(
+            account_tbl.c.email == email
+        )
         result = self.conn.execute(query).fetchall()
-        accounts = [
-            Account(account_id=row.account_id, email=row.email, status=row.status)
-            for row in result
-        ]
+        accounts = [Account(account_id=row.account_id, email=row.email, status=row.status) for row in result]
         if len(accounts) > 0:
             return accounts[0]
         return None
@@ -68,9 +58,7 @@ class DbAccountRepository(DatabaseRepository):
         query = (
             sqlalchemy.insert(account_tbl)
             .values(email=email, source=source, status="new_account")
-            .returning(
-                account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status
-            )
+            .returning(account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status)
         )
         row = self.conn.execute(query).one_or_none()
         return Account(account_id=row.account_id, email=row.email, status=row.status)
@@ -99,35 +87,27 @@ class DbAccountRepository(DatabaseRepository):
         phase_ids = self._id_query(phase_query)
 
         # Find the experiment groups connected to those phases
-        group_query = select(treatment_tbl.c.group_id).where(
-            treatment_tbl.c.phase_id.in_(phase_ids)
-        )
+        group_query = select(treatment_tbl.c.group_id).where(treatment_tbl.c.phase_id.in_(phase_ids))
         group_ids = self._id_query(group_query)
 
         # Find the users allocated to those groups
-        allocation_query = select(allocation_tbl.c.account_id).where(
-            allocation_tbl.c.group_id.in_(group_ids)
-        )
+        allocation_query = select(allocation_tbl.c.account_id).where(allocation_tbl.c.group_id.in_(group_ids))
         allocation_account_ids = self._id_query(allocation_query)
 
         # Find all the users who aren't in the allocations above
-        account_query = select(account_tbl.c.account_id).where(
-            account_tbl.c.account_id.not_in(allocation_account_ids)
-        )
+        account_query = select(account_tbl.c.account_id).where(account_tbl.c.account_id.not_in(allocation_account_ids))
         account_ids = self._id_query(account_query)
 
         return self.fetch_accounts(account_ids)
 
-    def fetch_subscribed_accounts(self) -> List[Account]:
+    def fetch_subscribed_accounts(self) -> list[Account]:
         subscription_tbl = self.tables["subscriptions"]
 
-        account_query = select(subscription_tbl.c.account_id).where(
-            subscription_tbl.c.ended == null()
-        )
+        account_query = select(subscription_tbl.c.account_id).where(subscription_tbl.c.ended == null())
         account_ids = self._id_query(account_query)
         return self.fetch_accounts(account_ids)
 
-    def fetch_subscription_for_account(self, account_id: UUID) -> Optional[UUID]:
+    def fetch_subscription_for_account(self, account_id: UUID) -> UUID | None:
         subscription_tbl = self.tables["subscriptions"]
         query = subscription_tbl.select().where(
             subscription_tbl.c.account_id == account_id,
@@ -159,16 +139,10 @@ class DbAccountRepository(DatabaseRepository):
 
     def record_consent(self, account_id: UUID, document_name: str):
         consent_tbl = self.tables["account_consent_log"]
-        query = sqlalchemy.insert(consent_tbl).values(
-            account_id=account_id, document_name=document_name
-        )
+        query = sqlalchemy.insert(consent_tbl).values(account_id=account_id, document_name=document_name)
         self.conn.execute(query)
 
     def update_status(self, account_id: UUID, new_status: str):
         account_tbl = self.tables["accounts"]
-        query = (
-            sqlalchemy.update(account_tbl)
-            .values(status=new_status)
-            .where(account_tbl.c.account_id == account_id)
-        )
+        query = sqlalchemy.update(account_tbl).values(status=new_status).where(account_tbl.c.account_id == account_id)
         self.conn.execute(query)

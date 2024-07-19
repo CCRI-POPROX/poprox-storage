@@ -3,7 +3,6 @@ import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Optional, Union
 
 import pytest
 from alembic.config import Config
@@ -19,7 +18,7 @@ PROJECT_NAME = PROJECT_PATH.stem
 DEFAULT_PG_URL = f"postgresql://postgres:{db_password}@127.0.0.1:5435/poprox"
 
 
-def make_alembic_config(cmd_opts: Union[Namespace, SimpleNamespace], base_path: str = PROJECT_PATH) -> Config:
+def make_alembic_config(cmd_opts: Namespace | SimpleNamespace, base_path: str = PROJECT_PATH) -> Config:
     # Replace path to alembic.ini file to absolute
     if not os.path.isabs(cmd_opts.config):
         cmd_opts.config = os.path.join(base_path, cmd_opts.config)
@@ -36,7 +35,7 @@ def make_alembic_config(cmd_opts: Union[Namespace, SimpleNamespace], base_path: 
     return config
 
 
-def alembic_config_from_url(pg_url: Optional[str] = None) -> Config:
+def alembic_config_from_url(pg_url: str | None = None) -> Config:
     """
     Provides Python object, representing alembic.ini file.
     """

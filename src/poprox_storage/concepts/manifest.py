@@ -3,7 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import date, timedelta
 from uuid import UUID
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel, PositiveInt
 
@@ -32,17 +31,17 @@ class ManifestExperiment(BaseModel):
     id: UUID
     description: str
     duration: str
-    start_date: Optional[date] = None
+    start_date: date | None = None
 
 
 class ManifestPhases(BaseModel):
-    sequence: List[str]
-    phases: Dict[str, ManifestPhase]
+    sequence: list[str]
+    phases: dict[str, ManifestPhase]
 
 
 class ManifestPhase(BaseModel):
     duration: str
-    assignments: Dict[str, ManifestPhaseAssignment]
+    assignments: dict[str, ManifestPhaseAssignment]
 
 
 class ManifestPhaseAssignment(BaseModel):
@@ -58,8 +57,8 @@ class ManifestGroupSpec(BaseModel):
 
 
 class ManifestUserGroup(BaseModel):
-    minimum_size: Optional[PositiveInt] = None
-    identical_to: Optional[str] = None
+    minimum_size: PositiveInt | None = None
+    identical_to: str | None = None
 
 
 def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
@@ -82,7 +81,8 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     Experiment
         A transformed version of the manifest file as a domain object
     """
-    start_date = manifest.experiment.start_date or (date.today() + timedelta(days=1))
+    # XXX: we probably should actually fix this later.
+    start_date = manifest.experiment.start_date or (date.today() + timedelta(days=1))  # noqa: DTZ011
     end_date = start_date + convert_duration(manifest.experiment.duration)
 
     experiment = Experiment(
@@ -110,13 +110,9 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     for phase_name in manifest.phases.sequence:
         manifest_phase = manifest.phases.phases[phase_name]
         duration = convert_duration(manifest_phase.duration)
-        phase_start = start_date + sum(
-            [phase.duration for phase in experiment.phases], start=timedelta(0)
-        )
+        phase_start = start_date + sum([phase.duration for phase in experiment.phases], start=timedelta(0))
         phase_end = phase_start + duration
-        phase = Phase(
-            name=phase_name, start_date=phase_start, end_date=phase_end, treatments=[]
-        )
+        phase = Phase(name=phase_name, start_date=phase_start, end_date=phase_end, treatments=[])
         for group_name, assignment in manifest_phase.assignments.items():
             recommender_name = assignment.recommender
             phase.treatments.append(
@@ -138,5 +134,6 @@ def convert_duration(duration: str) -> timedelta:
         case unit if "day" in unit:
             duration = timedelta(days=int(quantity))
         case _:
-            raise ValueError(f"Unsupported duration unit: {unit}")
+            msg = f"Unsupported duration unit: {unit}"
+            raise ValueError(msg)
     return duration
