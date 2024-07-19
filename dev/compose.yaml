@@ -21,10 +21,11 @@ services:
       - "127.0.0.1:5433:5432"
 
     healthcheck:
-      test: ["CMD", "pg_isready"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "pg_isready", "-d", "poprox"]
+      interval: 1m
+      timeout: 1m
+      retries: 10
+      start_period: 5m
 
     volumes:
       - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql

@@ -13,6 +13,8 @@ export POPROX_DB_NAME='poprox'
 
 docker compose up -d --wait
 
+sleep 60
+
 cd ../poprox-db
 alembic upgrade heads
 
