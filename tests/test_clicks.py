@@ -27,6 +27,7 @@ def pg_url():
 def test_get_click_between(pg_url: str):
     engine = create_engine(pg_url)
     with engine.connect() as conn:
+        conn.execute(text("delete from impressions"))
         conn.execute(text("delete from clicks;"))
         conn.execute(text("delete from newsletters;"))
         conn.execute(text("delete from articles;"))
