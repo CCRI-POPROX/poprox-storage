@@ -24,7 +24,7 @@ class DbAccountRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables(
             "accounts",
-            "expt_allocations",
+            "expt_assignments",
             "expt_phases",
             "expt_treatments",
             "subscriptions",
