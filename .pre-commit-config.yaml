@@ -28,7 +28,6 @@ repos:
       - id: ruff
         args: [--fix]
         name: auto-fix Python lint errors
-        exclude: ^poprox-db/migrations/versions
       # Run the formatter.
       - id: ruff-format
         name: format Python source
