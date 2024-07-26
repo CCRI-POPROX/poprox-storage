@@ -87,3 +87,4 @@ class Assignment(BaseModel):
     assignment_id: UUID | None = None
     account_id: UUID
     group_id: UUID
+    opted_out: bool | None = None

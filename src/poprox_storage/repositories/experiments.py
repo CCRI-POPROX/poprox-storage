@@ -2,7 +2,7 @@ import datetime
 from uuid import UUID
 
 import tomli
-from sqlalchemy import Connection, Table, and_, select
+from sqlalchemy import Connection, Table, and_, select, update
 
 from poprox_concepts import Account
 from poprox_storage.concepts.experiment import (
@@ -109,10 +109,9 @@ class DbExperimentRepository(DatabaseRepository):
 
         group_ids = self.get_active_expt_group_ids(date)
 
-        # Find accounts allocated to the groups that are assigned the active recommenders above
         group_query = select(
             assignments_tbl.c.assignment_id, assignments_tbl.c.account_id, assignments_tbl.c.group_id
-        ).where(assignments_tbl.c.group_id.in_(group_ids))
+        ).where(and_(assignments_tbl.c.group_id.in_(group_ids), assignments_tbl.c.opted_out is False))
         result = self.conn.execute(group_query).fetchall()
         group_lookup_by_account = {
             row.account_id: Assignment(
@@ -126,6 +125,24 @@ class DbExperimentRepository(DatabaseRepository):
     get_active_expt_group_ids = fetch_active_expt_group_ids
     get_active_expt_endpoint_urls = fetch_active_expt_endpoint_urls
     get_active_expt_allocations = fetch_active_expt_assignments
+
+    def update_expt_assignment_to_opt_out(self, account_id: UUID) -> UUID | None:
+        assignments_tbl = self.tables["expt_assignments"]
+
+        group_ids = self.get_active_expt_group_ids()
+
+        assignment_query = (
+            update(assignments_tbl)
+            .where(
+                and_(
+                    assignments_tbl.c.account_id == account_id,
+                    assignments_tbl.c.group_id.in_(group_ids),
+                    assignments_tbl.c.opted_out is False,
+                )
+            )
+            .values(opted_out=True)
+        )
+        self.conn.execute(assignment_query)
 
     def _insert_experiment(self, experiment: Experiment) -> UUID | None:
         return self._insert_model("experiments", experiment, exclude={"phases"}, commit=False)
