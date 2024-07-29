@@ -31,6 +31,7 @@ def upgrade() -> None:
         sa.Column("newsletter_id", sa.UUID, nullable=True),
         sa.Column("endpoint", sa.String, nullable=False),
         sa.Column("data", JSONB, nullable=False),  # not raw_data -- only contains extra url parameters.
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
 
     op.create_foreign_key(
