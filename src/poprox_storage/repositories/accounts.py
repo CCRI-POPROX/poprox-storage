@@ -12,6 +12,7 @@ from sqlalchemy import (
 )
 
 from poprox_concepts import Account
+from poprox_concepts.api.tracking import LoginLinkData
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 logger = logging.getLogger(__name__)
@@ -23,11 +24,12 @@ class DbAccountRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables(
             "accounts",
-            "expt_allocations",
+            "expt_assignments",
             "expt_phases",
             "expt_treatments",
             "subscriptions",
             "account_consent_log",
+            "web_logins",
         )
 
     def fetch_accounts(self, account_ids: list[UUID] | None = None) -> list[Account]:
@@ -145,6 +147,16 @@ class DbAccountRepository(DatabaseRepository):
     def update_status(self, account_id: UUID, new_status: str):
         account_tbl = self.tables["accounts"]
         query = sqlalchemy.update(account_tbl).values(status=new_status).where(account_tbl.c.account_id == account_id)
+        self.conn.execute(query)
+
+    def store_login(self, link_data: LoginLinkData):
+        web_login_tbl = self.tables["web_logins"]
+        query = sqlalchemy.insert(web_login_tbl).values(
+            account_id=link_data.account_id,
+            newsletter_id=link_data.newsletter_id,
+            endpoint=link_data.endpoint,
+            data=link_data.data,
+        )
         self.conn.execute(query)
 
     create_new_account = store_new_account
