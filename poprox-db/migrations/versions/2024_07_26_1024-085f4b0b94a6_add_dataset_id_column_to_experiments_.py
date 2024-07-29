@@ -21,7 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column(
         "experiments",
-        sa.Column("dataset_id", sa.UUID, nullable=False),
+        sa.Column("dataset_id", sa.UUID, nullable=True),
     )
 
     op.create_foreign_key(
