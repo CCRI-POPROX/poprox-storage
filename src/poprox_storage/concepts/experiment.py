@@ -83,7 +83,8 @@ class Phase(BaseModel):
         return self.end_date - self.start_date
 
 
-class Allocation(BaseModel):
-    allocation_id: UUID | None = None
+class Assignment(BaseModel):
+    assignment_id: UUID | None = None
     account_id: UUID
     group_id: UUID
+    opted_out: bool | None = None

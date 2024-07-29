@@ -2,11 +2,11 @@ import datetime
 from uuid import UUID
 
 import tomli
-from sqlalchemy import Connection, Table, and_, select
+from sqlalchemy import Connection, Table, and_, select, update
 
 from poprox_concepts import Account
 from poprox_storage.concepts.experiment import (
-    Allocation,
+    Assignment,
     Experiment,
     Group,
     Phase,
@@ -23,7 +23,7 @@ class DbExperimentRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables: dict[str, Table] = self._load_tables(
             "experiments",
-            "expt_allocations",
+            "expt_assignments",
             "expt_groups",
             "expt_phases",
             "expt_recommenders",
@@ -39,8 +39,8 @@ class DbExperimentRepository(DatabaseRepository):
             for group in experiment.groups:
                 group.group_id = self._insert_expt_group(experiment_id, group)
                 for account in assignments.get(group.name, []):
-                    allocation = Allocation(account_id=account.account_id, group_id=group.group_id)
-                    self._insert_expt_allocation(allocation)
+                    allocation = Assignment(account_id=account.account_id, group_id=group.group_id)
+                    self._insert_expt_assignment(allocation)
 
             for recommender in experiment.recommenders:
                 recommender.recommender_id = self._insert_expt_recommender(
@@ -104,19 +104,18 @@ class DbExperimentRepository(DatabaseRepository):
 
         return recommender_lookup_by_group
 
-    def fetch_active_expt_allocations(self, date: datetime.date | None = None) -> dict[UUID, Allocation]:
-        allocations_tbl = self.tables["expt_allocations"]
+    def fetch_active_expt_assignments(self, date: datetime.date | None = None) -> dict[UUID, Assignment]:
+        assignments_tbl = self.tables["expt_assignments"]
 
         group_ids = self.get_active_expt_group_ids(date)
 
-        # Find accounts allocated to the groups that are assigned the active recommenders above
         group_query = select(
-            allocations_tbl.c.allocation_id, allocations_tbl.c.account_id, allocations_tbl.c.group_id
-        ).where(allocations_tbl.c.group_id.in_(group_ids))
+            assignments_tbl.c.assignment_id, assignments_tbl.c.account_id, assignments_tbl.c.group_id
+        ).where(and_(assignments_tbl.c.group_id.in_(group_ids), assignments_tbl.c.opted_out is False))
         result = self.conn.execute(group_query).fetchall()
         group_lookup_by_account = {
-            row.account_id: Allocation(
-                allocation_id=row.allocation_id, account_id=row.account_id, group_id=row.group_id
+            row.account_id: Assignment(
+                assignment_id=row.assignment_id, account_id=row.account_id, group_id=row.group_id
             )
             for row in result
         }
@@ -125,7 +124,25 @@ class DbExperimentRepository(DatabaseRepository):
 
     get_active_expt_group_ids = fetch_active_expt_group_ids
     get_active_expt_endpoint_urls = fetch_active_expt_endpoint_urls
-    get_active_expt_allocations = fetch_active_expt_allocations
+    get_active_expt_allocations = fetch_active_expt_assignments
+
+    def update_expt_assignment_to_opt_out(self, account_id: UUID) -> UUID | None:
+        assignments_tbl = self.tables["expt_assignments"]
+
+        group_ids = self.get_active_expt_group_ids()
+
+        assignment_query = (
+            update(assignments_tbl)
+            .where(
+                and_(
+                    assignments_tbl.c.account_id == account_id,
+                    assignments_tbl.c.group_id.in_(group_ids),
+                    assignments_tbl.c.opted_out is False,
+                )
+            )
+            .values(opted_out=True)
+        )
+        self.conn.execute(assignment_query)
 
     def _insert_experiment(self, experiment: Experiment) -> UUID | None:
         return self._insert_model("experiments", experiment, exclude={"phases"}, commit=False)
@@ -185,13 +202,13 @@ class DbExperimentRepository(DatabaseRepository):
             commit=False,
         )
 
-    def _insert_expt_allocation(
+    def _insert_expt_assignment(
         self,
-        allocation: Allocation,
+        assignment: Assignment,
     ) -> UUID | None:
         return self._insert_model(
-            "expt_allocations",
-            allocation,
+            "expt_assignments",
+            assignment,
             commit=False,
         )
 

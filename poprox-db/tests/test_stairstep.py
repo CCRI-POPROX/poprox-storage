@@ -21,6 +21,9 @@ def test_migrations_stairway(alembic_config: Config, revision: Script):
     Does not require any maintenance - you just add it once to check 80% of typos
     and mistakes in migrations forever.
     """
+    if isinstance(revision.down_revision, tuple):
+        return  # don't test merge revisions
+
     upgrade(alembic_config, revision.revision)
 
     # We need -1 for downgrading first migration (its down_revision is None)
