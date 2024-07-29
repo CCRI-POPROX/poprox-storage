@@ -47,9 +47,11 @@ def upgrade() -> None:
         ["dataset_id"],
         ["dataset_id"],
     )
+    op.create_unique_constraint("uq_account_aliases", "account_aliases", ("account_id", "dataset_id"))
 
 
 def downgrade() -> None:
+    op.drop_constraint("uq_account_aliases", "account_aliases")
     op.drop_constraint("fk_account_aliases_dataset_id", "account_aliases", type_="foreignkey")
     op.drop_constraint("fk_account_aliases_account_id", "account_aliases", type_="foreignkey")
     op.drop_table("account_aliases")
