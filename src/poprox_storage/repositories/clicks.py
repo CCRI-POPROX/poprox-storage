@@ -35,11 +35,15 @@ class DbClicksRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables("clicks")
 
-    def store_click(self, newsletter_id, account_id, article_id, created_at=None):
+    def store_click(self, newsletter_id, account_id, article_id, headers=None, created_at=None):
         click_table = self.tables["clicks"]
         with self.conn.begin():
             stmt = insert(click_table).values(
-                newsletter_id=newsletter_id, account_id=account_id, article_id=article_id, created_at=created_at
+                newsletter_id=newsletter_id,
+                account_id=account_id,
+                article_id=article_id,
+                headers=headers,
+                created_at=created_at,
             )
             self.conn.execute(stmt)
 
