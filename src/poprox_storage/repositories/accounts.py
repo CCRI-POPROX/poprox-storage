@@ -102,9 +102,7 @@ class DbAccountRepository(DatabaseRepository):
 
         return self.fetch_accounts(account_ids)
 
-    def fetch_expt_eligible_accounts(
-        self, start_date: date, end_date: date
-    ) -> list[Account]:
+    def fetch_expt_eligible_accounts(self, start_date: date, end_date: date) -> list[Account]:
         unassigned_accts = self.fetch_unassigned_accounts(start_date, end_date)
         unassigned_acct_ids = [acct.account_id for acct in unassigned_accts]
 
@@ -119,9 +117,7 @@ class DbAccountRepository(DatabaseRepository):
                     subscription_tbl.c.ended == null(),
                 )
             )
-            .join(
-                consent_tbl, subscription_tbl.c.account_id == consent_tbl.c.account_id
-            )
+            .join(consent_tbl, subscription_tbl.c.account_id == consent_tbl.c.account_id)
         )
         eligible_acct_ids = self._id_query(account_query)
 
