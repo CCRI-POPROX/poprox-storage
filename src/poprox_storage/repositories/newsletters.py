@@ -26,7 +26,6 @@ class DbNewsletterRepository(DatabaseRepository):
         newsletter_table = self.tables["newsletters"]
         impression_table = self.tables["impressions"]
 
-        # with self.conn.begin():
         stmt = insert(newsletter_table).values(
             newsletter_id=newsletter_id,
             account_id=str(account_id),
