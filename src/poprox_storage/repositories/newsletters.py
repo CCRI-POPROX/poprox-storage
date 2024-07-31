@@ -27,21 +27,22 @@ class DbNewsletterRepository(DatabaseRepository):
         newsletter_table = self.tables["newsletters"]
         impression_table = self.tables["impressions"]
 
-        stmt = insert(newsletter_table).values(
-            newsletter_id=newsletter_id,
-            account_id=str(account_id),
-            content=[rec.json() for rec in recommended_articles],
-            html=article_html,
-        )
-        self.conn.execute(stmt)
-
-        for position, article in enumerate(recommended_articles):
-            stmt = insert(impression_table).values(
-                newsletter_id=str(newsletter_id),
-                article_id=str(article.article_id),
-                position=1 + position,
+        with self.conn.begin():
+            stmt = insert(newsletter_table).values(
+                newsletter_id=newsletter_id,
+                account_id=str(account_id),
+                content=[rec.json() for rec in recommended_articles],
+                html=article_html,
             )
             self.conn.execute(stmt)
+
+            for position, article in enumerate(recommended_articles):
+                stmt = insert(impression_table).values(
+                    newsletter_id=str(newsletter_id),
+                    article_id=str(article.article_id),
+                    position=1 + position,
+                )
+                self.conn.execute(stmt)
 
     def fetch_newsletters(self, accounts: list[Account]) -> dict[UUID, dict[UUID, list[Article]]]:
         newsletter_table = self.tables["newsletters"]

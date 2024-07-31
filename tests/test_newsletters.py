@@ -58,6 +58,8 @@ def test_fetch_newsletters(pg_url: str):
 
         newsletter_1_id = uuid4()
         newsletter_2_id = uuid4()
+
+        dbNewsletterRepository.conn.commit()
         dbNewsletterRepository.log_newsletter_content(
             newsletter_1_id, user_account_1.account_id, newsletter_1_articles, "fake-url-1"
         )
