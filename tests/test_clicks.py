@@ -49,18 +49,18 @@ def test_get_click_between(pg_url: str):
         article_id_2 = dbArticleRepository.insert_article(articles[1])
 
         accounts = [
-            Account(account_id=user_account_1.account_id, email="user-1@gmail.com", status=""),
-            Account(account_id=uuid4(), email="user-2@gmail.com", status=""),
+            Account(account_id=user_account_1.account_id, email="user-1@gmail.com", status="", source="test"),
+            Account(account_id=uuid4(), email="user-2@gmail.com", status="", source="test"),
         ]
 
         newsletter_id = uuid4()
         dbNewsletterRepository.log_newsletter_content(newsletter_id, user_account_1.account_id, [], "")
 
         dbClicksRepository.track_click_in_database(
-            newsletter_id, user_account_1.account_id, article_id_1, "2024-06-12 09:55:22"
+            newsletter_id, user_account_1.account_id, article_id_1, "title-1", "2024-06-12 09:55:22"
         )
         dbClicksRepository.track_click_in_database(
-            newsletter_id, user_account_1.account_id, article_id_2, "2024-07-14 12:55:22"
+            newsletter_id, user_account_1.account_id, article_id_2, "title-2", "2024-07-14 12:55:22"
         )
 
         start_time = "2024-06-13 09:55:22"
