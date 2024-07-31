@@ -58,8 +58,12 @@ def test_fetch_newsletters(pg_url: str):
 
         newsletter_1_id = uuid4()
         newsletter_2_id = uuid4()
-        dbNewsletterRepository.log_newsletter_content(newsletter_1_id, user_account_1.account_id, newsletter_1_articles, "fake-url-1")
-        dbNewsletterRepository.log_newsletter_content(newsletter_2_id, user_account_2.account_id, newsletter_2_articles, "fake-url-2")
+        dbNewsletterRepository.log_newsletter_content(
+            newsletter_1_id, user_account_1.account_id, newsletter_1_articles, "fake-url-1"
+        )
+        dbNewsletterRepository.log_newsletter_content(
+            newsletter_2_id, user_account_2.account_id, newsletter_2_articles, "fake-url-2"
+        )
 
         results = dbNewsletterRepository.fetch_newsletters(accounts)
 
