@@ -43,8 +43,9 @@ class DbClicksRepository(DatabaseRepository):
                 account_id=account_id,
                 article_id=article_id,
                 headers=headers,
-                created_at=created_at,
             )
+            if created_at:
+                stmt = stmt.values(created_at=created_at)
             self.conn.execute(stmt)
 
     def fetch_clicks(self, accounts: list[Account]) -> dict[UUID, ClickHistory]:
