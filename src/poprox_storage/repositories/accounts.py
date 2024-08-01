@@ -63,7 +63,7 @@ class DbAccountRepository(DatabaseRepository):
             .returning(account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status)
         )
         row = self.conn.execute(query).one_or_none()
-        return Account(account_id=row.account_id, email=row.email, status=row.status)
+        return Account(account_id=row.account_id, email=row.email, status=row.status, source=source)
 
     def fetch_unassigned_accounts(self, start_date: date, end_date: date):
         account_tbl = self.tables["accounts"]

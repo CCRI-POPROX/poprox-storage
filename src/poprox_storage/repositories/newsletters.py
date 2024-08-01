@@ -1,9 +1,16 @@
+import json
+from collections import defaultdict
+from datetime import datetime
+from uuid import UUID
+
 from sqlalchemy import (
     Connection,
     Table,
     insert,
+    select,
 )
 
+from poprox_concepts import Account, Article
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 
@@ -36,5 +43,36 @@ class DbNewsletterRepository(DatabaseRepository):
                     position=1 + position,
                 )
                 self.conn.execute(stmt)
+
+    def fetch_newsletters(self, accounts: list[Account]) -> dict[UUID, dict[UUID, list[Article]]]:
+        newsletter_table = self.tables["newsletters"]
+
+        query = select(
+            newsletter_table.c.newsletter_id,
+            newsletter_table.c.account_id,
+            newsletter_table.c.content,
+        ).where(
+            newsletter_table.c.account_id.in_([acct.account_id for acct in accounts]),
+        )
+        newsletter_result = self.conn.execute(query).fetchall()
+        historic_newsletters = defaultdict(dict)
+        for row in newsletter_result:
+            raw_articles = []
+            for article_json in row.content:
+                raw_articles.append(json.loads(article_json))
+            articles = [
+                Article(
+                    title=raw["title"],
+                    content=raw.get("description", None),
+                    url=raw["url"],
+                    published_at=datetime.strptime(
+                        raw.get("published_time", "1970-01-01T00:00:00")[:19],
+                        "%Y-%m-%dT%H:%M:%S",
+                    ),
+                )
+                for raw in raw_articles
+            ]
+            historic_newsletters[row.account_id][row.newsletter_id] = articles
+        return historic_newsletters
 
     log_newsletter_content = store_newsletter
