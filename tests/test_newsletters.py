@@ -37,7 +37,7 @@ def test_fetch_newsletters(pg_url: str):
         dbNewsletterRepository = DbNewsletterRepository(conn)
 
         newsletter_1_articles = [
-            Article(title="title-1", url="url-1"),
+            Article(title="title-1", content="article content 1", url="url-1"),
             Article(title="title-2", url="url-2"),
         ]
 
@@ -73,6 +73,7 @@ def test_fetch_newsletters(pg_url: str):
         user_1_newsletter = results[user_account_1.account_id]
         assert 1 == len(user_1_newsletter)
         assert 2 == len(user_1_newsletter[newsletter_1_id])
+        assert "article content 1" == user_1_newsletter[newsletter_1_id][0].content
 
         user_2_newsletter = results[user_account_2.account_id]
         assert 1 == len(user_2_newsletter)
