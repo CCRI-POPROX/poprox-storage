@@ -37,7 +37,7 @@ def test_fetch_newsletters(pg_url: str):
         dbNewsletterRepository = DbNewsletterRepository(conn)
 
         newsletter_1_articles = [
-            Article(title="title-1", content = "article content 1", url="url-1"),
+            Article(title="title-1", content="article content 1", url="url-1"),
             Article(title="title-2", url="url-2"),
         ]
 
