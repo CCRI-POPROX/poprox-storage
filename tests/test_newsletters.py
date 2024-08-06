@@ -42,7 +42,7 @@ def test_fetch_newsletters(pg_url: str):
         ]
 
         newsletter_2_articles = [
-            Article(title="title-3", url="url-1"),
+            Article(title="title-3", content="article 3 content", url="url-1"),
         ]
 
         user_account_1 = dbAccountRepository.create_new_account(email="user-1@gmail.com", source="test")
