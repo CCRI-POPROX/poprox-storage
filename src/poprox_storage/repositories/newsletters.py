@@ -59,14 +59,17 @@ class DbNewsletterRepository(DatabaseRepository):
         for row in newsletter_result:
             raw_articles = []
             for article_json in row.content:
+                if isinstance(article_json, dict):
+                    article_json = json.dumps(article_json)
                 raw_articles.append(json.loads(article_json))
             articles = [
                 Article(
+                    article_id=raw["article_id"],
                     title=raw["title"],
-                    content=raw.get("description", None),
+                    content=raw.get("content", None),
                     url=raw["url"],
                     published_at=datetime.strptime(
-                        raw.get("published_time", "1970-01-01T00:00:00")[:19],
+                        raw.get("published_at", "1970-01-01T00:00:00")[:19],
                         "%Y-%m-%dT%H:%M:%S",
                     ),
                 )
