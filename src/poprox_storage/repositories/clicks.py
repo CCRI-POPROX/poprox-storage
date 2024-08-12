@@ -74,7 +74,12 @@ class DbClicksRepository(DatabaseRepository):
     def fetch_clicks_between(self, accounts: list[Account], start_time, end_time) -> dict[UUID, list[Click]]:
         click_table = self.tables["clicks"]
 
-        click_query = select(click_table.c.account_id, click_table.c.article_id, click_table.c.created_at).where(
+        click_query = select(
+            click_table.c.account_id,
+            click_table.c.article_id,
+            click_table.c.newsletter_id,
+            click_table.c.created_at,
+        ).where(
             and_(
                 click_table.c.account_id.in_([acct.account_id for acct in accounts]),
                 click_table.c.created_at >= start_time,
@@ -85,7 +90,12 @@ class DbClicksRepository(DatabaseRepository):
 
         clicked_articles = defaultdict(list)
         for row in click_result:
-            clicked_articles[row.account_id].append(Click(article_id=row.article_id, timestamp=row.created_at))
+            click = Click(
+                article_id=row.article_id,
+                newsletter_id=row.newsletter_id,
+                timestamp=row.created_at,
+            )
+            clicked_articles[row.account_id].append(click)
 
         for account in accounts:
             account_id = account.account_id
