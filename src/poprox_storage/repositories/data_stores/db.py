@@ -20,7 +20,7 @@ class DatabaseRepository:
     def __init__(self, connection: Connection):
         self.conn: Connection = connection
 
-    def _load_tables(self, *args):
+    def _load_tables(self, *args) -> dict[str, Table]:
         metadata = MetaData()
         tables = {}
         for table_name in args:

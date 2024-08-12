@@ -6,6 +6,9 @@ from uuid import UUID
 import boto3
 from sqlalchemy import (
     Connection,
+    Table,
+    and_,
+    func,
     select,
 )
 from tqdm import tqdm
@@ -24,7 +27,7 @@ NEWS_FILE_KEY = "mockObjects/ap_scraped_data.json"
 class DbArticleRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
-        self.tables = self._load_tables(
+        self.tables: dict[str, Table] = self._load_tables(
             "articles",
             "entities",
             "mentions",
@@ -170,8 +173,28 @@ class DbArticleRepository(DatabaseRepository):
     insert_entity = store_entity
     insert_mention = store_mention
 
-    def _get_articles(self, article_table, where_clause=None) -> list[Article]:
-        query = article_table.select()
+    def _get_articles(self, article_table: Table, where_clause=None) -> list[Article]:
+        # Select only the most recent article row for each source/external id pair
+        inner_query = (
+            select(
+                article_table.c.source,
+                article_table.c.external_id,
+                func.max(article_table.c.created_at).label("updated_at"),
+            )
+            .where(article_table.c.external_id.is_not(None))
+            .group_by(article_table.c.source, article_table.c.external_id)
+            .order_by("updated_at")
+        )
+        # Select all columns for that subset of the articles
+        join_query = article_table.join(
+            inner_query,
+            and_(
+                inner_query.c.source == article_table.c.source,
+                inner_query.c.external_id == article_table.c.external_id,
+            ),
+        )
+        query = select(article_table).select_from(join_query)
+
         if where_clause is not None:
             query = query.where(where_clause)
         result = self.conn.execute(query).fetchall()
