@@ -45,13 +45,13 @@ def test_fetch_newsletters(pg_url: str):
             Article(title="title-3", url="url-1"),
         ]
 
-        user_account_1 = dbAccountRepository.create_new_account(email="user-1@gmail.com", source="test")
-        user_account_2 = dbAccountRepository.create_new_account(email="user-2@gmail.com", source="test")
+        user_account_1 = dbAccountRepository.store_new_account(email="user-1@gmail.com", source="test")
+        user_account_2 = dbAccountRepository.store_new_account(email="user-2@gmail.com", source="test")
         accounts = [user_account_1, user_account_2]
 
-        article_id_1 = dbArticleRepository.insert_article(newsletter_1_articles[0])
-        article_id_2 = dbArticleRepository.insert_article(newsletter_1_articles[1])
-        article_id_3 = dbArticleRepository.insert_article(newsletter_2_articles[0])
+        article_id_1 = dbArticleRepository.store_article(newsletter_1_articles[0])
+        article_id_2 = dbArticleRepository.store_article(newsletter_1_articles[1])
+        article_id_3 = dbArticleRepository.store_article(newsletter_2_articles[0])
 
         newsletter_1_articles = dbArticleRepository.fetch_articles_by_id([article_id_1, article_id_2])
         newsletter_2_articles = dbArticleRepository.fetch_articles_by_id([article_id_3])
@@ -60,10 +60,10 @@ def test_fetch_newsletters(pg_url: str):
         newsletter_2_id = uuid4()
 
         dbNewsletterRepository.conn.commit()
-        dbNewsletterRepository.log_newsletter_content(
+        dbNewsletterRepository.store_newsletter(
             newsletter_1_id, user_account_1.account_id, newsletter_1_articles, "fake-url-1"
         )
-        dbNewsletterRepository.log_newsletter_content(
+        dbNewsletterRepository.store_newsletter(
             newsletter_2_id, user_account_2.account_id, newsletter_2_articles, "fake-url-2"
         )
 

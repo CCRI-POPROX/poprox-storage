@@ -38,15 +38,15 @@ def test_get_click_between(pg_url: str):
         dbNewsletterRepository = DbNewsletterRepository(conn)
         dbClicksRepository = DbClicksRepository(conn)
 
-        user_account_1 = dbAccountRepository.create_new_account(email="user-1@gmail.com", source="test")
+        user_account_1 = dbAccountRepository.store_new_account(email="user-1@gmail.com", source="test")
 
         articles = [
             Article(title="title-1", url="url-1"),
             Article(title="title-2", url="url-2"),
         ]
 
-        article_id_1 = dbArticleRepository.insert_article(articles[0])
-        article_id_2 = dbArticleRepository.insert_article(articles[1])
+        article_id_1 = dbArticleRepository.store_article(articles[0])
+        article_id_2 = dbArticleRepository.store_article(articles[1])
 
         accounts = [
             Account(account_id=user_account_1.account_id, email="user-1@gmail.com", status="", source="test"),
@@ -54,18 +54,18 @@ def test_get_click_between(pg_url: str):
         ]
 
         newsletter_id = uuid4()
-        dbNewsletterRepository.log_newsletter_content(newsletter_id, user_account_1.account_id, [], "")
+        dbNewsletterRepository.store_newsletter(newsletter_id, user_account_1.account_id, [], "")
 
-        dbClicksRepository.track_click_in_database(
+        dbClicksRepository.store_click(
             newsletter_id, user_account_1.account_id, article_id_1, "title-1", "2024-06-12 09:55:22"
         )
-        dbClicksRepository.track_click_in_database(
+        dbClicksRepository.store_click(
             newsletter_id, user_account_1.account_id, article_id_2, "title-2", "2024-07-14 12:55:22"
         )
 
         start_time = "2024-06-13 09:55:22"
         end_time = "2024-07-15 09:55:22"
-        results = dbClicksRepository.get_clicks_between(accounts, start_time, end_time)
+        results = dbClicksRepository.fetch_clicks_between(accounts, start_time, end_time)
 
         assert 2 == len(results)
 

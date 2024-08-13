@@ -34,7 +34,7 @@ def test_get_active_survey(pg_url: str):
         conn.commit()
 
         repo = DbQualtricsSurveyRepository(conn)
-        results = repo.get_active_surveys()
+        results = repo.fetch_active_surveys()
         assert 1 == len(results)
 
         survey = results[0]
@@ -53,13 +53,13 @@ def test_update_survey(pg_url: str):
         conn.commit()
 
         repo = DbQualtricsSurveyRepository(conn)
-        results = repo.get_active_surveys()
+        results = repo.fetch_active_surveys()
         survey = results[0]
 
         survey.continuation_token = "apple"
         repo.update_survey(survey)
 
-        results = repo.get_active_surveys()
+        results = repo.fetch_active_surveys()
         assert len(results) == 1
 
         survey = results[0]
@@ -68,7 +68,7 @@ def test_update_survey(pg_url: str):
         assert "apple" == survey.continuation_token
 
 
-def test_create_survey_instance(pg_url: str):
+def test_store_survey_instance(pg_url: str):
     engine = create_engine(pg_url)
     with engine.connect() as conn:
         conn.execute(text("delete from qualtrics_survey_responses;"))
@@ -81,9 +81,9 @@ def test_create_survey_instance(pg_url: str):
         )
 
         repo = DbQualtricsSurveyRepository(conn)
-        results = repo.get_active_surveys()
+        results = repo.fetch_active_surveys()
         survey = results[0]
-        repo.create_survey_instance(survey, uuid)
+        repo.store_survey_instance(survey, uuid)
         results = conn.execute(text("select * from qualtrics_survey_instances;")).fetchall()
         assert 1 == len(results)
         assert survey.survey_id == results[0].survey_id
@@ -106,9 +106,9 @@ def test_create_survey_response(pg_url: str):
         )
 
         repo = DbQualtricsSurveyRepository(conn)
-        results = repo.get_active_surveys()
+        results = repo.fetch_active_surveys()
         survey = results[0]
-        repo.create_survey_instance(survey, account_uuid)
+        repo.store_survey_instance(survey, account_uuid)
         results = conn.execute(text("select * from qualtrics_survey_instances;")).fetchall()
         survey_instance_id = results[0].survey_instance_id
         raw_data = json.loads(
@@ -119,7 +119,7 @@ def test_create_survey_response(pg_url: str):
             qualtrics_response_id="R_1pKcm3b4BQjh6zF",
             raw_data=raw_data,
         )
-        repo.create_or_update_survey_response(survey_response)
+        repo.store_survey_response(survey_response)
         results = conn.execute(text("select * from qualtrics_survey_responses;")).fetchall()
         assert 1 == len(results)
         assert survey_instance_id == results[0].survey_instance_id
@@ -142,9 +142,9 @@ def test_update_survey_response(pg_url: str):
         )
 
         repo = DbQualtricsSurveyRepository(conn)
-        results = repo.get_active_surveys()
+        results = repo.fetch_active_surveys()
         survey = results[0]
-        repo.create_survey_instance(survey, account_uuid)
+        repo.store_survey_instance(survey, account_uuid)
         results = conn.execute(text("select * from qualtrics_survey_instances;")).fetchall()
         survey_instance_id = results[0].survey_instance_id
         raw_data = json.loads(
@@ -155,9 +155,9 @@ def test_update_survey_response(pg_url: str):
             qualtrics_response_id="R_1pKcm3b4BQjh6zF",
             raw_data=raw_data,
         )
-        repo.create_or_update_survey_response(survey_response)
+        repo.store_survey_response(survey_response)
         survey_response.raw_data = {"test": "yay"}
-        repo.create_or_update_survey_response(survey_response)
+        repo.store_survey_response(survey_response)
 
         results = conn.execute(text("select * from qualtrics_survey_responses;")).fetchall()
         assert 1 == len(results)

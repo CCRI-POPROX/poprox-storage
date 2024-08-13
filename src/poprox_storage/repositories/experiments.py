@@ -39,8 +39,8 @@ class DbExperimentRepository(DatabaseRepository):
             for group in experiment.groups:
                 group.group_id = self._insert_expt_group(experiment_id, group)
                 for account in assignments.get(group.name, []):
-                    allocation = Assignment(account_id=account.account_id, group_id=group.group_id)
-                    self._insert_expt_assignment(allocation)
+                    assignment = Assignment(account_id=account.account_id, group_id=group.group_id)
+                    self._insert_expt_assignment(assignment)
 
             for recommender in experiment.recommenders:
                 recommender.recommender_id = self._insert_expt_recommender(
@@ -107,7 +107,7 @@ class DbExperimentRepository(DatabaseRepository):
     def fetch_active_expt_assignments(self, date: datetime.date | None = None) -> dict[UUID, Assignment]:
         assignments_tbl = self.tables["expt_assignments"]
 
-        group_ids = self.get_active_expt_group_ids(date)
+        group_ids = self.fetch_active_expt_group_ids(date)
 
         group_query = select(
             assignments_tbl.c.assignment_id, assignments_tbl.c.account_id, assignments_tbl.c.group_id
@@ -122,14 +122,10 @@ class DbExperimentRepository(DatabaseRepository):
 
         return group_lookup_by_account
 
-    get_active_expt_group_ids = fetch_active_expt_group_ids
-    get_active_expt_endpoint_urls = fetch_active_expt_endpoint_urls
-    get_active_expt_allocations = fetch_active_expt_assignments
-
     def update_expt_assignment_to_opt_out(self, account_id: UUID) -> UUID | None:
         assignments_tbl = self.tables["expt_assignments"]
 
-        group_ids = self.get_active_expt_group_ids()
+        group_ids = self.fetch_active_expt_group_ids()
 
         assignment_query = (
             update(assignments_tbl)

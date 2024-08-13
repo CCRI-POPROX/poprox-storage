@@ -48,8 +48,6 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             for row in results
         ]
 
-    get_active_surveys = fetch_active_surveys
-
     def update_survey(self, survey: QualtricsSurvey) -> UUID | None:
         survey_table = self.tables["qualtrics_surveys"]
         return self._upsert_and_return_id(
@@ -79,6 +77,3 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             },
             constraint="uq_qualtrics_response_id",
         )
-
-    create_survey_instance = store_survey_instance
-    create_or_update_survey_response = store_survey_response
