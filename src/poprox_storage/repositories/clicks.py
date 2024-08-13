@@ -5,8 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import and_, insert, select
 
-from poprox_concepts import Account, ClickHistory
-from poprox_concepts.domain.click import Click
+from poprox_concepts import Account, Click
 from poprox_storage.aws import s3
 from poprox_storage.aws.exceptions import PoproxAwsUtilitiesException
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -48,33 +47,43 @@ class DbClicksRepository(DatabaseRepository):
                 stmt = stmt.values(created_at=created_at)
             self.conn.execute(stmt)
 
-    def fetch_clicks(self, accounts: list[Account]) -> dict[UUID, ClickHistory]:
+    def fetch_clicks(self, accounts: list[Account]) -> dict[UUID, list[Click]]:
         click_table = self.tables["clicks"]
 
-        click_query = select(click_table.c.account_id, click_table.c.article_id).where(
-            click_table.c.account_id.in_([acct.account_id for acct in accounts])
-        )
+        click_query = select(
+            click_table.c.account_id,
+            click_table.c.article_id,
+            click_table.c.newsletter_id,
+            click_table.c.created_at,
+        ).where(click_table.c.account_id.in_([acct.account_id for acct in accounts]))
         click_result = self.conn.execute(click_query).fetchall()
 
         clicked_articles = defaultdict(list)
         for row in click_result:
-            clicked_articles[row[0]].append(row[1])
+            clicked_articles[row.account_id].append(
+                Click(
+                    article_id=row.article_id,
+                    newsletter_id=row.newsletter_id,
+                    timestamp=row.created_at,
+                )
+            )
 
         for account in accounts:
             account_id = account.account_id
             if account_id not in clicked_articles:
                 clicked_articles[account_id] = []
 
-        histories = {}
-        for account_id, user_clicks in clicked_articles.items():
-            histories[account_id] = ClickHistory(article_ids=user_clicks)
-
-        return histories
+        return clicked_articles
 
     def fetch_clicks_between(self, accounts: list[Account], start_time, end_time) -> dict[UUID, list[Click]]:
         click_table = self.tables["clicks"]
 
-        click_query = select(click_table.c.account_id, click_table.c.article_id, click_table.c.created_at).where(
+        click_query = select(
+            click_table.c.account_id,
+            click_table.c.article_id,
+            click_table.c.newsletter_id,
+            click_table.c.created_at,
+        ).where(
             and_(
                 click_table.c.account_id.in_([acct.account_id for acct in accounts]),
                 click_table.c.created_at >= start_time,
@@ -85,15 +94,17 @@ class DbClicksRepository(DatabaseRepository):
 
         clicked_articles = defaultdict(list)
         for row in click_result:
-            clicked_articles[row.account_id].append(Click(article_id=row.article_id, timestamp=row.created_at))
+            clicked_articles[row.account_id].append(
+                Click(
+                    article_id=row.article_id,
+                    newsletter_id=row.newsletter_id,
+                    timestamp=row.created_at,
+                )
+            )
 
         for account in accounts:
             account_id = account.account_id
             if account_id not in clicked_articles:
                 clicked_articles[account_id] = []
 
-        histories = {}
-        for account_id, user_clicks in clicked_articles.items():
-            histories[account_id] = user_clicks
-
-        return histories
+        return clicked_articles
