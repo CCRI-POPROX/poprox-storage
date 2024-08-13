@@ -33,7 +33,7 @@ class DbAccountInterestRepository(DatabaseRepository):
 
         for interest in interests:
             try:
-                log_id = self.insert_topic_preference(
+                log_id = self.store_topic_preference(
                     account_id,
                     interest.entity_id,
                     interest.preference,
@@ -82,8 +82,3 @@ class DbAccountInterestRepository(DatabaseRepository):
             for row in results
         ]
         return results
-
-    insert_topic_preference = store_topic_preference
-    insert_topic_preferences = store_topic_preferences
-    lookup_entity_by_name = fetch_entity_by_name
-    get_topic_preferences = fetch_topic_preferences

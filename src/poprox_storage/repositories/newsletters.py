@@ -77,5 +77,3 @@ class DbNewsletterRepository(DatabaseRepository):
             ]
             historic_newsletters[row.account_id][row.newsletter_id] = articles
         return historic_newsletters
-
-    log_newsletter_content = store_newsletter

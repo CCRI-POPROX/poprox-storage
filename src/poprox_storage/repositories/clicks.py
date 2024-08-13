@@ -20,7 +20,7 @@ class S3ClicksRepository(S3Repository):
     def __init__(self, bucket_name):
         super().__init__(bucket_name)
 
-    def get_clicks_from_dev_file(self, file_key):
+    def fetch_clicks_from_dev_file(self, file_key):
         try:
             click_data = json.loads(s3.get_object(self.bucket_name, file_key).get("Body").read())
         except PoproxAwsUtilitiesException:
@@ -97,7 +97,3 @@ class DbClicksRepository(DatabaseRepository):
             histories[account_id] = user_clicks
 
         return histories
-
-    track_click_in_database = store_click
-    get_clicks = fetch_clicks
-    get_clicks_between = fetch_clicks_between

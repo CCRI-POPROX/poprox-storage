@@ -31,7 +31,7 @@ class DbImageRepository(DatabaseRepository):
 
         for image in images:
             try:
-                image_id = self.insert_image(image)
+                image_id = self.store_image(image)
                 if image_id is None:
                     msg = f"Insert failed for image {image}"
                     raise RuntimeError(msg)
@@ -43,9 +43,6 @@ class DbImageRepository(DatabaseRepository):
 
     def store_image(self, image: Image) -> UUID | None:
         return self._insert_model("images", image, exclude={"image_id"}, constraint="uq_images")
-
-    insert_images = store_images
-    insert_image = store_image
 
     def fetch_image_by_external_id(self, external_id: str) -> Image | None:
         image_table = self.tables["images"]
@@ -121,14 +118,10 @@ class S3ImageRepository(S3Repository):
         images = []
 
         for key in file_keys:
-            extracted = self.get_images_from_file(key)
+            extracted = self.fetch_images_from_file(key)
             images.extend(extracted)
 
         return images
-
-    list_image_files = fetch_image_file_keys
-    get_images_from_file = fetch_images_from_file
-    get_images_from_files = fetch_images_from_files
 
 
 def extract_images(img_file_content) -> list[Image]:

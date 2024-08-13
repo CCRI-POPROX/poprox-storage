@@ -67,7 +67,7 @@ class DbAccountRepository(DatabaseRepository):
 
     def fetch_unassigned_accounts(self, start_date: date, end_date: date):
         account_tbl = self.tables["accounts"]
-        allocation_tbl = self.tables["expt_allocations"]
+        assignment_tbl = self.tables["expt_assignments"]
         phase_tbl = self.tables["expt_phases"]
         treatment_tbl = self.tables["expt_treatments"]
 
@@ -93,11 +93,11 @@ class DbAccountRepository(DatabaseRepository):
         group_ids = self._id_query(group_query)
 
         # Find the users allocated to those groups
-        allocation_query = select(allocation_tbl.c.account_id).where(allocation_tbl.c.group_id.in_(group_ids))
-        allocation_account_ids = self._id_query(allocation_query)
+        assignment_query = select(assignment_tbl.c.account_id).where(assignment_tbl.c.group_id.in_(group_ids))
+        assignment_account_ids = self._id_query(assignment_query)
 
-        # Find all the users who aren't in the allocations above
-        account_query = select(account_tbl.c.account_id).where(account_tbl.c.account_id.not_in(allocation_account_ids))
+        # Find all the users who aren't in the assignments above
+        account_query = select(account_tbl.c.account_id).where(account_tbl.c.account_id.not_in(assignment_account_ids))
         account_ids = self._id_query(account_query)
 
         return self.fetch_accounts(account_ids)
@@ -179,8 +179,3 @@ class DbAccountRepository(DatabaseRepository):
             data=link_data.data,
         )
         self.conn.execute(query)
-
-    create_new_account = store_new_account
-    create_subscription_for_account = store_subscription_for_account
-    end_subscription_for_account = remove_subscription_for_account
-    record_consent = store_consent

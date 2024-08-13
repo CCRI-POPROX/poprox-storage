@@ -35,10 +35,10 @@ class DbArticleRepository(DatabaseRepository):
         )
 
     def fetch_todays_articles(self) -> list[Article]:
-        return self.get_articles_since(days_ago=1)
+        return self.fetch_articles_since(days_ago=1)
 
     def fetch_past_articles(self) -> list[Article]:
-        return self.get_articles_before(days_ago=1)
+        return self.fetch_articles_before(days_ago=1)
 
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
@@ -121,14 +121,6 @@ class DbArticleRepository(DatabaseRepository):
         else:
             return None
 
-    get_todays_articles = fetch_todays_articles
-    get_past_articles = fetch_past_articles
-    get_articles_since = fetch_articles_since
-    get_articles_before = fetch_articles_before
-    get_articles_by_id = fetch_articles_by_id
-    get_article_mentions = fetch_article_mentions
-    lookup_article_by_url = fetch_article_by_url
-
     def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
 
@@ -137,16 +129,16 @@ class DbArticleRepository(DatabaseRepository):
 
         for article in articles:
             try:
-                article_id = self.insert_article(article)
+                article_id = self.store_article(article)
                 if article_id is None:
                     msg = f"Article insert failed for article {article}"
                     raise RuntimeError(msg)
                 if mentions:
                     for mention in article.mentions:
-                        entity_id = self.insert_entity(mention.entity)
+                        entity_id = self.store_entity(mention.entity)
                         mention.article_id = article_id
                         mention.entity.entity_id = entity_id
-                        mention.mention_id = self.insert_mention(mention)
+                        mention.mention_id = self.store_mention(mention)
             except RuntimeError as exc:
                 logger.error(exc)
                 failed += 1
@@ -167,11 +159,6 @@ class DbArticleRepository(DatabaseRepository):
             addl_fields={"entity_id": mention.entity.entity_id},
             constraint="uq_mentions",
         )
-
-    insert_articles = store_articles
-    insert_article = store_article
-    insert_entity = store_entity
-    insert_mention = store_mention
 
     def _get_articles(self, article_table: Table, where_clause=None) -> list[Article]:
         # Select only the most recent article row for each source/external id pair
@@ -254,7 +241,7 @@ class S3ArticleRepository(S3Repository):
         articles = []
 
         for key in file_keys:
-            extracted = self.get_articles_from_file(key)
+            extracted = self.fetch_articles_from_file(key)
             articles.extend(extracted)
 
         return articles
@@ -276,11 +263,6 @@ class S3ArticleRepository(S3Repository):
         ]
 
         return articles
-
-    list_news_files = fetch_news_files
-    get_articles_from_file = fetch_articles_from_file
-    get_articles_from_files = fetch_articles_from_files
-    get_historical_articles = fetch_historical_articles
 
 
 def extract_articles(news_file_content) -> list[Article]:
