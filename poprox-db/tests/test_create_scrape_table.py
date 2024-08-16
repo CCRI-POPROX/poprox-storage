@@ -1,9 +1,5 @@
-# This test checks if a new table for scraped articles can be created in the PostgreSQL database
-# To test: run `pytest test_create_scrape_table.py` in the poprox-db/tests directory
-
 import psycopg2
 from sqlalchemy import create_engine
-import pandas as pd
 
 # Database connection parameters
 conn_params = {
@@ -16,7 +12,8 @@ conn_params = {
 
 # Create a SQLAlchemy engine
 engine = create_engine(
-    f'postgresql+psycopg2://{conn_params["user"]}:{conn_params["password"]}@{conn_params["host"]}:{conn_params["port"]}/{conn_params["dbname"]}')
+    f'postgresql+psycopg2://{conn_params["user"]}:{conn_params["password"]}@{conn_params["host"]}:{conn_params["port"]}/{conn_params["dbname"]}'
+)
 
 
 # Function to test the creation of a new table and insertion of data
