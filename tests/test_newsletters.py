@@ -2,12 +2,12 @@ import os
 from uuid import uuid4
 
 import pytest
-from poprox_storage.repositories.accounts import DbAccountRepository
-from poprox_storage.repositories.articles import DbArticleRepository
-from poprox_storage.repositories.newsletters import DbNewsletterRepository
 from sqlalchemy import create_engine, text
 
 from poprox_concepts import Article
+from poprox_storage.repositories.accounts import DbAccountRepository
+from poprox_storage.repositories.articles import DbArticleRepository
+from poprox_storage.repositories.newsletters import DbNewsletterRepository
 
 db_password = os.environ.get("POPROX_DB_PASSWORD", "")
 db_port = os.environ.get("POPROX_DB_PORT", "")
