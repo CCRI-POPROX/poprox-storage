@@ -54,7 +54,7 @@ def test_get_click_between(pg_url: str):
         ]
 
         newsletter_id = uuid4()
-        dbNewsletterRepository.store_newsletter(newsletter_id, user_account_1.account_id, [], "")
+        dbNewsletterRepository.store_newsletter(newsletter_id, user_account_1.account_id, [], "", "")
 
         dbClicksRepository.store_click(
             newsletter_id, user_account_1.account_id, article_id_1, "title-1", "2024-06-12 09:55:22"
