@@ -19,3 +19,5 @@ def test_repositories():
 
     assert "article" in fields
     assert fields["article"].annotation == DbArticleRepository
+
+    assert isinstance(repos.article, DbArticleRepository)
