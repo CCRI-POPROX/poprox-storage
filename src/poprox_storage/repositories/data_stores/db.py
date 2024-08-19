@@ -18,18 +18,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-DbRepositories: type[BaseModel] = create_model(
-    "DbRepositories",
-    conn=(Connection, None),
-    __config__=ConfigDict(arbitrary_types_allowed=True),
-)
-
-
-def camel_to_snake(s):
-    return "".join(["_" + c.lower() if c.isupper() else c for c in s]).lstrip("_")
+DbRepositories: type[BaseModel] | None = None
 
 
 def db_repositories(*args):
+    create_repository_model()
+
     if len(args) == 1 and not isinstance(args[0], list):
         names = [args[0]]
     else:
@@ -52,6 +46,28 @@ def db_repositories(*args):
     return inner_decorator
 
 
+def create_repository_model():
+    global DbRepositories
+
+    if DbRepositories is None:
+        # Convert the attribute names and classes to fields
+        fields = {
+            name: Annotated[type_, Field(default=None)] for name, type_ in DatabaseRepository._repository_types.items()
+        }
+
+        # Dynamically create a Pydantic model with those fields
+        DbRepositories = create_model(
+            "DbRepositories",
+            conn=(Connection, None),
+            **fields,
+            __config__=ConfigDict(arbitrary_types_allowed=True),
+        )
+
+
+def camel_to_snake(s):
+    return "".join(["_" + c.lower() if c.isupper() else c for c in s]).lstrip("_")
+
+
 class DatabaseRepository:
     _repository_types = {}
 
@@ -62,22 +78,10 @@ class DatabaseRepository:
         """
         Gets called once for each loaded class that sub-classes DatabaseRepository
         """
-        global DbRepositories
 
         # Register the attribute name and corresponding class
         concept_name = camel_to_snake(cls.__name__.removeprefix("Db").removesuffix("Repository"))
         cls._repository_types[concept_name] = cls
-
-        # Convert the attribute names and classes to fields
-        fields = {name: Annotated[type_, Field(default=None)] for name, type_ in cls._repository_types.items()}
-
-        # Dynamically create a Pydantic model with those fields
-        DbRepositories = create_model(
-            "DbRepositories",
-            conn=(Connection, None),
-            **fields,
-            __config__=ConfigDict(arbitrary_types_allowed=True),
-        )
 
     def _load_tables(self, *args) -> dict[str, Table]:
         metadata = MetaData()
