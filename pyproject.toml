@@ -98,7 +98,7 @@ unfixable = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["poprox_recommender", "poprox_concepts"]
+known-first-party = ["poprox_recommender", "poprox_concepts", "poprox_storage"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"

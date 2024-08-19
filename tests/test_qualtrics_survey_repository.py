@@ -3,9 +3,10 @@ import os
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import create_engine, text
+
 from poprox_storage.concepts.qualtrics_survey import QualtricsSurveyResponse
 from poprox_storage.repositories.qualtrics_survey import DbQualtricsSurveyRepository
-from sqlalchemy import create_engine, text
 
 db_password = os.environ.get("POPROX_DB_PASSWORD", "")
 db_port = os.environ.get("POPROX_DB_PORT", "")

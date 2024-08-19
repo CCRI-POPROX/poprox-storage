@@ -22,8 +22,7 @@ class DbNewsletterRepository(DatabaseRepository):
             "impressions",
         )
 
-    def store_newsletter(self, newsletter_id, account_id, recommended_articles, article_html):
-        # TODO: Add the email title to the newsletter table
+    def store_newsletter(self, newsletter_id, account_id, recommended_articles, email_subject, article_html):
         newsletter_table = self.tables["newsletters"]
         impression_table = self.tables["impressions"]
 
@@ -32,6 +31,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 newsletter_id=newsletter_id,
                 account_id=str(account_id),
                 content=[rec.json() for rec in recommended_articles],
+                email_subject=email_subject,
                 html=article_html,
             )
             self.conn.execute(stmt)

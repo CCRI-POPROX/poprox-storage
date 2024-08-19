@@ -2,12 +2,12 @@ import os
 from uuid import uuid4
 
 import pytest
-from poprox_storage.repositories.accounts import DbAccountRepository
-from poprox_storage.repositories.articles import DbArticleRepository
-from poprox_storage.repositories.newsletters import DbNewsletterRepository
 from sqlalchemy import create_engine, text
 
 from poprox_concepts import Article
+from poprox_storage.repositories.accounts import DbAccountRepository
+from poprox_storage.repositories.articles import DbArticleRepository
+from poprox_storage.repositories.newsletters import DbNewsletterRepository
 
 db_password = os.environ.get("POPROX_DB_PASSWORD", "")
 db_port = os.environ.get("POPROX_DB_PORT", "")
@@ -37,12 +37,14 @@ def test_fetch_newsletters(pg_url: str):
         dbNewsletterRepository = DbNewsletterRepository(conn)
 
         newsletter_1_articles = [
-            Article(title="title-1", content="article content 1", url="url-1"),
-            Article(title="title-2", url="url-2"),
+            Article(
+                title="title-1", content="article content 1", url="url-1", external_id="external-1", source="tests"
+            ),
+            Article(title="title-2", url="url-2", external_id="external-2", source="tests"),
         ]
 
         newsletter_2_articles = [
-            Article(title="title-3", url="url-1"),
+            Article(title="title-3", url="url-1", external_id="external-3", source="tests"),
         ]
 
         user_account_1 = dbAccountRepository.store_new_account(email="user-1@gmail.com", source="test")
@@ -61,14 +63,13 @@ def test_fetch_newsletters(pg_url: str):
 
         dbNewsletterRepository.conn.commit()
         dbNewsletterRepository.store_newsletter(
-            newsletter_1_id, user_account_1.account_id, newsletter_1_articles, "fake-url-1"
+            newsletter_1_id, user_account_1.account_id, newsletter_1_articles, "fake-subject", "fake-url-1"
         )
         dbNewsletterRepository.store_newsletter(
-            newsletter_2_id, user_account_2.account_id, newsletter_2_articles, "fake-url-2"
+            newsletter_2_id, user_account_2.account_id, newsletter_2_articles, "fake-subject", "fake-url-2"
         )
 
         results = dbNewsletterRepository.fetch_newsletters(accounts)
-
         assert 2 == len(results)
         user_1_newsletter = results[user_account_1.account_id]
         assert 1 == len(user_1_newsletter)

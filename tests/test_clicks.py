@@ -2,13 +2,13 @@ import os
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import create_engine, text
+
+from poprox_concepts import Account, Article
 from poprox_storage.repositories.accounts import DbAccountRepository
 from poprox_storage.repositories.articles import DbArticleRepository
 from poprox_storage.repositories.clicks import DbClicksRepository
 from poprox_storage.repositories.newsletters import DbNewsletterRepository
-from sqlalchemy import create_engine, text
-
-from poprox_concepts import Account, Article
 
 db_password = os.environ.get("POPROX_DB_PASSWORD", "")
 db_port = os.environ.get("POPROX_DB_PORT", "")
@@ -54,7 +54,7 @@ def test_get_click_between(pg_url: str):
         ]
 
         newsletter_id = uuid4()
-        dbNewsletterRepository.store_newsletter(newsletter_id, user_account_1.account_id, [], "")
+        dbNewsletterRepository.store_newsletter(newsletter_id, user_account_1.account_id, [], "", "")
 
         dbClicksRepository.store_click(
             newsletter_id, user_account_1.account_id, article_id_1, "title-1", "2024-06-12 09:55:22"
