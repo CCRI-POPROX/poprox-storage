@@ -1,5 +1,6 @@
 import logging
-from typing import Any
+from functools import wraps
+from typing import Any, get_type_hints
 from uuid import UUID
 
 from sqlalchemy import (
@@ -16,9 +17,38 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+def inject_repos(handler):
+    @wraps(handler)
+    def wrapper(event, context):
+        with DB_ENGINE.connect() as conn:
+            params: dict[str, type] = get_type_hints(handler)
+            # remove event, context, and return type if they were annotated.
+            params.pop("event", None)
+            params.pop("context", None)
+            params.pop("return", None)
+
+            repos = dict()
+            for param, class_obj in params.items():
+                if class_obj in DatabaseRepository._repository_types:
+                    repos[param] = class_obj(conn)
+
+            return handler(event, context, **repos)
+
+    return wrapper
+
+
 class DatabaseRepository:
+    _repository_types = set()
+
     def __init__(self, connection: Connection):
         self.conn: Connection = connection
+
+    def __init_subclass__(cls, *args, **kwargs):
+        """
+        Gets called once for each loaded class that sub-classes DatabaseRepository
+        """
+
+        cls._repository_types.add(cls)
 
     def _load_tables(self, *args) -> dict[str, Table]:
         metadata = MetaData()
