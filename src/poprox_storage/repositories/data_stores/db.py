@@ -48,7 +48,6 @@ class DatabaseRepository:
         Gets called once for each loaded class that sub-classes DatabaseRepository
         """
 
-        # Register the attribute name and corresponding class
         cls._repository_types.add(cls)
 
     def _load_tables(self, *args) -> dict[str, Table]:
