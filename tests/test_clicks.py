@@ -1,8 +1,6 @@
-import os
 from uuid import uuid4
 
-import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
 from poprox_concepts import Account, Article
 from poprox_storage.repositories.accounts import DbAccountRepository
@@ -10,23 +8,9 @@ from poprox_storage.repositories.articles import DbArticleRepository
 from poprox_storage.repositories.clicks import DbClicksRepository
 from poprox_storage.repositories.newsletters import DbNewsletterRepository
 
-db_password = os.environ.get("POPROX_DB_PASSWORD", "")
-db_port = os.environ.get("POPROX_DB_PORT", "")
 
-DEFAULT_PG_URL = f"postgresql://postgres:{db_password}@127.0.0.1:{db_port}/poprox"
-
-
-@pytest.fixture(scope="session")
-def pg_url():
-    """
-    Provides base PostgreSQL URL for creating temporary databases.
-    """
-    return os.getenv("CI_POPROX_PG_URL", DEFAULT_PG_URL)
-
-
-def test_get_click_between(pg_url: str):
-    engine = create_engine(pg_url)
-    with engine.connect() as conn:
+def test_get_click_between(db_engine):
+    with db_engine.connect() as conn:
         conn.execute(text("delete from impressions"))
         conn.execute(text("delete from clicks;"))
         conn.execute(text("delete from newsletters;"))

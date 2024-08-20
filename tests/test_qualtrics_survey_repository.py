@@ -1,30 +1,14 @@
 import json
-import os
 from uuid import uuid4
 
-import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
 from poprox_storage.concepts.qualtrics_survey import QualtricsSurveyResponse
 from poprox_storage.repositories.qualtrics_survey import DbQualtricsSurveyRepository
 
-db_password = os.environ.get("POPROX_DB_PASSWORD", "")
-db_port = os.environ.get("POPROX_DB_PORT", "")
 
-DEFAULT_PG_URL = f"postgresql://postgres:{db_password}@127.0.0.1:{db_port}/poprox"
-
-
-@pytest.fixture(scope="session")
-def pg_url():
-    """
-    Provides base PostgreSQL URL for creating temporary databases.
-    """
-    return os.getenv("CI_POPROX_PG_URL", DEFAULT_PG_URL)
-
-
-def test_get_active_survey(pg_url: str):
-    engine = create_engine(pg_url)
-    with engine.connect() as conn:
+def test_get_active_survey(db_engine):
+    with db_engine.connect() as conn:
         conn.execute(text("delete from qualtrics_survey_responses;"))
         conn.execute(text("delete from qualtrics_survey_instances;"))
         conn.execute(text("delete from qualtrics_surveys;"))
@@ -44,9 +28,8 @@ def test_get_active_survey(pg_url: str):
         assert None is survey.continuation_token
 
 
-def test_update_survey(pg_url: str):
-    engine = create_engine(pg_url)
-    with engine.connect() as conn:
+def test_update_survey(db_engine):
+    with db_engine.connect() as conn:
         conn.execute(text("delete from qualtrics_survey_responses;"))
         conn.execute(text("delete from qualtrics_survey_instances;"))
         conn.execute(text("delete from qualtrics_surveys;"))
@@ -69,9 +52,8 @@ def test_update_survey(pg_url: str):
         assert "apple" == survey.continuation_token
 
 
-def test_store_survey_instance(pg_url: str):
-    engine = create_engine(pg_url)
-    with engine.connect() as conn:
+def test_store_survey_instance(db_engine):
+    with db_engine.connect() as conn:
         conn.execute(text("delete from qualtrics_survey_responses;"))
         conn.execute(text("delete from qualtrics_survey_instances;"))
         conn.execute(text("delete from qualtrics_surveys;"))
@@ -92,9 +74,8 @@ def test_store_survey_instance(pg_url: str):
         assert None is not results[0].survey_instance_id
 
 
-def test_create_survey_response(pg_url: str):
-    engine = create_engine(pg_url)
-    with engine.connect() as conn:
+def test_create_survey_response(db_engine):
+    with db_engine.connect() as conn:
         conn.execute(text("delete from qualtrics_survey_responses;"))
         conn.execute(text("delete from qualtrics_survey_instances;"))
         conn.execute(text("delete from qualtrics_surveys;"))
@@ -128,9 +109,8 @@ def test_create_survey_response(pg_url: str):
         assert raw_data == results[0].raw_data
 
 
-def test_update_survey_response(pg_url: str):
-    engine = create_engine(pg_url)
-    with engine.connect() as conn:
+def test_update_survey_response(db_engine):
+    with db_engine.connect() as conn:
         conn.execute(text("delete from qualtrics_survey_responses;"))
         conn.execute(text("delete from qualtrics_survey_instances;"))
         conn.execute(text("delete from qualtrics_surveys;"))
