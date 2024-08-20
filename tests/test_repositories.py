@@ -1,23 +1,16 @@
-from sqlalchemy import Connection
-
 from poprox_storage.repositories import DbArticleRepository
-from poprox_storage.repositories.data_stores.db import db_repositories
+from poprox_storage.repositories.data_stores.db import inject_repos
+from poprox_storage.repositories.newsletters import DbNewsletterRepository
 
 
-@db_repositories("article")
-def example(event, context, repos):
-    return repos
+@inject_repos
+def example(event, context, article: DbArticleRepository, newsletter_repo: DbNewsletterRepository):
+    return article, newsletter_repo
 
 
 def test_repositories():
-    repos = example({}, {})
-    fields = repos.model_fields
-    assert fields != []
-
-    assert "conn" in fields
-    assert fields["conn"].annotation == Connection
-
-    assert "article" in fields
-    assert fields["article"].annotation == DbArticleRepository
-
-    assert isinstance(repos.article, DbArticleRepository)
+    retval = example({}, {})
+    assert isinstance(retval, tuple)
+    assert len(retval) == 2
+    assert isinstance(retval[0], DbArticleRepository)
+    assert isinstance(retval[1], DbNewsletterRepository)
