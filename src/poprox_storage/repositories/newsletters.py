@@ -10,7 +10,7 @@ from sqlalchemy import (
     select,
 )
 
-from poprox_concepts import Account, Article
+from poprox_concepts import Account, Article, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 
@@ -22,23 +22,24 @@ class DbNewsletterRepository(DatabaseRepository):
             "impressions",
         )
 
-    def store_newsletter(self, newsletter_id, account_id, recommended_articles, email_subject, article_html):
+    def store_newsletter(self, newsletter: Newsletter):
         newsletter_table = self.tables["newsletters"]
         impression_table = self.tables["impressions"]
 
+        self.conn.commit()  # End any transaction already in progress
         with self.conn.begin():
             stmt = insert(newsletter_table).values(
-                newsletter_id=newsletter_id,
-                account_id=str(account_id),
-                content=[rec.json() for rec in recommended_articles],
-                email_subject=email_subject,
-                html=article_html,
+                newsletter_id=newsletter.newsletter_id,
+                account_id=str(newsletter.account_id),
+                content=[rec.json() for rec in newsletter.articles],
+                email_subject=newsletter.subject,
+                html=newsletter.body_html,
             )
             self.conn.execute(stmt)
 
-            for position, article in enumerate(recommended_articles):
+            for position, article in enumerate(newsletter.articles):
                 stmt = insert(impression_table).values(
-                    newsletter_id=str(newsletter_id),
+                    newsletter_id=str(newsletter.newsletter_id),
                     article_id=str(article.article_id),
                     position=1 + position,
                 )

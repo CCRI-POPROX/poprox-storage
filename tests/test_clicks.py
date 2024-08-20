@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from sqlalchemy import text
 
-from poprox_concepts import Account, Article
+from poprox_concepts.domain import Account, Article, Newsletter
 from poprox_storage.repositories.accounts import DbAccountRepository
 from poprox_storage.repositories.articles import DbArticleRepository
 from poprox_storage.repositories.clicks import DbClicksRepository
@@ -37,14 +37,14 @@ def test_get_click_between(db_engine):
             Account(account_id=uuid4(), email="user-2@gmail.com", status="", source="test"),
         ]
 
-        newsletter_id = uuid4()
-        dbNewsletterRepository.store_newsletter(newsletter_id, user_account_1.account_id, [], "", "")
+        newsletter = Newsletter(account_id=user_account_1.account_id, articles=[], subject="", body_html="")
+        dbNewsletterRepository.store_newsletter(newsletter)
 
         dbClicksRepository.store_click(
-            newsletter_id, user_account_1.account_id, article_id_1, "title-1", "2024-06-12 09:55:22"
+            newsletter.newsletter_id, user_account_1.account_id, article_id_1, "title-1", "2024-06-12 09:55:22"
         )
         dbClicksRepository.store_click(
-            newsletter_id, user_account_1.account_id, article_id_2, "title-2", "2024-07-14 12:55:22"
+            newsletter.newsletter_id, user_account_1.account_id, article_id_2, "title-2", "2024-07-14 12:55:22"
         )
 
         start_time = "2024-06-13 09:55:22"

@@ -1,8 +1,6 @@
-from uuid import uuid4
-
 from sqlalchemy import text
 
-from poprox_concepts import Article
+from poprox_concepts.domain import Article, Newsletter
 from poprox_storage.repositories.accounts import DbAccountRepository
 from poprox_storage.repositories.articles import DbArticleRepository
 from poprox_storage.repositories.newsletters import DbNewsletterRepository
@@ -42,24 +40,29 @@ def test_fetch_newsletters(db_engine):
         newsletter_1_articles = dbArticleRepository.fetch_articles_by_id([article_id_1, article_id_2])
         newsletter_2_articles = dbArticleRepository.fetch_articles_by_id([article_id_3])
 
-        newsletter_1_id = uuid4()
-        newsletter_2_id = uuid4()
+        newsletter_1 = Newsletter(
+            account_id=user_account_1.account_id,
+            articles=newsletter_1_articles,
+            subject="fake-subject",
+            body_html="fake-html-1",
+        )
+        dbNewsletterRepository.store_newsletter(newsletter_1)
 
-        dbNewsletterRepository.conn.commit()
-        dbNewsletterRepository.store_newsletter(
-            newsletter_1_id, user_account_1.account_id, newsletter_1_articles, "fake-subject", "fake-url-1"
+        newsletter_2 = Newsletter(
+            account_id=user_account_2.account_id,
+            articles=newsletter_2_articles,
+            subject="fake-subject",
+            body_html="fake-html-2",
         )
-        dbNewsletterRepository.store_newsletter(
-            newsletter_2_id, user_account_2.account_id, newsletter_2_articles, "fake-subject", "fake-url-2"
-        )
+        dbNewsletterRepository.store_newsletter(newsletter_2)
 
         results = dbNewsletterRepository.fetch_newsletters(accounts)
         assert 2 == len(results)
         user_1_newsletter = results[user_account_1.account_id]
         assert 1 == len(user_1_newsletter)
-        assert 2 == len(user_1_newsletter[newsletter_1_id])
-        assert "article content 1" == user_1_newsletter[newsletter_1_id][0].content
+        assert 2 == len(user_1_newsletter[newsletter_1.newsletter_id])
+        assert "article content 1" == user_1_newsletter[newsletter_1.newsletter_id][0].content
 
         user_2_newsletter = results[user_account_2.account_id]
         assert 1 == len(user_2_newsletter)
-        assert 1 == len(user_2_newsletter[newsletter_2_id])
+        assert 1 == len(user_2_newsletter[newsletter_2.newsletter_id])
