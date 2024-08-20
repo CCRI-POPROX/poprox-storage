@@ -21,8 +21,7 @@ def inject_repos(handler):
     @wraps(handler)
     def wrapper(event, context):
         with DB_ENGINE.connect() as conn:
-            # this will be a dictionary containing all parameters (with type annotations)
-            params = get_type_hints(handler)
+            params: dict[str, type] = get_type_hints(handler)
             # remove event, context, and return type if they were annotated.
             params.pop("event", None)
             params.pop("context", None)
