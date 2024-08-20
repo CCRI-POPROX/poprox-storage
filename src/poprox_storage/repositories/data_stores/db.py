@@ -11,8 +11,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError, InternalError
 
-from poprox_storage.aws import DB_ENGINE
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -54,7 +52,7 @@ class DatabaseRepository:
         metadata = MetaData()
         tables = {}
         for table_name in args:
-            tables[table_name] = Table(table_name, metadata, autoload_with=DB_ENGINE)
+            tables[table_name] = Table(table_name, metadata, autoload_with=self.conn.engine)
         return tables
 
     def _id_query(self, query):
