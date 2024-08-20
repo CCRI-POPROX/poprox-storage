@@ -34,24 +34,36 @@ class DbArticleRepository(DatabaseRepository):
             "impressions",
         )
 
-    def fetch_todays_articles(self) -> list[Article]:
-        return self.fetch_articles_since(days_ago=1)
-
-    def fetch_past_articles(self) -> list[Article]:
-        return self.fetch_articles_before(days_ago=1)
-
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
+        cutoff = datetime.now() - timedelta(days=days_ago)
         return self._get_articles(
             article_table,
-            article_table.c.published_at > datetime.now() - timedelta(days=days_ago),
+            article_table.c.published_at > cutoff,
         )
 
     def fetch_articles_before(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
+        cutoff = datetime.now() - timedelta(days=days_ago)
         return self._get_articles(
             article_table,
-            article_table.c.published_at < datetime.now() - timedelta(days=days_ago),
+            article_table.c.published_at < cutoff,
+        )
+
+    def fetch_articles_ingested_since(self, days_ago=1) -> list[Article]:
+        article_table = self.tables["articles"]
+        cutoff = datetime.now() - timedelta(days=days_ago)
+        return self._get_articles(
+            article_table,
+            article_table.c.created_at > cutoff,
+        )
+
+    def fetch_articles_ingested_before(self, days_ago=1) -> list[Article]:
+        article_table = self.tables["articles"]
+        cutoff = datetime.now() - timedelta(days=days_ago)
+        return self._get_articles(
+            article_table,
+            article_table.c.created_at < cutoff,
         )
 
     def fetch_articles_by_id(self, ids: list[UUID]) -> list[Article]:
@@ -146,7 +158,12 @@ class DbArticleRepository(DatabaseRepository):
         return failed
 
     def store_article(self, article: Article) -> UUID | None:
-        return self._insert_model("articles", article, exclude={"article_id", "mentions"}, constraint="uq_articles")
+        return self._insert_model(
+            "articles",
+            article,
+            exclude={"article_id", "mentions"},
+            constraint="uq_articles",
+        )
 
     def store_entity(self, entity: Entity) -> UUID | None:
         return self._insert_model("entities", entity, exclude={"entity_id"}, constraint="uq_entities")
