@@ -25,8 +25,8 @@ def test_get_click_between(db_engine):
         user_account_1 = dbAccountRepository.store_new_account(email="user-1@gmail.com", source="test")
 
         articles = [
-            Article(title="title-1", url="url-1"),
-            Article(title="title-2", url="url-2"),
+            Article(headline="headline-1", url="url-1"),
+            Article(headline="headline-2", url="url-2"),
         ]
 
         article_id_1 = dbArticleRepository.store_article(articles[0])
@@ -41,10 +41,10 @@ def test_get_click_between(db_engine):
         dbNewsletterRepository.store_newsletter(newsletter)
 
         dbClicksRepository.store_click(
-            newsletter.newsletter_id, user_account_1.account_id, article_id_1, "title-1", "2024-06-12 09:55:22"
+            newsletter.newsletter_id, user_account_1.account_id, article_id_1, "headline-1", "2024-06-12 09:55:22"
         )
         dbClicksRepository.store_click(
-            newsletter.newsletter_id, user_account_1.account_id, article_id_2, "title-2", "2024-07-14 12:55:22"
+            newsletter.newsletter_id, user_account_1.account_id, article_id_2, "headline-2", "2024-07-14 12:55:22"
         )
 
         start_time = "2024-06-13 09:55:22"
