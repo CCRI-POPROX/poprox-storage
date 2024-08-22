@@ -34,10 +34,10 @@ def upgrade() -> None:
         sa.Column("section", sa.String),
         sa.Column("level", sa.String),
         sa.Column("image_url", sa.String),
-        sa.Column("scraped_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
 
 
 def downgrade() -> None:
     # Drop the table if it exists
-    op.execute("DROP TABLE IF EXISTS scraped_articles")
+    op.drop_table("scraped_articles")
