@@ -1,8 +1,10 @@
-import datetime
 import os
 
 import pytest
+from poprox_storage.repositories.scrapes import DbScrapeRepository
 from sqlalchemy import create_engine, text
+
+from poprox_concepts import ScrapedArticle
 
 db_password = os.environ.get("POPROX_DB_PASSWORD", "")
 db_port = os.environ.get("POPROX_DB_PORT", "")
@@ -21,41 +23,29 @@ def pg_url():
 def test_scrape_table(pg_url: str):
     engine = create_engine(pg_url)
     with engine.connect() as conn:
-        # Verify that the table was created and is initially empty
-        result = conn.execute(text("SELECT * FROM scraped_articles"))
-        assert result.fetchall() == []
+        conn.execute(text("delete from scraped_articles"))
 
-        # Insert a row of data
-        conn.execute(
-            text(
-                """
-                INSERT INTO scraped_articles (title, description, url, section, level, image_url, scraped_at)
-                VALUES ('test-title', 'test-description', 'test-url', 'test-section',
-                'test-level', 'test-image_url', '2024-08-21 16:39:29')
-                """
-            )
+        # Connect to the scrape repository
+        scrape_repo = DbScrapeRepository(conn)
+
+        # Create a test scrape
+        test_scrape = ScrapedArticle(
+            title="test-title",
+            description="test-description",
+            url="test-url",
+            section="test-section",
+            level="test-level",
+            image_url="test-image_url",
+            created_at="2024-08-22 17:56:00",
         )
 
-        # Verify that the data was inserted
-        result = conn.execute(text("SELECT * FROM scraped_articles"))
+        # Store the test scrape
+        scrape_repo.store_scrape(test_scrape)
 
-        # Prepare a datetime object for "2024-08-21 16:39:29"
-        scraped_at = datetime.datetime(2024, 8, 21, 16, 39, 29)
-        assert result.fetchall() == [
-            (
-                "test-title",
-                "test-description",
-                "test-url",
-                "test-section",
-                "test-level",
-                "test-image_url",
-                scraped_at,
-            )
-        ]
+        # Verify that the test scrape was stored
+        result = scrape_repo.fetch_scrape_by_url("test-url")
+        assert result.title == "test-title"
 
-        # Clear the table
-        conn.execute(text("DELETE FROM scraped_articles"))
-
-        # Verify that the table is empty
-        result = conn.execute(text("SELECT * FROM scraped_articles"))
-        assert result.fetchall() == []
+        # Delete the test scrape and verify that it was deleted
+        scrape_repo.delete_scrape("test-url")
+        assert scrape_repo.fetch_scrape_by_url("test-url") is None
