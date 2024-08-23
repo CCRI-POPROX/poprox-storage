@@ -205,8 +205,8 @@ class DbArticleRepository(DatabaseRepository):
         return [
             Article(
                 article_id=row.article_id,
-                title=row.title,
-                content=row.content,
+                headline=row.headline,
+                subhead=row.subhead,
                 url=row.url,
                 preview_image_id=row.preview_image_id,
                 published_at=row.published_at,
@@ -268,8 +268,8 @@ class S3ArticleRepository(S3Repository):
         raw_articles = json.loads(response)
         articles = [
             Article(
-                title=raw["title"],
-                content=raw.get("description", None),
+                headline=raw["title"],
+                subhead=raw.get("description", None),
                 url=raw["url"],
                 published_at=datetime.strptime(
                     raw.get("published_time", "1970-01-01T00:00:00")[:19],
@@ -318,8 +318,8 @@ def create_ap_article(ap_item):
     item_id = ap_item.get("altids", {}).get("itemid", None)
 
     ap_item = Article(
-        title=ap_item["headline"],
-        content=ap_item["headline_extended"],
+        headline=ap_item["headline"],
+        subhead=ap_item["headline_extended"],
         url=canonical_link or None,
         published_at=ap_item["firstcreated"],
         mentions=mentions,

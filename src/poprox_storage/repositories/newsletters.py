@@ -10,7 +10,7 @@ from sqlalchemy import (
     select,
 )
 
-from poprox_concepts import Account, Article, Newsletter
+from poprox_concepts.domain import Account, Article, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 
@@ -66,8 +66,8 @@ class DbNewsletterRepository(DatabaseRepository):
             articles = [
                 Article(
                     article_id=raw["article_id"],
-                    title=raw["title"],
-                    content=raw.get("content", None),
+                    headline=raw["headline"],
+                    subhead=raw.get("subhead", None),
                     url=raw["url"],
                     published_at=datetime.strptime(
                         raw.get("published_at", "1970-01-01T00:00:00")[:19],

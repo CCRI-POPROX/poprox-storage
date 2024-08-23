@@ -20,13 +20,27 @@ def test_fetch_newsletters(db_engine):
 
         newsletter_1_articles = [
             Article(
-                title="title-1", content="article content 1", url="url-1", external_id="external-1", source="tests"
+                headline="headline-1",
+                subhead="subhead-1",
+                url="url-1",
+                external_id="external-1",
+                source="tests",
             ),
-            Article(title="title-2", url="url-2", external_id="external-2", source="tests"),
+            Article(
+                headline="headline-2",
+                url="url-2",
+                external_id="external-2",
+                source="tests",
+            ),
         ]
 
         newsletter_2_articles = [
-            Article(title="title-3", url="url-1", external_id="external-3", source="tests"),
+            Article(
+                headline="headline-3",
+                url="url-1",
+                external_id="external-3",
+                source="tests",
+            ),
         ]
 
         user_account_1 = dbAccountRepository.store_new_account(email="user-1@gmail.com", source="test")
@@ -61,7 +75,7 @@ def test_fetch_newsletters(db_engine):
         user_1_newsletter = results[user_account_1.account_id]
         assert 1 == len(user_1_newsletter)
         assert 2 == len(user_1_newsletter[newsletter_1.newsletter_id])
-        assert "article content 1" == user_1_newsletter[newsletter_1.newsletter_id][0].content
+        assert "subhead-1" == user_1_newsletter[newsletter_1.newsletter_id][0].subhead
 
         user_2_newsletter = results[user_account_2.account_id]
         assert 1 == len(user_2_newsletter)
