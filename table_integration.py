@@ -1,10 +1,8 @@
 import psycopg2
 from sqlalchemy import create_engine
-from datetime import datetime, timezone
 from typing import List
-
-# Import the Article class from poprox-concepts
 from poprox_concepts.domain.article import Article
+from src.poprox_storage.repositories.data_stores.db import DbArticleRepository
 
 # Step 1: Connect to the first PostgreSQL database and fetch data
 def fetch_first_db_data():
@@ -25,7 +23,7 @@ def fetch_first_db_data():
     cur.close()
     conn.close()
 
-    return {row[2]: row for row in first_db_data}  # Return data as a dictionary keyed by URL
+    return {row[2]: row for row in first_db_data}  
 
 # Step 2: Connect to the second database using SQLAlchemy and fetch data
 def fetch_second_db_data():
@@ -46,15 +44,15 @@ def combine_data(first_db_data, second_db_data):
         if url in first_db_data:
             combined_record = Article(
                 title=first_db_data[url][0],
-                content=None, 
+                content=None,  
                 url=url,
                 preview_image_id=None,  
                 published_at=article.published_at,
-                mentions=[],  
+                mentions=[], 
                 source=article.source,
-                external_id=None,  
+                external_id=None, 
                 raw_data=None,  
-                popularity=article.popularity
+                popularity=article.popularity  
             )
             combined_data.append(combined_record.dict())
     return combined_data
@@ -63,3 +61,10 @@ if __name__ == "__main__":
     first_db_data = fetch_first_db_data()
     second_db_data = fetch_second_db_data()
     combined_data = combine_data(first_db_data, second_db_data)
+    
+    # Save combined data to a file or pass it to poprox-platform for S3 upload
+    with open('combined_data.json', 'w') as f:
+        import json
+        json.dump(combined_data, f, default=str)
+
+    print("Data merging complete. Combined data saved to 'combined_data.json'.")
