@@ -43,6 +43,7 @@ jobs:
         env:
           POPROX_DB_USER: ${{secrets.POPROX_CI_DB_USER}}
           POPROX_DB_PASSWORD: ${{secrets.POPROX_CI_DB_PASSWORD}}
+          POPROX_DB_PORT: 5433
 
       - name: Run tests
         run: |
