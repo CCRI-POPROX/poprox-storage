@@ -46,6 +46,8 @@ class DbExperimentRepository(DatabaseRepository):
             for group in experiment.groups:
                 group.group_id = self._insert_expt_group(experiment_id, group)
                 for account in assignments.get(group.name, []):
+                    self._insert_account_alias(dataset_id, account)
+
                     assignment = Assignment(
                         account_id=account.account_id, group_id=group.group_id
                     )
@@ -256,6 +258,17 @@ class DbExperimentRepository(DatabaseRepository):
                 "recommender_id": treatment.recommender.recommender_id,
             },
             exclude={"group", "recommender"},
+            commit=False,
+        )
+
+    def _insert_account_alias(self, dataset_id: UUID, account: Account) -> UUID | None:
+        return self._upsert_and_return_id(
+            self.conn,
+            self.tables["account_aliases"],
+            values={
+                "dataset_id": dataset_id,
+                "account_id": account.account_id,
+            },
             commit=False,
         )
 
