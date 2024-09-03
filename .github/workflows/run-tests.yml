@@ -15,8 +15,8 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: poprox_ci
-          POSTGRES_PASSWORD: poprox_ci_password
+          POSTGRES_USER: ${{secrets.POPROX_CI_DB_USER}}
+          POSTGRES_PASSWORD: ${{secrets.POPROX_CI_DB_PASSWORD}}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -40,6 +40,9 @@ jobs:
         working-directory: ./poprox-db
         run: |
           alembic upgrade heads
+        env:
+          POPROX_DB_USER: ${{secrets.POPROX_CI_DB_USER}}
+          POPROX_DB_PASSWORD: ${{secrets.POPROX_CI_DB_PASSWORD}}
 
       - name: Run tests
         run: |
