@@ -17,6 +17,7 @@ jobs:
         env:
           POSTGRES_USER: ${{secrets.POPROX_CI_DB_USER}}
           POSTGRES_PASSWORD: ${{secrets.POPROX_CI_DB_PASSWORD}}
+          POSTGRES_DB: poprox
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
