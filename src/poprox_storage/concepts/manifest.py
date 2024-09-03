@@ -11,6 +11,7 @@ from poprox_storage.concepts.experiment import (
     Group,
     Phase,
     Recommender,
+    Team,
     Treatment,
 )
 
@@ -22,6 +23,7 @@ class ManifestFile(BaseModel):
     """
 
     experiment: ManifestExperiment
+    owner: ManifestTeam
     users: ManifestGroupSpec
     recommenders: dict[str, ManifestRecommender]
     phases: ManifestPhases
@@ -32,6 +34,12 @@ class ManifestExperiment(BaseModel):
     description: str
     duration: str
     start_date: date | None = None
+
+
+class ManifestTeam(BaseModel):
+    team_id: UUID
+    team_name: str
+    members: list[UUID]
 
 
 class ManifestPhases(BaseModel):
@@ -85,7 +93,14 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     start_date = manifest.experiment.start_date or (date.today() + timedelta(days=1))  # noqa: DTZ011
     end_date = start_date + convert_duration(manifest.experiment.duration)
 
+    owner = Team(
+        team_id=manifest.owner.team_id,
+        team_name=manifest.owner.team_name,
+        members=manifest.owner.members,
+    )
+
     experiment = Experiment(
+        owner=owner,
         start_date=start_date,
         end_date=end_date,
         description=manifest.experiment.description,

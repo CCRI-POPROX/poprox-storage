@@ -11,6 +11,7 @@ from poprox_storage.concepts.experiment import (
     Group,
     Phase,
     Recommender,
+    Team,
     Treatment,
 )
 from poprox_storage.concepts.manifest import ManifestFile
@@ -30,10 +31,15 @@ class DbExperimentRepository(DatabaseRepository):
             "expt_treatments",
         )
 
-    def store_experiment(self, experiment: Experiment, assignments: dict[str, list[Account]] | None = None):
+    def store_experiment(
+        self,
+        experiment: Experiment,
+        assignments: dict[str, list[Account]] | None = None,
+    ):
         assignments = assignments or {}
         self.conn.rollback()
         with self.conn.begin():
+            experiment.owner.team_id = self._insert_team(experiment.owner)
             experiment_id = self._insert_experiment(experiment)
 
             for group in experiment.groups:
@@ -110,12 +116,21 @@ class DbExperimentRepository(DatabaseRepository):
         group_ids = self.fetch_active_expt_group_ids(date)
 
         group_query = select(
-            assignments_tbl.c.assignment_id, assignments_tbl.c.account_id, assignments_tbl.c.group_id
-        ).where(and_(assignments_tbl.c.group_id.in_(group_ids), assignments_tbl.c.opted_out is False))
+            assignments_tbl.c.assignment_id,
+            assignments_tbl.c.account_id,
+            assignments_tbl.c.group_id,
+        ).where(
+            and_(
+                assignments_tbl.c.group_id.in_(group_ids),
+                assignments_tbl.c.opted_out is False,
+            )
+        )
         result = self.conn.execute(group_query).fetchall()
         group_lookup_by_account = {
             row.account_id: Assignment(
-                assignment_id=row.assignment_id, account_id=row.account_id, group_id=row.group_id
+                assignment_id=row.assignment_id,
+                account_id=row.account_id,
+                group_id=row.group_id,
             )
             for row in result
         }
@@ -141,7 +156,27 @@ class DbExperimentRepository(DatabaseRepository):
         self.conn.execute(assignment_query)
 
     def _insert_experiment(self, experiment: Experiment) -> UUID | None:
-        return self._insert_model("experiments", experiment, exclude={"phases"}, commit=False)
+        return self._insert_model(
+            "experiments",
+            experiment,
+            addl_fields={"team_id": experiment.owner.team_id},
+            exclude={"phases"},
+            commit=False,
+        )
+
+    def _insert_expt_team(self, team: Team) -> UUID | None:
+        team_id = self._insert_model("teams", team, exclude={"members"}, commit=False)
+        for account_id in team.members:
+            self._upsert_and_return_id(team_id, account_id, commit=False)
+        return team_id
+
+    def _insert_team_membership(self, team_id: UUID, account_id: UUID) -> UUID | None:
+        return self._upsert_and_return_id(
+            self.conn,
+            self.tables["accounts"],
+            {"team_id": team_id, "account_id": account_id},
+            commit=False,
+        )
 
     def _insert_expt_group(
         self,
@@ -149,7 +184,11 @@ class DbExperimentRepository(DatabaseRepository):
         group: Group,
     ) -> UUID | None:
         return self._insert_model(
-            "expt_groups", group, {"experiment_id": experiment_id}, exclude={"minimum_size"}, commit=False
+            "expt_groups",
+            group,
+            {"experiment_id": experiment_id},
+            exclude={"minimum_size"},
+            commit=False,
         )
 
     def _insert_expt_recommender(
