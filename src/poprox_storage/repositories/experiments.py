@@ -39,13 +39,16 @@ class DbExperimentRepository(DatabaseRepository):
         assignments = assignments or {}
         self.conn.rollback()
         with self.conn.begin():
-            experiment.owner.team_id = self._insert_team(experiment.owner)
-            experiment_id = self._insert_experiment(experiment)
+            experiment.owner.team_id = self._insert_expt_team(experiment.owner)
+            dataset_id = self._insert_expt_dataset(experiment.owner)
+            experiment_id = self._insert_experiment(dataset_id, experiment)
 
             for group in experiment.groups:
                 group.group_id = self._insert_expt_group(experiment_id, group)
                 for account in assignments.get(group.name, []):
-                    assignment = Assignment(account_id=account.account_id, group_id=group.group_id)
+                    assignment = Assignment(
+                        account_id=account.account_id, group_id=group.group_id
+                    )
                     self._insert_expt_assignment(assignment)
 
             for recommender in experiment.recommenders:
@@ -61,7 +64,9 @@ class DbExperimentRepository(DatabaseRepository):
 
         return experiment_id
 
-    def fetch_active_expt_group_ids(self, date: datetime.date | None = None) -> list[UUID]:
+    def fetch_active_expt_group_ids(
+        self, date: datetime.date | None = None
+    ) -> list[UUID]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
         treatments_tbl = self.tables["expt_treatments"]
@@ -81,7 +86,9 @@ class DbExperimentRepository(DatabaseRepository):
 
         return self._id_query(groups_query)
 
-    def fetch_active_expt_endpoint_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
+    def fetch_active_expt_endpoint_urls(
+        self, date: datetime.date | None = None
+    ) -> dict[UUID, str]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
         recommenders_tbl = self.tables["expt_recommenders"]
@@ -110,7 +117,9 @@ class DbExperimentRepository(DatabaseRepository):
 
         return recommender_lookup_by_group
 
-    def fetch_active_expt_assignments(self, date: datetime.date | None = None) -> dict[UUID, Assignment]:
+    def fetch_active_expt_assignments(
+        self, date: datetime.date | None = None
+    ) -> dict[UUID, Assignment]:
         assignments_tbl = self.tables["expt_assignments"]
 
         group_ids = self.fetch_active_expt_group_ids(date)
@@ -155,11 +164,16 @@ class DbExperimentRepository(DatabaseRepository):
         )
         self.conn.execute(assignment_query)
 
-    def _insert_experiment(self, experiment: Experiment) -> UUID | None:
+    def _insert_experiment(
+        self, dataset_id: UUID, experiment: Experiment
+    ) -> UUID | None:
         return self._insert_model(
             "experiments",
             experiment,
-            addl_fields={"team_id": experiment.owner.team_id},
+            addl_fields={
+                "dataset_id": dataset_id,
+                "team_id": experiment.owner.team_id,
+            },
             exclude={"phases"},
             commit=False,
         )
@@ -175,6 +189,14 @@ class DbExperimentRepository(DatabaseRepository):
             self.conn,
             self.tables["accounts"],
             {"team_id": team_id, "account_id": account_id},
+            commit=False,
+        )
+
+    def _insert_expt_dataset(self, team: Team) -> UUID | None:
+        return self._upsert_and_return_id(
+            self.conn,
+            self.tables["datasets"],
+            {"team_id": team.team_id},
             commit=False,
         )
 
