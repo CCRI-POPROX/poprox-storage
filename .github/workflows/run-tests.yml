@@ -37,6 +37,7 @@ jobs:
           pip install -e .[dev]
 
       - name: Apply database migrations
+        working-directory: ./poprox-db
         run: |
           alembic upgrade heads
 
