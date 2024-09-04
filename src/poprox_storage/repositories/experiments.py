@@ -39,7 +39,7 @@ class DbExperimentRepository(DatabaseRepository):
         assignments: dict[str, list[Account]] | None = None,
     ):
         assignments = assignments or {}
-        self.conn.rollback()
+        self.conn.commit()
         with self.conn.begin():
             experiment.owner.team_id = self._insert_expt_team(experiment.owner)
             dataset_id = self._insert_expt_dataset(experiment.owner)
