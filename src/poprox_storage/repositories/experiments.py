@@ -168,7 +168,7 @@ class DbExperimentRepository(DatabaseRepository):
                 "dataset_id": dataset_id,
                 "team_id": experiment.owner.team_id,
             },
-            exclude={"phases"},
+            exclude={"owner", "phases"},
             commit=False,
         )
 
@@ -202,8 +202,8 @@ class DbExperimentRepository(DatabaseRepository):
         return self._insert_model(
             "expt_groups",
             group,
-            {"experiment_id": experiment_id},
-            exclude={"minimum_size"},
+            {"experiment_id": experiment_id, "group_name": group.name},
+            exclude={"minimum_size", "name"},
             commit=False,
         )
 
