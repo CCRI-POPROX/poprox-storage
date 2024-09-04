@@ -22,12 +22,15 @@ class DbExperimentRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
         self.tables: dict[str, Table] = self._load_tables(
+            "datasets",
             "experiments",
             "expt_assignments",
             "expt_groups",
             "expt_phases",
             "expt_recommenders",
             "expt_treatments",
+            "teams",
+            "team_memberships",
         )
 
     def store_experiment(
@@ -178,7 +181,7 @@ class DbExperimentRepository(DatabaseRepository):
     def _insert_team_membership(self, team_id: UUID, account_id: UUID) -> UUID | None:
         return self._upsert_and_return_id(
             self.conn,
-            self.tables["accounts"],
+            self.tables["team_memberships"],
             {"team_id": team_id, "account_id": account_id},
             commit=False,
         )
