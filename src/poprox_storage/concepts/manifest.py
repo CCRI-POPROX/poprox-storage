@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import date, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import tomli
 from pydantic import BaseModel, PositiveInt
@@ -101,6 +101,7 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     )
 
     experiment = Experiment(
+        experiment_id=manifest.experiment.id,
         owner=owner,
         start_date=start_date,
         end_date=end_date,
@@ -109,7 +110,7 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     )
 
     recommenders = {
-        rec_name: Recommender(name=rec_name, endpoint_url=recommender.endpoint)
+        rec_name: Recommender(recommender_id=uuid4(), name=rec_name, endpoint_url=recommender.endpoint)
         for rec_name, recommender in manifest.recommenders.items()
     }
 
@@ -117,10 +118,11 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     for group_name, group in manifest.users.groups.items():
         if group.identical_to:
             new_group = deepcopy(groups[group.identical_to])
+            new_group.group_id = uuid4()
             new_group.name = group_name
             groups[group_name] = new_group
         else:
-            groups[group_name] = Group(name=group_name, minimum_size=group.minimum_size)
+            groups[group_name] = Group(group_id=uuid4(), name=group_name, minimum_size=group.minimum_size)
 
     phase_start = start_date
     for phase_name in manifest.phases.sequence:
@@ -128,7 +130,7 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
         duration = convert_duration(manifest_phase.duration)
         phase_start = start_date + sum([phase.duration for phase in experiment.phases], start=timedelta(0))
         phase_end = phase_start + duration
-        phase = Phase(name=phase_name, start_date=phase_start, end_date=phase_end, treatments=[])
+        phase = Phase(phase_id=uuid4(), name=phase_name, start_date=phase_start, end_date=phase_end, treatments=[])
         for group_name, assignment in manifest_phase.assignments.items():
             recommender_name = assignment.recommender
             phase.treatments.append(
