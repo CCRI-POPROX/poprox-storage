@@ -1,7 +1,6 @@
 import datetime
 from uuid import UUID
 
-import tomli
 from sqlalchemy import Connection, Table, and_, select, update
 
 from poprox_concepts import Account
@@ -14,7 +13,7 @@ from poprox_storage.concepts.experiment import (
     Team,
     Treatment,
 )
-from poprox_storage.concepts.manifest import ManifestFile
+from poprox_storage.concepts.manifest import ManifestFile, parse_manifest_toml
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -276,13 +275,4 @@ class DbExperimentRepository(DatabaseRepository):
 class S3ExperimentRepository(S3Repository):
     def fetch_manifest(self, manifest_file_key) -> ManifestFile:
         manifest_toml = self._get_s3_file(manifest_file_key)
-        manifest_dict = tomli.loads(manifest_toml)
-
-        phases = {"sequence": manifest_dict["phases"]["sequence"], "phases": {}}
-        for name, phase in manifest_dict["phases"].items():
-            if name != "sequence":
-                phases["phases"][name] = phase
-
-        manifest_dict["phases"] = phases
-
-        return ManifestFile.model_validate(manifest_dict)
+        return parse_manifest_toml(manifest_toml)

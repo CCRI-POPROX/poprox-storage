@@ -4,6 +4,7 @@ from copy import deepcopy
 from datetime import date, timedelta
 from uuid import UUID
 
+import tomli
 from pydantic import BaseModel, PositiveInt
 
 from poprox_storage.concepts.experiment import (
@@ -152,3 +153,15 @@ def convert_duration(duration: str) -> timedelta:
             msg = f"Unsupported duration unit: {unit}"
             raise ValueError(msg)
     return duration
+
+
+def parse_manifest_toml(manifest_file: str):
+    manifest_dict = tomli.loads(manifest_file)
+    phases = {"sequence": manifest_dict["phases"]["sequence"], "phases": {}}
+    for name, phase in manifest_dict["phases"].items():
+        if name != "sequence":
+            phases["phases"][name] = phase
+
+    manifest_dict["phases"] = phases
+
+    return ManifestFile.model_validate(manifest_dict)
