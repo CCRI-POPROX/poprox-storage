@@ -19,10 +19,7 @@ jobs:
           POSTGRES_PASSWORD: ${{secrets.POPROX_CI_DB_PASSWORD}}
           POSTGRES_DB: poprox
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
         ports:
           # Maps tcp port 5432 on service container to the host
           - 5433:5432
