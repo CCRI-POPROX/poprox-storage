@@ -2,10 +2,10 @@ import os
 import uuid
 
 import pytest
-from poprox_storage.repositories.placements import DbPlacementRepository
 from sqlalchemy import create_engine, text
 
 from poprox_concepts import ArticlePlacement
+from poprox_storage.repositories.placements import DbPlacementRepository
 
 db_password = os.environ.get("POPROX_DB_PASSWORD", "")
 db_port = os.environ.get("POPROX_DB_PORT", "")
