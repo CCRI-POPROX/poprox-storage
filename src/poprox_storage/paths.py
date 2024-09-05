@@ -20,7 +20,7 @@ def project_root(*, require: bool = True) -> Path | None:
     This searches upwards from the **current working directory** to find the
     root of the project, which it identifies by the ``pyproject.toml`` file.  If
     this function is called from a directory that is not within a checkout of
-    the ``poprox-recommender`` repository, it will raise an error.
+    the ``poprox-storage`` repository, it will raise an error.
 
     Args:
         require:
