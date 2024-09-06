@@ -1,54 +1,51 @@
-import os
-import uuid
-
-import pytest
-from sqlalchemy import create_engine, text
-
-from poprox_concepts import ArticlePlacement
+from poprox_storage.repositories.articles import DbArticleRepository
 from poprox_storage.repositories.placements import DbPlacementRepository
+from sqlalchemy import text
 
-db_password = os.environ.get("POPROX_DB_PASSWORD", "")
-db_port = os.environ.get("POPROX_DB_PORT", "")
-
-DEFAULT_PG_URL = f"postgresql://postgres:{db_password}@127.0.0.1:{db_port}/poprox"
+from poprox_concepts import Article, ArticlePlacement
 
 
-@pytest.fixture(scope="session")
-def pg_url():
-    """
-    Provides base PostgreSQL URL for creating temporary databases.
-    """
-    return os.getenv("CI_POPROX_PG_URL", DEFAULT_PG_URL)
+def test_placement_table(db_engine):
+    with db_engine.connect() as conn:
+        conn.execute(text("delete from article_placements;"))
 
+        # Connect to the article and placement repository
+        dbArticleRepository = DbArticleRepository(conn)
+        dbPlacementRepository = DbPlacementRepository(conn)
 
-def test_placement_table(pg_url: str):
-    engine = create_engine(pg_url)
-    with engine.connect() as conn:
-        conn.execute(text("delete from article_placements"))
+        # Create a test article
+        test_article = Article(
+            headline="test-headline",
+            url="test-url",
+        )
 
-        # Connect to the placement repository
-        placement_repo = DbPlacementRepository(conn)
+        # Store the test article and get the article_id
+        test_article_id = dbArticleRepository.store_article(test_article)
 
         # Create a test placement
         test_placement = ArticlePlacement(
-            article_id=uuid.uuid4(),
+            article_id=test_article_id,
             url="test-url",
             section="test-section",
             level="test-level",
             image_url="test-image_url",
-            created_at="2024-09-04 20:00:00",
+            created_at="2024-09-06 20:00:00",
         )
 
         # Store the test placement
-        placement_repo.store_placement(test_placement)
+        dbPlacementRepository.store_placement(test_placement)
 
         # Verify if there is only one placement in the table
-        assert len(placement_repo.fetch_all_placements()) == 1
+        assert len(dbPlacementRepository.fetch_all_placements()) == 1
 
         # Verify if the test placement was stored -- by URL
-        result = placement_repo.fetch_placement_by_url("test-url")
+        result = dbPlacementRepository.fetch_placement_by_url("test-url")
         assert result.image_url == "test-image_url"
 
+        # Verify if the test placement was stored -- by article_id
+        result = dbPlacementRepository.fetch_placement_by_id(test_article_id)
+        assert result.url == "test-url"
+
         # Delete the test placement and verify that it was deleted
-        placement_repo.delete_placement("test-url")
-        assert placement_repo.fetch_placement_by_url("test-url") is None
+        dbPlacementRepository.delete_placement("test-url")
+        assert dbPlacementRepository.fetch_placement_by_url("test-url") is None

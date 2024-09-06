@@ -17,6 +17,7 @@ down_revision: Union[str, None] = "23409beee637"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+
 # Article placements table
 # article_id: UUID, foreign key
 # url: str, primary key
@@ -43,15 +44,22 @@ def upgrade() -> None:
             sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
         ],
     )
-    # op.create_foreign_key(
-    #     "fk_article_placements_articles",
-    #     "article_placements",
-    #     "article",
-    #     ["article_id"],
-    #     ["article_id"]
-    # )
+    op.create_foreign_key(
+        "fk_articles_placements_articles",
+        "article_placements",
+        "articles",
+        ["article_id"],
+        ["article_id"]
+    )
 
 
 def downgrade() -> None:
+    # Drop the FK constraint before dropping the table
+    op.drop_constraint(
+        "fk_article_placements_articles",
+        "article_placements",
+        type_="foreignkey",
+    )
+
     # Drop the table if it exists
     op.drop_table("article_placements")
