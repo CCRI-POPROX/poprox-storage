@@ -7,6 +7,7 @@ from poprox_storage.concepts.manifest import manifest_to_experiment, parse_manif
 from poprox_storage.paths import project_root
 from poprox_storage.repositories import DbAccountRepository, DbExperimentRepository
 from poprox_storage.repositories.data_stores.db import DB_ENGINE
+from tests import clear_tables
 
 
 def test_store_experiment():
@@ -16,6 +17,20 @@ def test_store_experiment():
     experiment = manifest_to_experiment(manifest)
 
     with DB_ENGINE.connect() as conn:
+        clear_tables(
+            conn,
+            "team_memberships",
+            "expt_treatments",
+            "expt_groups",
+            "expt_phases",
+            "expt_recommenders",
+            "experiments",
+            "datasets",
+            "teams",
+            "clicks",
+            "accounts",
+        )
+
         account_repo = DbAccountRepository(conn)
         experiment_repo = DbExperimentRepository(conn)
 
