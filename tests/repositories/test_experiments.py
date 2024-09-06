@@ -28,6 +28,7 @@ def test_store_experiment():
             "datasets",
             "teams",
             "clicks",
+            "newsletters",
             "accounts",
         )
 

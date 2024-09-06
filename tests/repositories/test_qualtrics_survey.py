@@ -5,13 +5,17 @@ from sqlalchemy import text
 
 from poprox_storage.concepts.qualtrics_survey import QualtricsSurveyResponse
 from poprox_storage.repositories.qualtrics_survey import DbQualtricsSurveyRepository
+from tests import clear_tables
 
 
 def test_get_active_survey(db_engine):
     with db_engine.connect() as conn:
-        conn.execute(text("delete from qualtrics_survey_responses;"))
-        conn.execute(text("delete from qualtrics_survey_instances;"))
-        conn.execute(text("delete from qualtrics_surveys;"))
+        clear_tables(
+            conn,
+            "qualtrics_survey_responses",
+            "qualtrics_survey_instances",
+            "qualtrics_surveys",
+        )
         conn.execute(text("insert into qualtrics_surveys(qualtrics_id, base_url) values ('first', 'first');"))
         conn.execute(
             text("insert into qualtrics_surveys(qualtrics_id, base_url, active) values ('second', 'second', false);")
@@ -30,9 +34,12 @@ def test_get_active_survey(db_engine):
 
 def test_update_survey(db_engine):
     with db_engine.connect() as conn:
-        conn.execute(text("delete from qualtrics_survey_responses;"))
-        conn.execute(text("delete from qualtrics_survey_instances;"))
-        conn.execute(text("delete from qualtrics_surveys;"))
+        clear_tables(
+            conn,
+            "qualtrics_survey_responses",
+            "qualtrics_survey_instances",
+            "qualtrics_surveys",
+        )
         conn.execute(text("insert into qualtrics_surveys(qualtrics_id, base_url) values ('first', 'first');"))
         conn.commit()
 
@@ -54,9 +61,12 @@ def test_update_survey(db_engine):
 
 def test_store_survey_instance(db_engine):
     with db_engine.connect() as conn:
-        conn.execute(text("delete from qualtrics_survey_responses;"))
-        conn.execute(text("delete from qualtrics_survey_instances;"))
-        conn.execute(text("delete from qualtrics_surveys;"))
+        clear_tables(
+            conn,
+            "qualtrics_survey_responses",
+            "qualtrics_survey_instances",
+            "qualtrics_surveys",
+        )
         conn.execute(text("insert into qualtrics_surveys(qualtrics_id, base_url) values ('first', 'first');"))
         uuid = uuid4()
         conn.execute(
@@ -76,9 +86,12 @@ def test_store_survey_instance(db_engine):
 
 def test_create_survey_response(db_engine):
     with db_engine.connect() as conn:
-        conn.execute(text("delete from qualtrics_survey_responses;"))
-        conn.execute(text("delete from qualtrics_survey_instances;"))
-        conn.execute(text("delete from qualtrics_surveys;"))
+        clear_tables(
+            conn,
+            "qualtrics_survey_responses",
+            "qualtrics_survey_instances",
+            "qualtrics_surveys",
+        )
         conn.execute(text("insert into qualtrics_surveys(qualtrics_id, base_url) values ('first', 'first');"))
         account_uuid = uuid4()
         conn.execute(
@@ -111,9 +124,12 @@ def test_create_survey_response(db_engine):
 
 def test_update_survey_response(db_engine):
     with db_engine.connect() as conn:
-        conn.execute(text("delete from qualtrics_survey_responses;"))
-        conn.execute(text("delete from qualtrics_survey_instances;"))
-        conn.execute(text("delete from qualtrics_surveys;"))
+        clear_tables(
+            conn,
+            "qualtrics_survey_responses",
+            "qualtrics_survey_instances",
+            "qualtrics_surveys",
+        )
         conn.execute(text("insert into qualtrics_surveys(qualtrics_id, base_url) values ('first', 'first');"))
         account_uuid = uuid4()
         conn.execute(
