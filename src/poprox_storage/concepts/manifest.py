@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import date, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 
+import tomli
 from pydantic import BaseModel, PositiveInt
 
 from poprox_storage.concepts.experiment import (
@@ -11,6 +12,7 @@ from poprox_storage.concepts.experiment import (
     Group,
     Phase,
     Recommender,
+    Team,
     Treatment,
 )
 
@@ -22,6 +24,7 @@ class ManifestFile(BaseModel):
     """
 
     experiment: ManifestExperiment
+    owner: ManifestTeam
     users: ManifestGroupSpec
     recommenders: dict[str, ManifestRecommender]
     phases: ManifestPhases
@@ -32,6 +35,12 @@ class ManifestExperiment(BaseModel):
     description: str
     duration: str
     start_date: date | None = None
+
+
+class ManifestTeam(BaseModel):
+    team_id: UUID
+    team_name: str
+    members: list[UUID]
 
 
 class ManifestPhases(BaseModel):
@@ -85,7 +94,15 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     start_date = manifest.experiment.start_date or (date.today() + timedelta(days=1))  # noqa: DTZ011
     end_date = start_date + convert_duration(manifest.experiment.duration)
 
+    owner = Team(
+        team_id=manifest.owner.team_id,
+        team_name=manifest.owner.team_name,
+        members=manifest.owner.members,
+    )
+
     experiment = Experiment(
+        experiment_id=manifest.experiment.id,
+        owner=owner,
         start_date=start_date,
         end_date=end_date,
         description=manifest.experiment.description,
@@ -93,7 +110,7 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     )
 
     recommenders = {
-        rec_name: Recommender(name=rec_name, endpoint_url=recommender.endpoint)
+        rec_name: Recommender(recommender_id=uuid4(), name=rec_name, endpoint_url=recommender.endpoint)
         for rec_name, recommender in manifest.recommenders.items()
     }
 
@@ -101,10 +118,11 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     for group_name, group in manifest.users.groups.items():
         if group.identical_to:
             new_group = deepcopy(groups[group.identical_to])
+            new_group.group_id = uuid4()
             new_group.name = group_name
             groups[group_name] = new_group
         else:
-            groups[group_name] = Group(name=group_name, minimum_size=group.minimum_size)
+            groups[group_name] = Group(group_id=uuid4(), name=group_name, minimum_size=group.minimum_size)
 
     phase_start = start_date
     for phase_name in manifest.phases.sequence:
@@ -112,7 +130,7 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
         duration = convert_duration(manifest_phase.duration)
         phase_start = start_date + sum([phase.duration for phase in experiment.phases], start=timedelta(0))
         phase_end = phase_start + duration
-        phase = Phase(name=phase_name, start_date=phase_start, end_date=phase_end, treatments=[])
+        phase = Phase(phase_id=uuid4(), name=phase_name, start_date=phase_start, end_date=phase_end, treatments=[])
         for group_name, assignment in manifest_phase.assignments.items():
             recommender_name = assignment.recommender
             phase.treatments.append(
@@ -137,3 +155,15 @@ def convert_duration(duration: str) -> timedelta:
             msg = f"Unsupported duration unit: {unit}"
             raise ValueError(msg)
     return duration
+
+
+def parse_manifest_toml(manifest_file: str):
+    manifest_dict = tomli.loads(manifest_file)
+    phases = {"sequence": manifest_dict["phases"]["sequence"], "phases": {}}
+    for name, phase in manifest_dict["phases"].items():
+        if name != "sequence":
+            phases["phases"][name] = phase
+
+    manifest_dict["phases"] = phases
+
+    return ManifestFile.model_validate(manifest_dict)

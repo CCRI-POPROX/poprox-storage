@@ -55,6 +55,21 @@ class DbAccountRepository(DatabaseRepository):
             return accounts[0]
         return None
 
+    def store_account(self, account: Account) -> UUID | None:
+        account_tbl = self.tables["accounts"]
+        query = (
+            sqlalchemy.insert(account_tbl)
+            .values(
+                account_id=account.account_id,
+                email=account.email,
+                source=account.source,
+                status="new_account",
+            )
+            .returning(account_tbl.c.account_id)
+        )
+        row = self.conn.execute(query).one_or_none()
+        return row.account_id
+
     def store_new_account(self, email: str, source: str) -> Account:
         account_tbl = self.tables["accounts"]
         query = (

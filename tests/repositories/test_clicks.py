@@ -1,20 +1,22 @@
 from uuid import uuid4
 
-from sqlalchemy import text
-
 from poprox_concepts.domain import Account, Article, Newsletter
 from poprox_storage.repositories.accounts import DbAccountRepository
 from poprox_storage.repositories.articles import DbArticleRepository
 from poprox_storage.repositories.clicks import DbClicksRepository
 from poprox_storage.repositories.newsletters import DbNewsletterRepository
+from tests import clear_tables
 
 
 def test_get_click_between(db_engine):
     with db_engine.connect() as conn:
-        conn.execute(text("delete from impressions"))
-        conn.execute(text("delete from clicks;"))
-        conn.execute(text("delete from newsletters;"))
-        conn.execute(text("delete from articles;"))
+        clear_tables(
+            conn,
+            "impressions",
+            "clicks",
+            "newsletters",
+            "articles",
+        )
 
         dbAccountRepository = DbAccountRepository(conn)
         dbArticleRepository = DbArticleRepository(conn)

@@ -1,17 +1,19 @@
-from sqlalchemy import text
-
 from poprox_concepts.domain import Article, Newsletter
 from poprox_storage.repositories.accounts import DbAccountRepository
 from poprox_storage.repositories.articles import DbArticleRepository
 from poprox_storage.repositories.newsletters import DbNewsletterRepository
+from tests import clear_tables
 
 
 def test_fetch_newsletters(db_engine):
     with db_engine.connect() as conn:
-        conn.execute(text("delete from impressions"))
-        conn.execute(text("delete from clicks;"))
-        conn.execute(text("delete from newsletters;"))
-        conn.execute(text("delete from articles;"))
+        clear_tables(
+            conn,
+            "impressions",
+            "clicks",
+            "newsletters",
+            "articles",
+        )
 
         dbAccountRepository = DbAccountRepository(conn)
         dbArticleRepository = DbArticleRepository(conn)

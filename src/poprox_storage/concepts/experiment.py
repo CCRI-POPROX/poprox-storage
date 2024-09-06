@@ -6,8 +6,15 @@ from uuid import UUID
 from pydantic import BaseModel, PositiveInt
 
 
+class Team(BaseModel):
+    team_id: UUID | None = None
+    team_name: str
+    members: list[UUID]
+
+
 class Experiment(BaseModel):
     experiment_id: UUID | None = None
+    owner: Team
     description: str
     start_date: date
     end_date: date

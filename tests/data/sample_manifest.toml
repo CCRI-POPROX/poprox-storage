@@ -1,0 +1,68 @@
+[experiment]
+id = "e36f5d4a-42b4-438d-ab44-35db780d066b"
+description = "Test experiment"
+start_date = "2024-06-16"
+duration = "1 week"
+
+[owner]
+team_id = "06d49058-d1b2-4ecf-994f-65e497833196"
+team_name = "Test team"
+members = ["1936ac91-daf0-4af8-9aa1-53a170c514aa"]
+
+[users.groups.a]
+minimum_size = 5
+
+[users.groups.b]
+identical_to = "a"
+
+[users.groups.c]
+identical_to = "b"
+
+
+[recommenders.x]
+endpoint = "https://example.com/recommender_x"
+
+[recommenders.y]
+endpoint = "https://example.com/recommender_y"
+
+[recommenders.z]
+endpoint = "https://example.com/recommender_z"
+
+[phases]
+sequence = ["1", "2", "3"]
+
+[phases.1]
+duration = "2 days"
+
+[phases.1.assignments.a]
+recommender = "x"
+
+[phases.1.assignments.b]
+recommender = "y"
+
+[phases.1.assignments.c]
+recommender = "z"
+
+[phases.2]
+duration = "2 days"
+
+[phases.2.assignments.a]
+recommender = "z"
+
+[phases.2.assignments.b]
+recommender = "x"
+
+[phases.2.assignments.c]
+recommender = "y"
+
+[phases.3]
+duration = "2 days"
+
+[phases.3.assignments.a]
+recommender = "y"
+
+[phases.3.assignments.b]
+recommender = "z"
+
+[phases.3.assignments.c]
+recommender = "x"
