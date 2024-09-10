@@ -57,7 +57,7 @@ class DatabaseRepository:
             tables[table_name] = Table(table_name, metadata, autoload_with=self.conn.engine)
         return tables
 
-    def _id_query(self, query):
+    def _id_query(self, query) -> list[UUID]:
         result = self.conn.execute(query).fetchall()
         return [row[0] for row in result]
 
