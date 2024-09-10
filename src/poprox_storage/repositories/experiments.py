@@ -22,6 +22,7 @@ class DbExperimentRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
         self.tables: dict[str, Table] = self._load_tables(
+            "account_aliases",
             "datasets",
             "experiments",
             "expt_assignments",
@@ -159,6 +160,28 @@ class DbExperimentRepository(DatabaseRepository):
             .values(opted_out=True)
         )
         self.conn.execute(assignment_query)
+
+    def fetch_dataset_by_assignment(self, assignment_id):
+        dataset_table = self.tables["datasets"]
+        experiment_table = self.tables["experiments"]
+        group_table = self.tables["expt_groups"]
+        assignment_table = self.tables["expt_assignments"]
+        query = (
+            select(dataset_table)
+            .join(experiment_table, dataset_table.c.dataset_id == experiment_table.c.dataset_id)
+            .join(group_table, group_table.c.experiment_id == experiment_table.c.experiment_id)
+            .join(assignment_table, assignment_table.c.group_id == group_table.c.group_id)
+            .where(assignment_table.c.assignment_id == assignment_id)
+        )
+
+        return self._id_query(query)[0]
+
+    def fetch_account_alias(self, dataset_id, account_id):
+        alias_table = self.tables["account_aliases"]
+        query = select(alias_table.c.alias_id).where(
+            and_(alias_table.c.account_id == account_id, alias_table.c.dataset_id == dataset_id)
+        )
+        return self._id_query(query)[0]
 
     def _insert_experiment(self, dataset_id: UUID, experiment: Experiment) -> UUID | None:
         return self._insert_model(
