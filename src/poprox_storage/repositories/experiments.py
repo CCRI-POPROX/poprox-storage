@@ -87,6 +87,47 @@ class DbExperimentRepository(DatabaseRepository):
 
         return self._id_query(groups_query)
 
+    def fetch_active_treatments_by_group(self, date: datetime.date | None = None) -> dict[UUID, UUID]:
+        phases_tbl = self.tables["expt_phases"]
+        treatments_tbl = self.tables["expt_treatments"]
+
+        # Find the groups and associated recommenders for the active experiment phases
+        date = date or datetime.date.today()
+
+        group_treatment_query = (
+            select(treatments_tbl.c.group_id, treatments_tbl.c.treatment_id).join(
+                phases_tbl, phases_tbl.c.phase_id == treatments_tbl.c.phase_id
+            )
+        ).where(
+            and_(
+                phases_tbl.c.start_date <= date,
+                date < phases_tbl.c.end_date,
+            )
+        )
+
+        result = self.conn.execute(group_treatment_query).fetchall()
+        treatment_lookup_by_group = {row[0]: row[1] for row in result}
+
+        return treatment_lookup_by_group
+
+    def fetch_treatment_endpoint_urls(self, treatment_ids: list[UUID]) -> dict[UUID, str]:
+        recommenders_tbl = self.tables["expt_recommenders"]
+        treatments_tbl = self.tables["expt_treatments"]
+
+        treatment_endpoint_query = (
+            select(treatments_tbl.c.treatment_id, recommenders_tbl.c.endpoint_url)
+            .where(treatments_tbl.c.treatment_id.in_(treatment_ids))
+            .join(
+                recommenders_tbl,
+                recommenders_tbl.c.recommender_id == treatments_tbl.c.recommender_id,
+            )
+        )
+
+        result = self.conn.execute(treatment_endpoint_query).fetchall()
+        endpoints_by_treatment = {row[0]: row[1] for row in result}
+
+        return endpoints_by_treatment
+
     def fetch_active_expt_endpoint_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
@@ -168,8 +209,14 @@ class DbExperimentRepository(DatabaseRepository):
         assignment_table = self.tables["expt_assignments"]
         query = (
             select(dataset_table)
-            .join(experiment_table, dataset_table.c.dataset_id == experiment_table.c.dataset_id)
-            .join(group_table, group_table.c.experiment_id == experiment_table.c.experiment_id)
+            .join(
+                experiment_table,
+                dataset_table.c.dataset_id == experiment_table.c.dataset_id,
+            )
+            .join(
+                group_table,
+                group_table.c.experiment_id == experiment_table.c.experiment_id,
+            )
             .join(assignment_table, assignment_table.c.group_id == group_table.c.group_id)
             .where(assignment_table.c.assignment_id == assignment_id)
         )
@@ -179,7 +226,10 @@ class DbExperimentRepository(DatabaseRepository):
     def fetch_account_alias(self, dataset_id, account_id):
         alias_table = self.tables["account_aliases"]
         query = select(alias_table.c.alias_id).where(
-            and_(alias_table.c.account_id == account_id, alias_table.c.dataset_id == dataset_id)
+            and_(
+                alias_table.c.account_id == account_id,
+                alias_table.c.dataset_id == dataset_id,
+            )
         )
         return self._id_query(query)[0]
 
