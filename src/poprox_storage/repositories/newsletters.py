@@ -31,7 +31,8 @@ class DbNewsletterRepository(DatabaseRepository):
             stmt = insert(newsletter_table).values(
                 newsletter_id=newsletter.newsletter_id,
                 account_id=str(newsletter.account_id),
-                content=[rec.json() for rec in newsletter.articles],
+                treatment_id=str(newsletter.treatment_id) if newsletter.treatment_id else None,
+                content=[rec.model_dump_json() for rec in newsletter.articles],
                 email_subject=newsletter.subject,
                 html=newsletter.body_html,
             )
