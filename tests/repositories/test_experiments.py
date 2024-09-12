@@ -20,6 +20,7 @@ def test_store_experiment():
         clear_tables(
             conn,
             "team_memberships",
+            "expt_assignments",
             "expt_treatments",
             "expt_groups",
             "expt_phases",
@@ -28,6 +29,7 @@ def test_store_experiment():
             "datasets",
             "teams",
             "clicks",
+            "web_logins",
             "newsletters",
             "accounts",
         )
