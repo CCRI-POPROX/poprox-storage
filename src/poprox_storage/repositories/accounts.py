@@ -35,22 +35,46 @@ class DbAccountRepository(DatabaseRepository):
     def fetch_accounts(self, account_ids: list[UUID] | None = None) -> list[Account]:
         account_tbl = self.tables["accounts"]
 
-        query = select(account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status)
+        query = select(
+            account_tbl.c.account_id,
+            account_tbl.c.email,
+            account_tbl.c.status,
+            account_tbl.c.source,
+        )
         if account_ids is not None:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
         elif len(account_ids) == 0:
             return []
         result = self.conn.execute(query).fetchall()
 
-        return [Account(account_id=rec.account_id, email=rec.email, status=rec.status) for rec in result]
+        return [
+            Account(
+                account_id=row.account_id,
+                email=row.email,
+                status=row.status,
+                source=row.source,
+            )
+            for row in result
+        ]
 
     def fetch_account_by_email(self, email: str) -> Account | None:
         account_tbl = self.tables["accounts"]
-        query = sqlalchemy.select(account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status).where(
-            account_tbl.c.email == email
-        )
+        query = sqlalchemy.select(
+            account_tbl.c.account_id,
+            account_tbl.c.email,
+            account_tbl.c.status,
+            account_tbl.c.source,
+        ).where(account_tbl.c.email == email)
         result = self.conn.execute(query).fetchall()
-        accounts = [Account(account_id=row.account_id, email=row.email, status=row.status) for row in result]
+        accounts = [
+            Account(
+                account_id=row.account_id,
+                email=row.email,
+                status=row.status,
+                source=row.source,
+            )
+            for row in result
+        ]
         if len(accounts) > 0:
             return accounts[0]
         return None
