@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel, Field, PositiveInt
 
 
 class Team(BaseModel):
-    team_id: UUID | None = None
+    team_id: UUID = Field(default_factory=uuid4)
     team_name: str
     members: list[UUID]
 
 
 class Experiment(BaseModel):
-    experiment_id: UUID | None = None
+    experiment_id: UUID = Field(default_factory=uuid4)
     owner: Team
     description: str
     start_date: date
@@ -67,19 +67,19 @@ class Treatment(BaseModel):
 
 
 class Group(BaseModel):
-    group_id: UUID | None = None
+    group_id: UUID = Field(default_factory=uuid4)
     name: str
     minimum_size: PositiveInt
 
 
 class Recommender(BaseModel):
-    recommender_id: UUID | None = None
+    recommender_id: UUID = Field(default_factory=uuid4)
     name: str
     endpoint_url: str
 
 
 class Phase(BaseModel):
-    phase_id: UUID | None = None
+    phase_id: UUID = Field(default_factory=uuid4)
     name: str
     start_date: date
     end_date: date
@@ -91,7 +91,7 @@ class Phase(BaseModel):
 
 
 class Assignment(BaseModel):
-    assignment_id: UUID | None = None
+    assignment_id: UUID = Field(default_factory=uuid4)
     account_id: UUID
     group_id: UUID
-    opted_out: bool | None = None
+    opted_out: bool = Field(default=False)
