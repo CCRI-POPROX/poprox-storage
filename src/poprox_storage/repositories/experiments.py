@@ -169,7 +169,7 @@ class DbExperimentRepository(DatabaseRepository):
         ).where(
             and_(
                 assignments_tbl.c.group_id.in_(group_ids),
-                assignments_tbl.c.opted_out is False,
+                assignments_tbl.c.opted_out is not True,
             )
         )
         result = self.conn.execute(group_query).fetchall()
@@ -208,7 +208,7 @@ class DbExperimentRepository(DatabaseRepository):
         group_table = self.tables["expt_groups"]
         assignment_table = self.tables["expt_assignments"]
         query = (
-            select(dataset_table)
+            select(dataset_table.c.dataset_id)
             .join(
                 experiment_table,
                 dataset_table.c.dataset_id == experiment_table.c.dataset_id,
