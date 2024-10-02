@@ -27,6 +27,25 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             "qualtrics_survey_responses",
         )
 
+    def fetch_survey(self, survey_id: UUID) -> QualtricsSurvey:
+        survey_table = self.tables["qualtrics_surveys"]
+
+        query = select(
+            survey_table.c.survey_id,
+            survey_table.c.qualtrics_id,
+            survey_table.c.base_url,
+            survey_table.c.continuation_token,
+            survey_table.c.active,
+        ).where(survey_table.c.survey_id == survey_id)
+        row = self.conn.execute(query).fetchone()
+        return QualtricsSurvey(
+            survey_id=row.survey_id,
+            qualtrics_id=row.qualtrics_id,
+            base_url=row.base_url,
+            continuation_token=row.continuation_token,
+            active=row.active,
+        )
+
     def fetch_active_surveys(self) -> list[QualtricsSurvey]:
         survey_table = self.tables["qualtrics_surveys"]
         query = select(
