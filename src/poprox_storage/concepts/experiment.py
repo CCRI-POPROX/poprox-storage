@@ -62,6 +62,7 @@ class Experiment(BaseModel):
 
 
 class Treatment(BaseModel):
+    treatment_id: UUID = Field(default_factory=uuid4)
     group: Group
     recommender: Recommender
 
