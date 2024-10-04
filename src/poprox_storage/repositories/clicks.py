@@ -115,6 +115,21 @@ class DbClicksRepository(DatabaseRepository):
 
         return clicked_articles
 
+    def fetch_clicks_by_newsletter_id(self, newsletter_ids: list[UUID]) -> list[Click]:
+        click_table = self.tables["clicks"]
+
+        click_query = select(click_table).where(click_table.c.newsletter_id.in_(newsletter_ids))
+        result = self.conn.execute(click_query).fetchall()
+
+        return [
+            Click(
+                article_id=row.article_id,
+                newsletter_id=row.newsletter_id,
+                timestamp=row.created_at,
+            )
+            for row in result
+        ]
+
 
 def extract_and_flatten(clicks):
     def flatten(account_id, account_clicks):

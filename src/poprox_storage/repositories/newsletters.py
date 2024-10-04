@@ -81,6 +81,26 @@ class DbNewsletterRepository(DatabaseRepository):
             historic_newsletters[row.account_id][row.newsletter_id] = articles
         return historic_newsletters
 
+    def fetch_newsletters_by_treatment_id(self, expt_treatment_ids: list[UUID]) -> list[Newsletter]:
+        newsletter_table = self.tables["newsletters"]
+
+        query = select(newsletter_table).where(
+            newsletter_table.c.treatment_id.in_(expt_treatment_ids),
+        )
+        newsletter_result = self.conn.execute(query).fetchall()
+        return [
+            Newsletter(
+                newsletter_id=row.newsletter_id,
+                account_id=row.account_id,
+                treatment_id=row.treatment_id,
+                articles=[],
+                subject=row.subject,
+                body_html=row.body_html,
+                created_at=row.created_at,
+            )
+            for row in newsletter_result
+        ]
+
 
 class S3NewsletterRepository(S3Repository):
     def store_as_parquet(self, newsletters: list[Newsletter]) -> str:

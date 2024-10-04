@@ -66,6 +66,16 @@ class DbArticleRepository(DatabaseRepository):
             article_table.c.created_at < cutoff,
         )
 
+    def fetch_articles_ingested_between(self, start_date, end_date) -> list[Article]:
+        article_table = self.tables["articles"]
+        return self._get_articles(
+            article_table,
+            and_(
+                article_table.c.created_at <= end_date,
+                article_table.c.created_at >= start_date,
+            ),
+        )
+
     def fetch_articles_by_id(self, ids: list[UUID]) -> list[Article]:
         article_table = self.tables["articles"]
         return self._get_articles(article_table, article_table.c.article_id.in_(ids))
