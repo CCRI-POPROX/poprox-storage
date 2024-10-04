@@ -12,6 +12,7 @@ from sqlalchemy import (
 
 from poprox_concepts.domain import Account, Article, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
+from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 
 class DbNewsletterRepository(DatabaseRepository):
@@ -79,3 +80,30 @@ class DbNewsletterRepository(DatabaseRepository):
             ]
             historic_newsletters[row.account_id][row.newsletter_id] = articles
         return historic_newsletters
+
+
+class S3NewsletterRepository(S3Repository):
+    def store_as_parquet(self, newsletters: list[Newsletter]) -> str:
+        import pandas as pd
+
+        newsletter_df = pd.DataFrame.from_records(extract_and_flatten(newsletters))
+        return self._write_dataframe_as_parquet(newsletter_df)
+
+
+def extract_and_flatten(newsletters):
+    def flatten(account_id, account_newsletters):
+        newsletter_list = []
+        for newsletter_id in account_newsletters:
+            articles = account_newsletters[newsletter_id]
+            for article in articles:
+                row = {}
+                row["account_id"] = str(account_id)
+                row["newsletter_id"] = str(newsletter_id)
+                row["article_id"] = str(article.article_id)
+                newsletter_list.append(row)
+        return newsletter_list
+
+    final_list = []
+    for account_id in newsletters:
+        final_list.extend(flatten(account_id, newsletters[account_id]))
+    return final_list

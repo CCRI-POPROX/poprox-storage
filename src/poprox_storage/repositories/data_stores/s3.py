@@ -1,6 +1,9 @@
+from datetime import datetime
 from functools import wraps
+from io import BytesIO
 from typing import get_type_hints
 
+import pandas as pd
 from smart_open import open as smart_open
 
 
@@ -39,3 +42,20 @@ class S3Repository:
 
         with smart_open(load_path, "r") as f:
             return f.read()
+
+    def _write_dataframe_as_parquet(dataframe: pd.DataFrame, bucket_name: str, file_prefix: str):
+        # Export dataframe as Parquet
+        # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_parquet.html
+        data = BytesIO()
+        dataframe.to_parquet(data)
+
+        # reset the BytesIO for reading
+        data.seek(0)
+
+        start_time = datetime.now()
+        file_name = f"{file_prefix}_{start_time.strftime('%Y%m%d-%H%M%S')}.parquet"
+
+        with open("s3://{bucket_name}/{file_name}", "w") as out_file:
+            out_file.write(data)
+
+        return file_name

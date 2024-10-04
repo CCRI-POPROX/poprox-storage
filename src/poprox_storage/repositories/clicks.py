@@ -28,6 +28,12 @@ class S3ClicksRepository(S3Repository):
 
         return click_data
 
+    def store_as_parquet(self, clicks: list[Click], bucket_name: str, file_prefix: str):
+        import pandas as pd
+
+        dataframe = pd.DataFrame.from_records(extract_and_flatten(clicks))
+        return self._write_dataframe_as_parquet(dataframe)
+
 
 class DbClicksRepository(DatabaseRepository):
     def __init__(self, connection):
@@ -108,3 +114,21 @@ class DbClicksRepository(DatabaseRepository):
                 clicked_articles[account_id] = []
 
         return clicked_articles
+
+
+def extract_and_flatten(clicks):
+    def flatten(account_id, account_clicks):
+        click_list = []
+        for click in account_clicks:
+            row = click.__dict__
+            row["account_id"] = str(account_id)
+            row["article_id"] = str(row["article_id"])
+            row["newsletter_id"] = str(row["newsletter_id"])
+            row["timestamp"] = str(row["timestamp"])
+            click_list.append(row)
+        return click_list
+
+    final_list = []
+    for account_id in clicks:
+        final_list.extend(flatten(account_id, clicks[account_id]))
+    return final_list

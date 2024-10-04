@@ -281,6 +281,12 @@ class S3ArticleRepository(S3Repository):
 
         return articles
 
+    def store_articles_as_parquet(self, articles: list[Article], bucket_name: str, file_prefix: str):
+        import pandas as pd
+
+        dataframe = pd.DataFrame.from_records(extract_and_flatten(articles))
+        return self._write_dataframe_as_parquet(dataframe)
+
 
 def extract_articles(news_file_content) -> list[Article]:
     lines = news_file_content.splitlines()
@@ -345,3 +351,25 @@ def create_ap_subject_mention(subject) -> Mention:
     mention = Mention(source=source, relevance=relevance, entity=entity)
 
     return mention
+
+
+def extract_and_flatten(articles):
+    def flatten(article):
+        result = article.__dict__
+        result["article_id"] = str(result["article_id"])
+        mentions = result["mentions"]
+        del result["mentions"]
+        del result["preview_image_id"]
+        del result["source"]
+        del result["external_id"]
+        mention_dict = {}
+        for mention in mentions:
+            key = mention.entity.entity_type + "_" + mention.entity.name
+            if key not in mention_dict or (key in mention_dict and mention.source == "AP-Editorial"):
+                mention_dict[key] = mention
+        result["mentions"] = {}
+        for key, value in mention_dict.items():
+            result["mentions"][key] = value.relevance
+        return result
+
+    return [flatten(article) for article in articles]
