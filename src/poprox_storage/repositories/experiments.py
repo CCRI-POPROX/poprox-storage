@@ -291,8 +291,9 @@ class DbExperimentRepository(DatabaseRepository):
             {
                 "recommender_name": recommender.name,
                 "experiment_id": experiment_id,
+                "endpoint_url": recommender.url,
             },
-            exclude={"name"},
+            exclude={"name", "url"},
             commit=False,
         )
 
