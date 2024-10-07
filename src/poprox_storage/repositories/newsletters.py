@@ -94,8 +94,8 @@ class DbNewsletterRepository(DatabaseRepository):
                 account_id=row.account_id,
                 treatment_id=row.treatment_id,
                 articles=[],
-                subject=row.subject,
-                body_html=row.body_html,
+                subject=row.email_subject,
+                body_html=row.html,
                 created_at=row.created_at,
             )
             for row in newsletter_result
