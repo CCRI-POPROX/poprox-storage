@@ -20,13 +20,13 @@ identical_to = "b"
 
 
 [recommenders.x]
-endpoint = "https://example.com/recommender_x"
+url = "https://example.com/recommender_x"
 
 [recommenders.y]
-endpoint = "https://example.com/recommender_y"
+url = "https://example.com/recommender_y"
 
 [recommenders.z]
-endpoint = "https://example.com/recommender_z"
+url = "https://example.com/recommender_z"
 
 [phases]
 sequence = ["1", "2", "3"]
