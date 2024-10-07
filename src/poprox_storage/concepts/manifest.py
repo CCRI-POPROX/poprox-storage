@@ -58,7 +58,7 @@ class ManifestPhaseAssignment(BaseModel):
 
 
 class ManifestRecommender(BaseModel):
-    endpoint: str
+    url: str
 
 
 class ManifestGroupSpec(BaseModel):
@@ -110,7 +110,7 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     )
 
     recommenders = {
-        rec_name: Recommender(recommender_id=uuid4(), name=rec_name, endpoint_url=recommender.endpoint)
+        rec_name: Recommender(recommender_id=uuid4(), name=rec_name, url=recommender.url)
         for rec_name, recommender in manifest.recommenders.items()
     }
 

@@ -110,7 +110,7 @@ class DbExperimentRepository(DatabaseRepository):
 
         return treatment_lookup_by_group
 
-    def fetch_treatment_endpoint_urls(self, treatment_ids: list[UUID]) -> dict[UUID, str]:
+    def fetch_treatment_recommender_urls(self, treatment_ids: list[UUID]) -> dict[UUID, str]:
         recommenders_tbl = self.tables["expt_recommenders"]
         treatments_tbl = self.tables["expt_treatments"]
 
@@ -128,7 +128,7 @@ class DbExperimentRepository(DatabaseRepository):
 
         return endpoints_by_treatment
 
-    def fetch_active_expt_endpoint_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
+    def fetch_active_expt_recommender_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
         recommenders_tbl = self.tables["expt_recommenders"]
@@ -291,8 +291,9 @@ class DbExperimentRepository(DatabaseRepository):
             {
                 "recommender_name": recommender.name,
                 "experiment_id": experiment_id,
+                "endpoint_url": recommender.url,
             },
-            exclude={"name"},
+            exclude={"name", "url"},
             commit=False,
         )
 

@@ -75,7 +75,7 @@ class Group(BaseModel):
 class Recommender(BaseModel):
     recommender_id: UUID = Field(default_factory=uuid4)
     name: str
-    endpoint_url: str
+    url: str
 
 
 class Phase(BaseModel):
