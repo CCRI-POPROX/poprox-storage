@@ -77,7 +77,6 @@ class DbExperimentRepository(DatabaseRepository):
         else:
             return Experiment(
                 experiment_id=result.experiment_id,
-                owner=None,
                 description=result.description,
                 start_date=result.start_date,
                 end_date=result.end_date,
