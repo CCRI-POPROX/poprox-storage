@@ -27,6 +27,8 @@ def inject_s3_repos(handler):
 
 
 class S3Repository:
+    _repository_types = set()
+
     def __init__(self, bucket_name):
         self.bucket_name: str = bucket_name
 
