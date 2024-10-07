@@ -291,11 +291,11 @@ class S3ArticleRepository(S3Repository):
 
         return articles
 
-    def store_articles_as_parquet(self, articles: list[Article], bucket_name: str, file_prefix: str):
+    def store_as_parquet(self, articles: list[Article], bucket_name: str, file_prefix: str):
         import pandas as pd
 
         dataframe = pd.DataFrame.from_records(extract_and_flatten(articles))
-        return self._write_dataframe_as_parquet(dataframe)
+        return self._write_dataframe_as_parquet(dataframe, bucket_name, file_prefix)
 
 
 def extract_articles(news_file_content) -> list[Article]:

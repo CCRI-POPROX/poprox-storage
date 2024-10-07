@@ -103,11 +103,16 @@ class DbNewsletterRepository(DatabaseRepository):
 
 
 class S3NewsletterRepository(S3Repository):
-    def store_as_parquet(self, newsletters: list[Newsletter]) -> str:
+    def store_as_parquet(
+        self,
+        newsletters: list[Newsletter],
+        bucket_name: str,
+        file_prefix: str,
+    ) -> str:
         import pandas as pd
 
         newsletter_df = pd.DataFrame.from_records(extract_and_flatten(newsletters))
-        return self._write_dataframe_as_parquet(newsletter_df)
+        return self._write_dataframe_as_parquet(newsletter_df, bucket_name, file_prefix)
 
 
 def extract_and_flatten(newsletters):
