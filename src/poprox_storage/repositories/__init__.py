@@ -11,7 +11,9 @@ from poprox_storage.repositories.experiments import (
     S3ExperimentRepository,
 )
 from poprox_storage.repositories.images import DbImageRepository, S3ImageRepository
-from poprox_storage.repositories.newsletters import DbNewsletterRepository
+from poprox_storage.repositories.newsletters import DbNewsletterRepository, S3NewsletterRepository
+from poprox_storage.repositories.placements import DbPlacementRepository
+from poprox_storage.repositories.qualtrics_survey import DbQualtricsSurveyRepository
 
 
 def inject_repos(handler):
@@ -44,16 +46,19 @@ def inject_repos(handler):
 
 
 __all__ = [
-    "DbAccountRepository",
     "DbAccountInterestRepository",
+    "DbAccountRepository",
     "DbArticleRepository",
     "DbClicksRepository",
+    "DbDemographicsRepository",
     "DbExperimentRepository",
     "DbImageRepository",
     "DbNewsletterRepository",
-    "DbDemographicsRepository",
+    "DbPlacementRepository",
+    "DbQualtricsSurveyRepository",
     "S3ArticleRepository",
     "S3ClicksRepository",
     "S3ExperimentRepository",
     "S3ImageRepository",
+    "S3NewsletterRepository",
 ]
