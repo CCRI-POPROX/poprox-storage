@@ -12,6 +12,7 @@ from sqlalchemy import (
 
 from poprox_concepts.domain import Account, Article, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
+from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 
 class DbNewsletterRepository(DatabaseRepository):
@@ -79,3 +80,55 @@ class DbNewsletterRepository(DatabaseRepository):
             ]
             historic_newsletters[row.account_id][row.newsletter_id] = articles
         return historic_newsletters
+
+    def fetch_newsletters_by_treatment_id(self, expt_treatment_ids: list[UUID]) -> list[Newsletter]:
+        newsletter_table = self.tables["newsletters"]
+
+        query = select(newsletter_table).where(
+            newsletter_table.c.treatment_id.in_(expt_treatment_ids),
+        )
+        newsletter_result = self.conn.execute(query).fetchall()
+        return [
+            Newsletter(
+                newsletter_id=row.newsletter_id,
+                account_id=row.account_id,
+                treatment_id=row.treatment_id,
+                articles=[],
+                subject=row.email_subject,
+                body_html=row.html,
+                created_at=row.created_at,
+            )
+            for row in newsletter_result
+        ]
+
+
+class S3NewsletterRepository(S3Repository):
+    def store_as_parquet(
+        self,
+        newsletters: list[Newsletter],
+        bucket_name: str,
+        file_prefix: str,
+    ) -> str:
+        import pandas as pd
+
+        newsletter_df = pd.DataFrame.from_records(extract_and_flatten(newsletters))
+        return self._write_dataframe_as_parquet(newsletter_df, bucket_name, file_prefix)
+
+
+def extract_and_flatten(newsletters):
+    def flatten(account_id, account_newsletters):
+        newsletter_list = []
+        for newsletter_id in account_newsletters:
+            articles = account_newsletters[newsletter_id]
+            for article in articles:
+                row = {}
+                row["account_id"] = str(account_id)
+                row["newsletter_id"] = str(newsletter_id)
+                row["article_id"] = str(article.article_id)
+                newsletter_list.append(row)
+        return newsletter_list
+
+    final_list = []
+    for account_id in newsletters:
+        final_list.extend(flatten(account_id, newsletters[account_id]))
+    return final_list

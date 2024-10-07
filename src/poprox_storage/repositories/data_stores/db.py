@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def inject_repos(handler):
+def inject_db_repos(handler):
     @wraps(handler)
     def wrapper(event, context):
         with DB_ENGINE.connect() as conn:
