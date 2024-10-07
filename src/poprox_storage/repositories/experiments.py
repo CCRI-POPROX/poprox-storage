@@ -69,7 +69,7 @@ class DbExperimentRepository(DatabaseRepository):
 
     def fetch_experiment_by_id(self, experiment_id: str) -> Experiment | None:
         expt_table = self.tables["experiments"]
-        expt_query = select(expt_table).where(expt_table.c.image_id == experiment_id)
+        expt_query = select(expt_table).where(expt_table.c.experiment_id == experiment_id)
 
         result = self.conn.execute(expt_query).first()
         if not result:
@@ -106,7 +106,12 @@ class DbExperimentRepository(DatabaseRepository):
 
     def fetch_treatment_ids_by_experiment_id(self, experiment_id: UUID):
         treatments_tbl = self.tables["expt_treatments"]
-        query = select(treatments_tbl.c.treatment_id).where(treatments_tbl.c.experiment_id == experiment_id)
+        recommenders_tbl = self.tables["expt_recommenders"]
+        query = (
+            select(treatments_tbl.c.treatment_id)
+            .join(recommenders_tbl, treatments_tbl.c.recommender_id == recommenders_tbl.c.recommender_id)
+            .where(recommenders_tbl.c.experiment_id == experiment_id)
+        )
         return self._id_query(query)
 
     def fetch_active_treatments_by_group(self, date: datetime.date | None = None) -> dict[UUID, UUID]:
