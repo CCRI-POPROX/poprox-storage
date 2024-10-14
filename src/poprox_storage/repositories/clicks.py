@@ -1,6 +1,7 @@
 import json
 import logging
 from collections import defaultdict
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import and_, insert, select
@@ -28,11 +29,17 @@ class S3ClicksRepository(S3Repository):
 
         return click_data
 
-    def store_as_parquet(self, clicks: list[Click], bucket_name: str, file_prefix: str):
+    def store_as_parquet(
+        self,
+        clicks: list[Click],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
         import pandas as pd
 
         dataframe = pd.DataFrame.from_records(extract_and_flatten(clicks))
-        return self._write_dataframe_as_parquet(dataframe, bucket_name, file_prefix)
+        return self._write_dataframe_as_parquet(dataframe, bucket_name, file_prefix, start_time)
 
 
 class DbClicksRepository(DatabaseRepository):

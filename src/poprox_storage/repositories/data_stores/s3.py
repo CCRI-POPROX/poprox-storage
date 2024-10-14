@@ -45,7 +45,13 @@ class S3Repository:
         with smart_open(load_path, "r") as f:
             return f.read()
 
-    def _write_dataframe_as_parquet(self, dataframe: pd.DataFrame, bucket_name: str, file_prefix: str):
+    def _write_dataframe_as_parquet(
+        self,
+        dataframe: pd.DataFrame,
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
         # Export dataframe as Parquet
         # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_parquet.html
         data = BytesIO()
@@ -54,7 +60,7 @@ class S3Repository:
         # reset the BytesIO for reading
         data.seek(0)
 
-        start_time = datetime.now()
+        start_time = start_time or datetime.now()
         file_name = f"{file_prefix}_{start_time.strftime('%Y%m%d-%H%M%S')}.parquet"
 
         with smart_open(f"s3://{bucket_name}/{file_name}", "wb") as out_file:
