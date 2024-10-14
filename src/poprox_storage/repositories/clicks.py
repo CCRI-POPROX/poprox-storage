@@ -115,7 +115,7 @@ class DbClicksRepository(DatabaseRepository):
 
         return clicked_articles
 
-    def fetch_clicks_by_newsletter_id(self, newsletter_ids: list[UUID]) -> list[Click]:
+    def fetch_clicks_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> list[Click]:
         click_table = self.tables["clicks"]
 
         click_query = select(click_table).where(click_table.c.newsletter_id.in_(newsletter_ids))
