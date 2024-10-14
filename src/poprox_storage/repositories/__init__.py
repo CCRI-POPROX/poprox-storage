@@ -11,19 +11,54 @@ from poprox_storage.repositories.experiments import (
     S3ExperimentRepository,
 )
 from poprox_storage.repositories.images import DbImageRepository, S3ImageRepository
-from poprox_storage.repositories.newsletters import DbNewsletterRepository
+from poprox_storage.repositories.newsletters import DbNewsletterRepository, S3NewsletterRepository
+from poprox_storage.repositories.placements import DbPlacementRepository
+from poprox_storage.repositories.qualtrics_survey import DbQualtricsSurveyRepository
+
+
+def inject_repos(handler):
+    from functools import wraps
+    from typing import get_type_hints
+
+    from poprox_storage.aws import DB_ENGINE
+    from poprox_storage.repositories.data_stores.db import DatabaseRepository
+    from poprox_storage.repositories.data_stores.s3 import S3Repository
+
+    @wraps(handler)
+    def wrapper(event, context):
+        params: dict[str, type] = get_type_hints(handler)
+        # remove event, context, and return type if they were annotated.
+        params.pop("event", None)
+        params.pop("context", None)
+        params.pop("return", None)
+
+        with DB_ENGINE.connect() as conn:
+            repos = dict()
+            for param, class_obj in params.items():
+                if class_obj in DatabaseRepository._repository_types:
+                    repos[param] = class_obj(conn)
+                elif class_obj in S3Repository._repository_types:
+                    repos[param] = class_obj(conn)
+
+            return handler(event, context, **repos)
+
+    return wrapper
+
 
 __all__ = [
-    "DbAccountRepository",
     "DbAccountInterestRepository",
+    "DbAccountRepository",
     "DbArticleRepository",
     "DbClicksRepository",
+    "DbDemographicsRepository",
     "DbExperimentRepository",
     "DbImageRepository",
     "DbNewsletterRepository",
-    "DbDemographicsRepository",
+    "DbPlacementRepository",
+    "DbQualtricsSurveyRepository",
     "S3ArticleRepository",
     "S3ClicksRepository",
     "S3ExperimentRepository",
     "S3ImageRepository",
+    "S3NewsletterRepository",
 ]

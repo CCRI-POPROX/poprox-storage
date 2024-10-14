@@ -1,6 +1,7 @@
 import json
 import logging
 from collections import defaultdict
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import and_, insert, select
@@ -27,6 +28,18 @@ class S3ClicksRepository(S3Repository):
             click_data = {}
 
         return click_data
+
+    def store_as_parquet(
+        self,
+        clicks: list[Click],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        import pandas as pd
+
+        dataframe = pd.DataFrame.from_records(extract_and_flatten(clicks))
+        return self._write_dataframe_as_parquet(dataframe, bucket_name, file_prefix, start_time)
 
 
 class DbClicksRepository(DatabaseRepository):
@@ -108,3 +121,33 @@ class DbClicksRepository(DatabaseRepository):
                 clicked_articles[account_id] = []
 
         return clicked_articles
+
+    def fetch_clicks_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> list[Click]:
+        click_table = self.tables["clicks"]
+
+        click_query = select(click_table).where(click_table.c.newsletter_id.in_(newsletter_ids))
+        result = self.conn.execute(click_query).fetchall()
+
+        return [
+            Click(
+                article_id=row.article_id,
+                newsletter_id=row.newsletter_id,
+                timestamp=row.created_at,
+            )
+            for row in result
+        ]
+
+
+def extract_and_flatten(clicks: list[Click]) -> list[dict]:
+    def flatten(click: Click):
+        row = {}
+        row["newsletter_id"] = str(click.newsletter_id)
+        row["article_id"] = str(click.article_id)
+        row["timestamp"] = click.timestamp
+        return row
+
+    final_list = []
+    for click in clicks:
+        final_list.append(flatten(click))
+
+    return final_list

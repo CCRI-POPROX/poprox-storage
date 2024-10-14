@@ -67,6 +67,22 @@ class DbExperimentRepository(DatabaseRepository):
 
         return experiment_id
 
+    def fetch_experiment_by_id(self, experiment_id: str) -> Experiment | None:
+        expt_table = self.tables["experiments"]
+        expt_query = select(expt_table).where(expt_table.c.experiment_id == experiment_id)
+
+        result = self.conn.execute(expt_query).first()
+        if not result:
+            return None
+        else:
+            return Experiment(
+                experiment_id=result.experiment_id,
+                description=result.description,
+                start_date=result.start_date,
+                end_date=result.end_date,
+                phases=[],
+            )
+
     def fetch_active_expt_group_ids(self, date: datetime.date | None = None) -> list[UUID]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
@@ -86,6 +102,16 @@ class DbExperimentRepository(DatabaseRepository):
         )
 
         return self._id_query(groups_query)
+
+    def fetch_treatment_ids_by_experiment_id(self, experiment_id: UUID):
+        treatments_tbl = self.tables["expt_treatments"]
+        recommenders_tbl = self.tables["expt_recommenders"]
+        query = (
+            select(treatments_tbl.c.treatment_id)
+            .join(recommenders_tbl, treatments_tbl.c.recommender_id == recommenders_tbl.c.recommender_id)
+            .where(recommenders_tbl.c.experiment_id == experiment_id)
+        )
+        return self._id_query(query)
 
     def fetch_active_treatments_by_group(self, date: datetime.date | None = None) -> dict[UUID, UUID]:
         phases_tbl = self.tables["expt_phases"]
