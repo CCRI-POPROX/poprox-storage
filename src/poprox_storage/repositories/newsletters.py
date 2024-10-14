@@ -21,6 +21,7 @@ class DbNewsletterRepository(DatabaseRepository):
         self.tables: dict[str, Table] = self._load_tables(
             "newsletters",
             "impressions",
+            "articles",
         )
 
     def store_newsletter(self, newsletter: Newsletter):
@@ -82,18 +83,48 @@ class DbNewsletterRepository(DatabaseRepository):
         return historic_newsletters
 
     def fetch_newsletters_by_treatment_id(self, expt_treatment_ids: list[UUID]) -> list[Newsletter]:
-        newsletter_table = self.tables["newsletters"]
+        newsletters_table = self.tables["newsletters"]
+        impressions_table = self.tables["impressions"]
+        articles_table = self.tables["articles"]
 
-        query = select(newsletter_table).where(
-            newsletter_table.c.treatment_id.in_(expt_treatment_ids),
+        newsletters_query = select(newsletters_table).where(
+            newsletters_table.c.treatment_id.in_(expt_treatment_ids),
         )
-        newsletter_result = self.conn.execute(query).fetchall()
+        newsletter_result = self.conn.execute(newsletters_query).fetchall()
+
+        articles_query = (
+            select(impressions_table.c.newsletter_id, articles_table)
+            .join(
+                impressions_table,
+                articles_table.c.article_id == impressions_table.c.article_id,
+            )
+            .where(impressions_table.c.newsletter_id.in_([row.newsletter_id for row in newsletter_result]))
+        )
+
+        articles_result = self.conn.execute(articles_query).fetchall()
+
+        articles_by_newsletter_id = defaultdict(list)
+        for row in articles_result:
+            articles_by_newsletter_id[row.newsletter_id].append(
+                Article(
+                    article_id=row.article_id,
+                    headline=row.headline,
+                    subhead=row.subhead,
+                    url=row.url,
+                    preview_image_id=row.preview_image_id,
+                    published_at=row.published_at,
+                    source=row.source,
+                    external_id=row.external_id,
+                    raw_data=row.raw_data,
+                )
+            )
+
         return [
             Newsletter(
                 newsletter_id=row.newsletter_id,
                 account_id=row.account_id,
                 treatment_id=row.treatment_id,
-                articles=[],
+                articles=articles_by_newsletter_id[row.newsletter_id],
                 subject=row.email_subject,
                 body_html=row.html,
                 created_at=row.created_at,
