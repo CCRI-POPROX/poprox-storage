@@ -131,19 +131,15 @@ class DbClicksRepository(DatabaseRepository):
         ]
 
 
-def extract_and_flatten(clicks):
-    def flatten(account_id, account_clicks):
-        click_list = []
-        for click in account_clicks:
-            row = click.__dict__
-            row["account_id"] = str(account_id)
-            row["article_id"] = str(row["article_id"])
-            row["newsletter_id"] = str(row["newsletter_id"])
-            row["timestamp"] = str(row["timestamp"])
-            click_list.append(row)
-        return click_list
+def extract_and_flatten(clicks: list[Click]) -> list[dict]:
+    def flatten(click: Click):
+        row = click.__dict__
+        row["article_id"] = str(row["article_id"])
+        row["newsletter_id"] = str(row["newsletter_id"])
+        row["timestamp"] = str(row["timestamp"])
+        return row
 
     final_list = []
-    for account_id in clicks:
-        final_list.extend(flatten(account_id, clicks[account_id]))
+    for click in clicks:
+        final_list.extend(flatten(click))
     return final_list
