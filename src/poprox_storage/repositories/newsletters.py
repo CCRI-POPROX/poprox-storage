@@ -115,20 +115,18 @@ class S3NewsletterRepository(S3Repository):
         return self._write_dataframe_as_parquet(newsletter_df, bucket_name, file_prefix)
 
 
-def extract_and_flatten(newsletters):
-    def flatten(account_id, account_newsletters):
-        newsletter_list = []
-        for newsletter_id in account_newsletters:
-            articles = account_newsletters[newsletter_id]
-            for article in articles:
-                row = {}
-                row["account_id"] = str(account_id)
-                row["newsletter_id"] = str(newsletter_id)
-                row["article_id"] = str(article.article_id)
-                newsletter_list.append(row)
-        return newsletter_list
+def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
+    def flatten(newsletter):
+        rows = []
+        for article in newsletter.articles:
+            row = {}
+            row["account_id"] = str(newsletter.account_id)
+            row["newsletter_id"] = str(newsletter.newsletter_id)
+            row["article_id"] = str(article.article_id)
+            rows.append(row)
+        return rows
 
     final_list = []
-    for account_id in newsletters:
-        final_list.extend(flatten(account_id, newsletters[account_id]))
+    for newsletter in newsletters:
+        final_list.extend(flatten(newsletter))
     return final_list
