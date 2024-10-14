@@ -32,7 +32,7 @@ class S3ClicksRepository(S3Repository):
         import pandas as pd
 
         dataframe = pd.DataFrame.from_records(extract_and_flatten(clicks))
-        return self._write_dataframe_as_parquet(dataframe)
+        return self._write_dataframe_as_parquet(dataframe, bucket_name, file_prefix)
 
 
 class DbClicksRepository(DatabaseRepository):
