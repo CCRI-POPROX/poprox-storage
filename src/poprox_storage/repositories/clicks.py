@@ -133,13 +133,14 @@ class DbClicksRepository(DatabaseRepository):
 
 def extract_and_flatten(clicks: list[Click]) -> list[dict]:
     def flatten(click: Click):
-        row = click.__dict__
-        row["article_id"] = str(row["article_id"])
-        row["newsletter_id"] = str(row["newsletter_id"])
-        row["timestamp"] = str(row["timestamp"])
+        row = {}
+        row["newsletter_id"] = str(click.newsletter_id)
+        row["article_id"] = str(click.article_id)
+        row["timestamp"] = click.timestamp
         return row
 
     final_list = []
     for click in clicks:
-        final_list.extend(flatten(click))
+        final_list.append(flatten(click))
+
     return final_list
