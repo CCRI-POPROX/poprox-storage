@@ -77,6 +77,7 @@ class DbExperimentRepository(DatabaseRepository):
         else:
             return Experiment(
                 experiment_id=result.experiment_id,
+                dataset_id=result.dataset_id,
                 description=result.description,
                 start_date=result.start_date,
                 end_date=result.end_date,
@@ -108,7 +109,10 @@ class DbExperimentRepository(DatabaseRepository):
         recommenders_tbl = self.tables["expt_recommenders"]
         query = (
             select(treatments_tbl.c.treatment_id)
-            .join(recommenders_tbl, treatments_tbl.c.recommender_id == recommenders_tbl.c.recommender_id)
+            .join(
+                recommenders_tbl,
+                treatments_tbl.c.recommender_id == recommenders_tbl.c.recommender_id,
+            )
             .where(recommenders_tbl.c.experiment_id == experiment_id)
         )
         return self._id_query(query)
@@ -258,6 +262,12 @@ class DbExperimentRepository(DatabaseRepository):
             )
         )
         return self._id_query(query)[0]
+
+    def fetch_account_aliases(self, dataset_id: UUID) -> dict[UUID, UUID]:
+        alias_table = self.tables["account_aliases"]
+        query = select(alias_table.c.account_id, alias_table.c.alias_id).where(alias_table.c.dataset_id == dataset_id)
+        rows = self.conn.execute(query).fetchall()
+        return {row.account_id: row.alias_id for row in rows}
 
     def _insert_experiment(self, dataset_id: UUID, experiment: Experiment) -> UUID | None:
         return self._insert_model(
