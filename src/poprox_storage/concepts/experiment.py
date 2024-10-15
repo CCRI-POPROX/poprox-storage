@@ -14,6 +14,7 @@ class Team(BaseModel):
 
 class Experiment(BaseModel):
     experiment_id: UUID = Field(default_factory=uuid4)
+    dataset_id: UUID | None = None
     owner: Team | None = None
     description: str
     start_date: date
