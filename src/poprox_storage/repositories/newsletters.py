@@ -10,7 +10,7 @@ from sqlalchemy import (
     select,
 )
 
-from poprox_concepts.domain import Account, Article, Newsletter
+from poprox_concepts.domain import Account, Article, Impression, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -132,15 +132,51 @@ class DbNewsletterRepository(DatabaseRepository):
             for row in newsletter_result
         ]
 
+    def fetch_impressions_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> list[Impression]:
+        impressions_table = self.tables["impressions"]
+
+        query = select(
+            impressions_table.c.newsletter_id,
+            impressions_table.c.article_id,
+            impressions_table.c.position,
+        ).where(
+            impressions_table.c.newsletter_id.in_(newsletter_ids),
+        )
+        rows = self.conn.execute(query).fetchall()
+        return [
+            Impression(
+                newsletter_id=row.newsletter_id,
+                article_id=row.article_id,
+                position=row.position,
+            )
+            for row in rows
+        ]
+
 
 class S3NewsletterRepository(S3Repository):
     def store_as_parquet(
-        self, newsletters: list[Newsletter], bucket_name: str, file_prefix: str, start_time: datetime = None
+        self,
+        newsletters: list[Newsletter],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
     ) -> str:
         import pandas as pd
 
         newsletter_df = pd.DataFrame.from_records(extract_and_flatten(newsletters))
         return self._write_dataframe_as_parquet(newsletter_df, bucket_name, file_prefix, start_time)
+
+    def store_impressions_as_parquet(
+        self,
+        impressions: list[Impression],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ) -> str:
+        import pandas as pd
+
+        impression_df = pd.DataFrame.from_records(convert_impressions_to_records(impressions))
+        return self._write_dataframe_as_parquet(impression_df, bucket_name, file_prefix, start_time)
 
 
 def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
@@ -158,3 +194,16 @@ def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
     for newsletter in newsletters:
         final_list.extend(flatten(newsletter))
     return final_list
+
+
+def convert_impressions_to_records(impressions: list[Impression]) -> list[dict]:
+    rows = []
+
+    for impression in impressions:
+        row = {}
+        row["newsletter_id"] = str(impression.newsletter_id)
+        row["article_id"] = str(impression.article_id)
+        row["position"] = impression.position
+        rows.append(row)
+
+    return rows
