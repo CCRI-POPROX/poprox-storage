@@ -5,7 +5,7 @@ from poprox_storage.repositories.articles import (
     S3ArticleRepository,
 )
 from poprox_storage.repositories.clicks import DbClicksRepository, S3ClicksRepository
-from poprox_storage.repositories.demographics import DbDemographicsRepository
+from poprox_storage.repositories.demographics import DbDemographicsRepository, S3DemographicsRepository
 from poprox_storage.repositories.experiments import (
     DbExperimentRepository,
     S3ExperimentRepository,
@@ -58,6 +58,7 @@ __all__ = [
     "DbQualtricsSurveyRepository",
     "S3ArticleRepository",
     "S3ClicksRepository",
+    "S3DemographicsRepository",
     "S3ExperimentRepository",
     "S3ImageRepository",
     "S3NewsletterRepository",
