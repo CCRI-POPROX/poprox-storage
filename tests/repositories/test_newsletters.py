@@ -1,4 +1,6 @@
-from poprox_concepts.domain import Article, Newsletter
+from uuid import uuid4
+
+from poprox_concepts.domain import Article, Impression, Newsletter
 from poprox_storage.repositories.accounts import DbAccountRepository
 from poprox_storage.repositories.articles import DbArticleRepository
 from poprox_storage.repositories.newsletters import DbNewsletterRepository
@@ -19,6 +21,9 @@ def test_fetch_newsletters(db_engine):
         dbArticleRepository = DbArticleRepository(conn)
 
         dbNewsletterRepository = DbNewsletterRepository(conn)
+
+        newsletter_1_id = uuid4()
+        newsletter_2_id = uuid4()
 
         newsletter_1_articles = [
             Article(
@@ -57,16 +62,24 @@ def test_fetch_newsletters(db_engine):
         newsletter_2_articles = dbArticleRepository.fetch_articles_by_id([article_id_3])
 
         newsletter_1 = Newsletter(
+            newsletter_id=newsletter_1_id,
             account_id=user_account_1.account_id,
-            articles=newsletter_1_articles,
+            impressions=[
+                Impression(newsletter_id=newsletter_1_id, position=idx + 1, article=article)
+                for idx, article in enumerate(newsletter_1_articles)
+            ],
             subject="fake-subject",
             body_html="fake-html-1",
         )
         dbNewsletterRepository.store_newsletter(newsletter_1)
 
         newsletter_2 = Newsletter(
+            newsletter_id=newsletter_2_id,
             account_id=user_account_2.account_id,
-            articles=newsletter_2_articles,
+            impressions=[
+                Impression(newsletter_id=newsletter_2_id, position=idx + 1, article=article)
+                for idx, article in enumerate(newsletter_2_articles)
+            ],
             subject="fake-subject",
             body_html="fake-html-2",
         )

@@ -10,7 +10,7 @@ from sqlalchemy import (
     select,
 )
 
-from poprox_concepts.domain import Account, Article, Newsletter
+from poprox_concepts.domain import Account, Article, Impression, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -40,11 +40,11 @@ class DbNewsletterRepository(DatabaseRepository):
             )
             self.conn.execute(stmt)
 
-            for position, article in enumerate(newsletter.articles):
+            for impression in newsletter.impressions:
                 stmt = insert(impression_table).values(
                     newsletter_id=str(newsletter.newsletter_id),
-                    article_id=str(article.article_id),
-                    position=1 + position,
+                    article_id=str(impression.article.article_id),
+                    position=impression.position,
                 )
                 self.conn.execute(stmt)
 
@@ -92,8 +92,8 @@ class DbNewsletterRepository(DatabaseRepository):
         )
         newsletter_result = self.conn.execute(newsletters_query).fetchall()
 
-        articles_query = (
-            select(impressions_table.c.newsletter_id, articles_table)
+        impressions_query = (
+            select(impressions_table.c.newsletter_id, impressions_table.c.position, articles_table)
             .join(
                 impressions_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
@@ -101,21 +101,25 @@ class DbNewsletterRepository(DatabaseRepository):
             .where(impressions_table.c.newsletter_id.in_([row.newsletter_id for row in newsletter_result]))
         )
 
-        articles_result = self.conn.execute(articles_query).fetchall()
+        impressions_result = self.conn.execute(impressions_query).fetchall()
 
-        articles_by_newsletter_id = defaultdict(list)
-        for row in articles_result:
-            articles_by_newsletter_id[row.newsletter_id].append(
-                Article(
-                    article_id=row.article_id,
-                    headline=row.headline,
-                    subhead=row.subhead,
-                    url=row.url,
-                    preview_image_id=row.preview_image_id,
-                    published_at=row.published_at,
-                    source=row.source,
-                    external_id=row.external_id,
-                    raw_data=row.raw_data,
+        impressions_by_newsletter_id = defaultdict(list)
+        for row in impressions_result:
+            impressions_by_newsletter_id[row.newsletter_id].append(
+                Impression(
+                    newsletter_id=row.newsletter_id,
+                    position=row.position,
+                    article=Article(
+                        article_id=row.article_id,
+                        headline=row.headline,
+                        subhead=row.subhead,
+                        url=row.url,
+                        preview_image_id=row.preview_image_id,
+                        published_at=row.published_at,
+                        source=row.source,
+                        external_id=row.external_id,
+                        raw_data=row.raw_data,
+                    ),
                 )
             )
 
@@ -124,7 +128,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 newsletter_id=row.newsletter_id,
                 account_id=row.account_id,
                 treatment_id=row.treatment_id,
-                articles=articles_by_newsletter_id[row.newsletter_id],
+                impressions=impressions_by_newsletter_id[row.newsletter_id],
                 subject=row.email_subject,
                 body_html=row.html,
                 created_at=row.created_at,
@@ -132,10 +136,34 @@ class DbNewsletterRepository(DatabaseRepository):
             for row in newsletter_result
         ]
 
+    def fetch_impressions_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> list[Impression]:
+        impressions_table = self.tables["impressions"]
+
+        query = select(
+            impressions_table.c.newsletter_id,
+            impressions_table.c.article_id,
+            impressions_table.c.position,
+        ).where(
+            impressions_table.c.newsletter_id.in_(newsletter_ids),
+        )
+        rows = self.conn.execute(query).fetchall()
+        return [
+            Impression(
+                newsletter_id=row.newsletter_id,
+                article_id=row.article_id,
+                position=row.position,
+            )
+            for row in rows
+        ]
+
 
 class S3NewsletterRepository(S3Repository):
     def store_as_parquet(
-        self, newsletters: list[Newsletter], bucket_name: str, file_prefix: str, start_time: datetime = None
+        self,
+        newsletters: list[Newsletter],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
     ) -> str:
         import pandas as pd
 
@@ -144,17 +172,15 @@ class S3NewsletterRepository(S3Repository):
 
 
 def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
-    def flatten(newsletter):
-        rows = []
-        for article in newsletter.articles:
-            row = {}
-            row["account_id"] = str(newsletter.account_id)
-            row["newsletter_id"] = str(newsletter.newsletter_id)
-            row["article_id"] = str(article.article_id)
-            rows.append(row)
-        return rows
-
-    final_list = []
+    impression_records = []
     for newsletter in newsletters:
-        final_list.extend(flatten(newsletter))
-    return final_list
+        records = []
+        for impression in newsletter.impressions:
+            record = {}
+            record["account_id"] = str(newsletter.account_id)
+            record["newsletter_id"] = str(newsletter.newsletter_id)
+            record["article_id"] = str(impression.article.article_id)
+            record["position"] = impression.position
+            records.append(record)
+        impression_records.extend(records)
+    return impression_records
