@@ -65,7 +65,7 @@ def test_fetch_newsletters(db_engine):
             newsletter_id=newsletter_1_id,
             account_id=user_account_1.account_id,
             impressions=[
-                Impression(newsletter_id=newsletter_1_id, position=idx, article=article)
+                Impression(newsletter_id=newsletter_1_id, position=idx + 1, article=article)
                 for idx, article in enumerate(newsletter_1_articles)
             ],
             subject="fake-subject",
@@ -77,7 +77,7 @@ def test_fetch_newsletters(db_engine):
             newsletter_id=newsletter_2_id,
             account_id=user_account_2.account_id,
             impressions=[
-                Impression(newsletter_id=newsletter_2_id, position=idx, article=article)
+                Impression(newsletter_id=newsletter_2_id, position=idx + 1, article=article)
                 for idx, article in enumerate(newsletter_2_articles)
             ],
             subject="fake-subject",
