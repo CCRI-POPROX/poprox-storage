@@ -13,9 +13,9 @@ authors = [{ name = "Karl Higley", email = "khigley@umn.edu" }]
 dependencies = [
   "boto3~=1.33.3",
   "botocore~=1.33.3",
+  "fastparquet",
   "pandas",
   "psycopg2-binary",
-  "pyarrow",
   "pydantic~=2.7.1",
   "smart_open",
   "sqlalchemy",

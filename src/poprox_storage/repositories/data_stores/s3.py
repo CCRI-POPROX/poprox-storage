@@ -55,7 +55,14 @@ class S3Repository:
         # Export dataframe as Parquet
         # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_parquet.html
         data = BytesIO()
-        dataframe.to_parquet(data)
+
+        # FastParquet closes the "file"; temporarily stubbing out the close method prevents that
+        orig_close = data.close
+        data.close = lambda: None
+        try:
+            dataframe.to_parquet(data)
+        finally:
+            data.close = orig_close
 
         # reset the BytesIO for reading
         data.seek(0)
