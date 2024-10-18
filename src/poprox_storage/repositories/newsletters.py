@@ -165,10 +165,8 @@ class S3NewsletterRepository(S3Repository):
         file_prefix: str,
         start_time: datetime = None,
     ) -> str:
-        import pandas as pd
-
-        newsletter_df = pd.DataFrame.from_records(extract_and_flatten(newsletters))
-        return self._write_dataframe_as_parquet(newsletter_df, bucket_name, file_prefix, start_time)
+        records = extract_and_flatten(newsletters)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
 def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:

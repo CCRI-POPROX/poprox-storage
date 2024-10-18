@@ -66,10 +66,8 @@ class S3DemographicsRepository(S3Repository):
         file_prefix: str,
         start_time: datetime = None,
     ):
-        import pandas as pd
-
-        dataframe = pd.DataFrame.from_records(convert_to_records(demographics))
-        return self._write_dataframe_as_parquet(dataframe, bucket_name, file_prefix, start_time)
+        records = convert_to_records(demographics)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
 def convert_to_records(demographics: list[Demographics]) -> list[dict]:
