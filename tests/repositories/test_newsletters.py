@@ -14,6 +14,7 @@ def test_fetch_newsletters(db_engine):
             "impressions",
             "clicks",
             "newsletters",
+            "article_placements",
             "articles",
         )
 
@@ -50,8 +51,8 @@ def test_fetch_newsletters(db_engine):
             ),
         ]
 
-        user_account_1 = dbAccountRepository.store_new_account(email="user-1@gmail.com", source="test")
-        user_account_2 = dbAccountRepository.store_new_account(email="user-2@gmail.com", source="test")
+        user_account_1 = dbAccountRepository.store_new_account(email=f"{uuid4()}@example.com", source="test")
+        user_account_2 = dbAccountRepository.store_new_account(email=f"{uuid4()}@example.com", source="test")
         accounts = [user_account_1, user_account_2]
 
         article_id_1 = dbArticleRepository.store_article(newsletter_1_articles[0])
