@@ -219,9 +219,9 @@ class DbAccountRepository(DatabaseRepository):
             consent_tbl.update()
             .where(
                 consent_tbl.c.account_id == account_id,
-                consent_tbl.c.ended == null(),
+                consent_tbl.c.ended_at == null(),
             )
-            .values(ended=sqlalchemy.text("NOW()"))
+            .values(ended_at=sqlalchemy.text("NOW()"))
         )
         self.conn.execute(update_query)
 
@@ -233,7 +233,7 @@ class DbAccountRepository(DatabaseRepository):
                 account_tbl.c.account_id == account_id,
                 account_tbl.c.email != null(),
             )
-            .values(ended=null())
+            .values(email=null())
         )
         self.conn.execute(update_query)
 
@@ -244,6 +244,6 @@ class DbAccountRepository(DatabaseRepository):
             .where(
                 account_tbl.c.account_id == account_id,
             )
-            .values(ended=True)
+            .values(is_deleted=True)
         )
         self.conn.execute(update_query)
