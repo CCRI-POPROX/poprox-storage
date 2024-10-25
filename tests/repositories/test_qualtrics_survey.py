@@ -70,7 +70,10 @@ def test_store_survey_instance(db_engine):
         conn.execute(text("insert into qualtrics_surveys(qualtrics_id, base_url) values ('first', 'first');"))
         uuid = uuid4()
         conn.execute(
-            text(f"insert into accounts(account_id, email, status, source) values ('{uuid}', 'd@g.com', '', '');")  # noqa: S608
+            text(
+                "insert into accounts(account_id, email, status, source) values "
+                f"('{uuid}', '{uuid}@example.com', '', '');"
+            )  # noqa: S608
         )
 
         repo = DbQualtricsSurveyRepository(conn)
@@ -96,7 +99,8 @@ def test_create_survey_response(db_engine):
         account_uuid = uuid4()
         conn.execute(
             text(
-                f"insert into accounts(account_id, email, status, source) values ('{account_uuid}', 'd@g.com', '', '');"  # noqa: S608
+                "insert into accounts(account_id, email, status, source) values "
+                f"('{account_uuid}', '{account_uuid}@example.com', '', '');"  # noqa: S608
             )
         )
 
@@ -134,7 +138,8 @@ def test_update_survey_response(db_engine):
         account_uuid = uuid4()
         conn.execute(
             text(
-                f"insert into accounts(account_id, email, status, source) values ('{account_uuid}', 'd@g.com', '', '');"  # noqa: S608
+                "insert into accounts(account_id, email, status, source) values "
+                f"('{account_uuid}', '{account_uuid}@example.com', '', '');"  # noqa: S608
             )
         )
 

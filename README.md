@@ -22,6 +22,13 @@ pip install poprox-storage
 pip install .[dev]
 ```
 
+### Making Database Schema Changes
+
+We use [alembic](https://alembic.sqlalchemy.org/en/latest/) to manage schema changes as a series of migrations. You can [create a new migration file](https://alembic.sqlalchemy.org/en/latest/tutorial.html#create-a-migration-script) from the `poprox-db` directory with:
+```
+alembic revision -m "description of your changes"
+```
+
 ### Running the tests
 
 Start the dev database and load the database schema with:

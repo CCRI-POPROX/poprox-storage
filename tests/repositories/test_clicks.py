@@ -15,6 +15,7 @@ def test_get_click_between(db_engine):
             "impressions",
             "clicks",
             "newsletters",
+            "article_placements",
             "articles",
         )
 
@@ -24,7 +25,7 @@ def test_get_click_between(db_engine):
         dbNewsletterRepository = DbNewsletterRepository(conn)
         dbClicksRepository = DbClicksRepository(conn)
 
-        user_account_1 = dbAccountRepository.store_new_account(email="user-1@gmail.com", source="test")
+        user_account_1 = dbAccountRepository.store_new_account(email=f"{uuid4()}@example.com", source="test")
 
         articles = [
             Article(headline="headline-1", url="url-1"),
@@ -35,8 +36,8 @@ def test_get_click_between(db_engine):
         article_id_2 = dbArticleRepository.store_article(articles[1])
 
         accounts = [
-            Account(account_id=user_account_1.account_id, email="user-1@gmail.com", status="", source="test"),
-            Account(account_id=uuid4(), email="user-2@gmail.com", status="", source="test"),
+            Account(account_id=user_account_1.account_id, email=user_account_1.email, status="", source="test"),
+            Account(account_id=uuid4(), email=f"{uuid4()}@gmail.com", status="", source="test"),
         ]
 
         newsletter = Newsletter(account_id=user_account_1.account_id, impressions=[], subject="", body_html="")
