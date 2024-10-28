@@ -1,5 +1,6 @@
 import json
 import logging
+import pandas as pd
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -298,7 +299,7 @@ class S3ArticleRepository(S3Repository):
         file_prefix: str,
         start_time: datetime = None,
     ):
-        records = extract_and_flatten(articles)
+        records = pd.json_normalize(articles).to_dict(orient="records")
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
@@ -365,25 +366,3 @@ def create_ap_subject_mention(subject) -> Mention:
     mention = Mention(source=source, relevance=relevance, entity=entity)
 
     return mention
-
-
-def extract_and_flatten(articles):
-    def flatten(article):
-        result = article.__dict__
-        result["article_id"] = str(result["article_id"])
-        mentions = result["mentions"]
-        del result["mentions"]
-        del result["preview_image_id"]
-        del result["source"]
-        del result["external_id"]
-        mention_dict = {}
-        for mention in mentions:
-            key = mention.entity.entity_type + "_" + mention.entity.name
-            if key not in mention_dict or (key in mention_dict and mention.source == "AP-Editorial"):
-                mention_dict[key] = mention
-        result["mentions"] = {}
-        for key, value in mention_dict.items():
-            result["mentions"][key] = value.relevance
-        return result
-
-    return [flatten(article) for article in articles]
