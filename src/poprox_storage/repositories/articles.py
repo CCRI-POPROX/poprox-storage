@@ -2,6 +2,7 @@ import json
 import logging
 import pandas as pd
 from datetime import datetime, timedelta
+from io import BytesIO
 from uuid import UUID
 
 import boto3
@@ -126,6 +127,47 @@ class DbArticleRepository(DatabaseRepository):
 
         return_val = list(article_lookup.values())
         return return_val
+    
+    def fetch_mentions(self) -> list[Mention]:
+        entity_table = self.tables["entities"]
+        mention_table = self.tables["mentions"]
+
+        query = (
+            select(
+                entity_table.c.entity_id,
+                entity_table.c.external_id,
+                entity_table.c.name,
+                entity_table.c.entity_type,
+                entity_table.c.source,
+                entity_table.c.raw_data,
+                mention_table.c.mention_id,
+                mention_table.c.article_id,
+                mention_table.c.source,
+                mention_table.c.relevance,
+            )
+            .join(entity_table, mention_table.c.entity_id == entity_table.c.entity_id)
+        )
+        results = self.conn.execute(query).fetchall()
+        mentions = []
+        for row in results:
+            entity = Entity(
+                entity_id=row[0],
+                external_id=row[1],
+                name=row[2],
+                entity_type=row[3],
+                source=row[4],
+                raw_data=row[5],
+            )
+            mention = Mention(
+                mention_id=row[6],
+                article_id=row[7],
+                source=row[8],
+                relevance=row[9],
+                entity=entity,
+            )
+            mentions.append(mention)
+        return mentions
+
 
     def fetch_article_by_url(self, article_url: str, newsletter_id: UUID | None = None) -> UUID | None:
         impression_table = self.tables["impressions"]
@@ -299,8 +341,27 @@ class S3ArticleRepository(S3Repository):
         file_prefix: str,
         start_time: datetime = None,
     ):
-        records = pd.json_normalize(articles).to_dict(orient="records")
+        records = extract_and_flatten(articles)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+    
+    def store_mentions_as_parquet(
+        self, 
+        mentions: list[Mention],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        mentions_df = pd.json_normalize(mentions)
+        data = BytesIO()
+        mentions_df.to_parquet(data)
+
+        data.seek(0)
+
+        file_write_time = datetime.now()
+        file_name = f"{file_prefix}_{file_write_time.strftime('%Y%m%d-%H%M%S')}.parquet"
+
+        s3.put_object(bucket_name, file_name, data)
+        return {"new_file_key": file_name}
 
 
 def extract_articles(news_file_content) -> list[Article]:
@@ -366,3 +427,24 @@ def create_ap_subject_mention(subject) -> Mention:
     mention = Mention(source=source, relevance=relevance, entity=entity)
 
     return mention
+
+def extract_and_flatten(articles):
+    def flatten(article):
+        result = article.__dict__
+        result["article_id"] = str(result["article_id"])
+        mentions = result["mentions"]
+        del result["mentions"]
+        del result["preview_image_id"]
+        del result["source"]
+        del result["external_id"]
+        mention_dict = {}
+        for mention in mentions:
+            key = mention.entity.entity_type + "_" + mention.entity.name
+            if key not in mention_dict or (key in mention_dict and mention.source == "AP-Editorial"):
+                mention_dict[key] = mention
+        result["mentions"] = {}
+        for key, value in mention_dict.items():
+            result["mentions"][key] = value.relevance
+        return result
+
+    return [flatten(article) for article in articles]
