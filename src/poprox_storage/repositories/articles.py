@@ -352,16 +352,8 @@ class S3ArticleRepository(S3Repository):
         start_time: datetime = None,
     ):
         mentions_df = pd.json_normalize(mentions)
-        data = BytesIO()
-        mentions_df.to_parquet(data)
-
-        data.seek(0)
-
-        file_write_time = datetime.now()
-        file_name = f"{file_prefix}_{file_write_time.strftime('%Y%m%d-%H%M%S')}.parquet"
-
-        s3.put_object(bucket_name, file_name, data)
-        return {"new_file_key": file_name}
+        records = mentions_df.to_dict('records')
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
 def extract_articles(news_file_content) -> list[Article]:
