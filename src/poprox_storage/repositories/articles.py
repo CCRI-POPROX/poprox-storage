@@ -353,6 +353,7 @@ class S3ArticleRepository(S3Repository):
     ):
         mentions_df = pd.json_normalize(mentions)
         records = mentions_df.to_dict('records')
+        logger.info(f"converted {len(records)} records")
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
