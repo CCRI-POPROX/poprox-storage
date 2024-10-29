@@ -1,8 +1,6 @@
 import json
 import logging
-import pandas as pd
 from datetime import datetime, timedelta
-from io import BytesIO
 from uuid import UUID
 
 import boto3
@@ -419,6 +417,7 @@ def create_ap_subject_mention(subject) -> Mention:
     mention = Mention(source=source, relevance=relevance, entity=entity)
 
     return mention
+
 
 def extract_and_flatten(articles):
     def flatten(article):
