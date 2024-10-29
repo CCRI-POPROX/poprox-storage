@@ -56,6 +56,30 @@ class DbDemographicsRepository(DatabaseRepository):
             )
             for row in result
         ]
+        
+    # fetching latest demographic info
+    def fetch_latest_demographics_by_account_id(self, account_id: UUID) -> Demographics:
+        demographics_tbl = self.tables["demographics"]
+
+        demo_query = (
+            select(demographics_tbl)
+            .where(demographics_tbl.c.account_id == account_id)
+            .order_by(demographics_tbl.c.created_at.desc())
+            .limit(1)
+        )
+        result = self.conn.execute(demo_query).fetchone()
+
+        if result is None:
+            return None
+
+        return Demographics(
+            account_id=result.account_id,
+            gender=result.gender,
+            birth_year=result.birth_year,
+            zip5=result.zip5,
+            education=result.education,
+            race=result.race,
+        )
 
 
 class S3DemographicsRepository(S3Repository):
@@ -84,3 +108,7 @@ def convert_to_records(demographics: list[Demographics]) -> list[dict]:
         )
 
     return records
+
+
+
+
