@@ -447,6 +447,8 @@ def extract_and_flatten_mentions(mentions):
         result["article_id"] = str(result["article_id"])
         result["mention_id"] = str(result["mention_id"])
         entity = result["entity"].__dict__
+        entity['entity_id'] = str(entity['entity_id'])
+        entity['external_id'] = str(entity['external_id'])
         result['entity'] = entity
         return result
     return [flatten(mention) for mention in mentions]
