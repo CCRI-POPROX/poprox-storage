@@ -351,9 +351,8 @@ class S3ArticleRepository(S3Repository):
         file_prefix: str,
         start_time: datetime = None,
     ):
-        mentions_df = pd.json_normalize(mentions)
-        records = mentions_df.to_dict('records')
-        logger.info(f"converted {len(records)} records")
+        
+        records = extract_and_flatten_mentions(mentions)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
@@ -441,3 +440,13 @@ def extract_and_flatten(articles):
         return result
 
     return [flatten(article) for article in articles]
+
+def extract_and_flatten_mentions(mentions):
+    def flatten(mention):
+        result = mention.__dict__
+        result["article_id"] = str(result["article_id"])
+        result["mention_id"] = str(result["mention_id"])
+        entity = result["entity"].__dict__
+        result['entity'] = entity
+        return result
+    return [flatten(mention) for mention in mentions]
