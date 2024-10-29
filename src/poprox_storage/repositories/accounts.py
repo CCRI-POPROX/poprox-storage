@@ -94,16 +94,16 @@ class DbAccountRepository(DatabaseRepository):
         row = self.conn.execute(query).one_or_none()
         return row.account_id
 
-    def store_new_account(self, email: str, source: str, sub_source: str = None) -> Account:
+    def store_new_account(self, email: str, source: str, subsource: str = None) -> Account:
         account_tbl = self.tables["accounts"]
         query = (
             sqlalchemy.insert(account_tbl)
-            .values(email=email, source=source, sub_source=sub_source, status="new_account")
+            .values(email=email, source=source, subsource=subsource, status="new_account")
             .returning(account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status)
         )
         row = self.conn.execute(query).one_or_none()
         return Account(
-            account_id=row.account_id, email=row.email, status=row.status, source=source, sub_source=sub_source
+            account_id=row.account_id, email=row.email, status=row.status, source=source, subsource=subsource
         )
 
     def fetch_unassigned_accounts(self, start_date: date, end_date: date):
