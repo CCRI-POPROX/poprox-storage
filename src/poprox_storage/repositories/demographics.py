@@ -30,9 +30,10 @@ class DbDemographicsRepository(DatabaseRepository):
                 account_id=demographic.account_id,
                 gender=demographic.gender,
                 birth_year=demographic.birth_year,
-                zip5=demographic.zip5,
+                zip3=demographic.zip5,
                 education=demographic.education,
                 race=demographic.race,
+                email_client=demographic.email_client,
             )
             .returning(demographics_tbl.c.demographic_id)
         )
@@ -76,9 +77,10 @@ class DbDemographicsRepository(DatabaseRepository):
             account_id=result.account_id,
             gender=result.gender,
             birth_year=result.birth_year,
-            zip5=result.zip5,
+            zip5=result.zip3,
             education=result.education,
             race=result.race,
+            email_client=result.email_client,
         )
 
 
