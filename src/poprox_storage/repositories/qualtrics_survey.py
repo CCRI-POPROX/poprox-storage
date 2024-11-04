@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
@@ -6,8 +7,10 @@ from sqlalchemy import (
     select,
 )
 
+from poprox_concepts.domain import Account
 from poprox_storage.concepts.qualtrics_survey import (
     QualtricsSurvey,
+    QualtricsSurveyInstance,
     QualtricsSurveyResponse,
 )
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -23,6 +26,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables(
             "qualtrics_surveys",
+            "qualtrics_survey_calendar",
             "qualtrics_survey_instances",
             "qualtrics_survey_responses",
         )
@@ -96,3 +100,45 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             },
             constraint="uq_qualtrics_response_id",
         )
+
+    def fetch_survey_responses(
+        self, account: Account, survey_ids: list[UUID] | None = None
+    ) -> list[tuple[QualtricsSurveyInstance, QualtricsSurveyResponse]]:
+        survey_instance_table = self.tables["qualtrics_survey_instances"]
+        survey_responses_table = self.tables["qualtrics_survey_responses"]
+
+        survey_ids = survey_ids or []
+
+        instance_query = select(survey_instance_table).where(survey_instance_table.c.account_id == account.account_id)
+
+        if survey_ids:
+            instance_query = instance_query.where(survey_instance_table.c.survey_id.in_(survey_ids))
+
+        response_query = instance_query.join(
+            survey_responses_table,
+            survey_instance_table.c.survey_instance_id == survey_responses_table.c.survey_instance_id,
+        )
+        results = self.conn.execute(response_query).fetchall()
+
+        return [
+            (
+                QualtricsSurveyInstance(row.survey_instance_id, row.survey_id, row.account_id),
+                QualtricsSurveyResponse(
+                    row.survey_response_id,
+                    survey_instance_id=row.survey_instance_id,
+                    qualtrics_response_id=row.qualtrics_response_id,
+                    raw_data=row.raw_data,
+                ),
+            )
+            for row in results
+        ]
+
+    def fetch_latest_survey_sent(self, date: datetime.date | None = None) -> UUID:
+        survey_calendar_table = self.tables["qualtrics_survey_calendar"]
+
+        date = date or datetime.date.today()
+
+        query = select(survey_calendar_table).where(survey_calendar_table.c.created_at <= date).limit(1)
+        row = self.conn.execute(query).fetchone()
+
+        return row.survey_id
