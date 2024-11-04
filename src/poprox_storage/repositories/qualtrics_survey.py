@@ -133,7 +133,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             for row in results
         ]
 
-    def fetch_latest_survey_sent(self, date: datetime.date | None = None) -> UUID:
+    def fetch_latest_survey_sent(self, date: datetime.date = None) -> UUID:
         survey_calendar_table = self.tables["qualtrics_survey_calendar"]
 
         date = date or datetime.date.today()
