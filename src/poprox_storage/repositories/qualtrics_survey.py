@@ -133,6 +133,15 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             for row in results
         ]
 
+    def store_latest_survey_sent(self, survey: QualtricsSurvey) -> UUID:
+        survey_calendar_table = self.tables["qualtrics_survey_calendar"]
+
+        return self._upsert_and_return_id(
+            self.conn,
+            survey_calendar_table,
+            {"survey_id": survey.survey_id},
+        )
+
     def fetch_latest_survey_sent(self, date: datetime.date = None) -> UUID:
         survey_table = self.tables["qualtrics_surveys"]
         survey_calendar_table = self.tables["qualtrics_survey_calendar"]
