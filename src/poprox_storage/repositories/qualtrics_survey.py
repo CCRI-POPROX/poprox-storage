@@ -134,11 +134,23 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         ]
 
     def fetch_latest_survey_sent(self, date: datetime.date = None) -> UUID:
+        survey_table = self.tables["qualtrics_surveys"]
         survey_calendar_table = self.tables["qualtrics_survey_calendar"]
 
         date = date or datetime.date.today()
 
-        query = select(survey_calendar_table).where(survey_calendar_table.c.created_at <= date).limit(1)
+        query = (
+            select(survey_table)
+            .join(survey_calendar_table, survey_table.c.survey_id == survey_calendar_table.c.survey_id)
+            .where(survey_calendar_table.c.created_at <= date)
+            .order_by(survey_calendar_table.c.created_at.desc())
+            .limit(1)
+        )
         row = self.conn.execute(query).fetchone()
 
-        return row.survey_id
+        return QualtricsSurvey(
+            survey_id=row.survey_id,
+            qualtrics_id=row.qualtrics_id,
+            continuation_token=row.continuation_token,
+            active=row.active,
+        )
