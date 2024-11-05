@@ -27,7 +27,7 @@ target_metadata = None
 # ... etc.
 
 db_user = os.environ.get("POPROX_DB_USER", "postgres")
-db_password = os.environ.get("POPROX_DB_PASSWORD", "thisisapoproxpassword")
+db_password = os.environ.get("POPROX_DB_PASSWORD", "")
 db_host = os.environ.get("POPROX_DB_HOST", "127.0.0.1")
 db_port = os.environ.get("POPROX_DB_PORT", 5433)
 db_name = os.environ.get("POPROX_DB_NAME", "poprox")
