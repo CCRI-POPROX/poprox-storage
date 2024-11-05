@@ -15,7 +15,7 @@ class QualtricsSurvey(BaseModel):
 
 class QualtricsSurveyInstance(BaseModel):
     survey_instance_id: UUID | None = None
-    survey_instance_id: UUID
+    survey_id: UUID
     account_id: UUID
 
 
