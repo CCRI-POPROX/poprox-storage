@@ -256,10 +256,11 @@ class DbArticleRepository(DatabaseRepository):
                 subhead=row.subhead,
                 url=row.url,
                 preview_image_id=row.preview_image_id,
-                published_at=row.published_at,
                 source=row.source,
                 external_id=row.external_id,
                 raw_data=row.raw_data,
+                published_at=row.published_at,
+                created_at=row.created_at,
             )
             for row in result
         ]
