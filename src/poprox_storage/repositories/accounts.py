@@ -108,13 +108,13 @@ class DbAccountRepository(DatabaseRepository):
     
 ######################### storing & fetching the zip code #########################
     
-    def store_zip_code(self, account_id: UUID, zip5: str) -> bool:
+    def store_zip5(self, account_id: UUID, zip5: str) -> bool:
         account_tbl = self.tables["accounts"]
         query = sqlalchemy.update(account_tbl).values(zip5=zip5).where(account_tbl.c.account_id == account_id)
         result = self.conn.execute(query)    
         return result.rowcount > 0
     
-    def fetch_zip_code(self, account_id: UUID) -> str | None:
+    def fetch_zip5(self, account_id: UUID) -> str | None:
         account_tbl = self.tables["accounts"]
         query = sqlalchemy.select(account_tbl.c.zip5).where(account_tbl.c.account_id == account_id)
         result = self.conn.execute(query).one_or_none()
