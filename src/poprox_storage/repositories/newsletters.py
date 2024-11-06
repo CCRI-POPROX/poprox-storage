@@ -108,7 +108,7 @@ class DbNewsletterRepository(DatabaseRepository):
     def _fetch_newsletters(self, newsletters_table, impressions_table, articles_table, where_clause=None):
         newsletter_query = select(newsletters_table)
 
-        if where_clause:
+        if where_clause is not None:
             newsletter_query = newsletter_query.where(where_clause)
 
         newsletter_result = self.conn.execute(newsletter_query).fetchall()
