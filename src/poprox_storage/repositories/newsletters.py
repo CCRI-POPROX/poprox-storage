@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import (
@@ -57,6 +57,20 @@ class DbNewsletterRepository(DatabaseRepository):
             impressions_table,
             articles_table,
             newsletters_table.c.account_id.in_([acct.account_id for acct in accounts]),
+        )
+
+    def fetch_newsletters_since(self, days_ago=90) -> list[Newsletter]:
+        newsletters_table = self.tables["newsletters"]
+        impressions_table = self.tables["impressions"]
+        articles_table = self.tables["articles"]
+
+        cutoff = datetime.now() - timedelta(days=days_ago)
+
+        return self._fetch_newsletters(
+            newsletters_table,
+            impressions_table,
+            articles_table,
+            newsletters_table.c.created_at >= cutoff,
         )
 
     def fetch_newsletters_by_treatment_id(self, expt_treatment_ids: list[UUID]) -> list[Newsletter]:
