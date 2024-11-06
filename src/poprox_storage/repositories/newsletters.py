@@ -1,4 +1,3 @@
-import json
 from collections import defaultdict
 from datetime import datetime
 from uuid import UUID
@@ -48,49 +47,57 @@ class DbNewsletterRepository(DatabaseRepository):
                 )
                 self.conn.execute(stmt)
 
-    def fetch_newsletters(self, accounts: list[Account]) -> dict[UUID, dict[UUID, list[Article]]]:
-        newsletter_table = self.tables["newsletters"]
+    def fetch_newsletters(self, accounts: list[Account]) -> list[Newsletter]:
+        newsletters_table = self.tables["newsletters"]
+        impressions_table = self.tables["impressions"]
+        articles_table = self.tables["articles"]
 
-        query = select(
-            newsletter_table.c.newsletter_id,
-            newsletter_table.c.account_id,
-            newsletter_table.c.content,
-        ).where(
-            newsletter_table.c.account_id.in_([acct.account_id for acct in accounts]),
+        return self._fetch_newsletters(
+            newsletters_table,
+            impressions_table,
+            articles_table,
+            newsletters_table.c.account_id.in_([acct.account_id for acct in accounts]),
         )
-        newsletter_result = self.conn.execute(query).fetchall()
-        historic_newsletters = defaultdict(dict)
-        for row in newsletter_result:
-            raw_articles = []
-            for article_json in row.content:
-                if isinstance(article_json, dict):
-                    article_json = json.dumps(article_json)
-                raw_articles.append(json.loads(article_json))
-            articles = [
-                Article(
-                    article_id=raw["article_id"],
-                    headline=raw["headline"],
-                    subhead=raw.get("subhead", None),
-                    url=raw["url"],
-                    published_at=datetime.strptime(
-                        raw.get("published_at", "1970-01-01T00:00:00")[:19],
-                        "%Y-%m-%dT%H:%M:%S",
-                    ),
-                )
-                for raw in raw_articles
-            ]
-            historic_newsletters[row.account_id][row.newsletter_id] = articles
-        return historic_newsletters
 
     def fetch_newsletters_by_treatment_id(self, expt_treatment_ids: list[UUID]) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
 
-        newsletters_query = select(newsletters_table).where(
+        return self._fetch_newsletters(
+            newsletters_table,
+            impressions_table,
+            articles_table,
             newsletters_table.c.treatment_id.in_(expt_treatment_ids),
         )
-        newsletter_result = self.conn.execute(newsletters_query).fetchall()
+
+    def fetch_impressions_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> list[Impression]:
+        impressions_table = self.tables["impressions"]
+
+        query = select(
+            impressions_table.c.newsletter_id,
+            impressions_table.c.article_id,
+            impressions_table.c.position,
+        ).where(
+            impressions_table.c.newsletter_id.in_(newsletter_ids),
+        )
+        rows = self.conn.execute(query).fetchall()
+        return [
+            Impression(
+                newsletter_id=row.newsletter_id,
+                article_id=row.article_id,
+                position=row.position,
+            )
+            for row in rows
+        ]
+
+    def _fetch_newsletters(self, newsletters_table, impressions_table, articles_table, where_clause=None):
+        newsletter_query = select(newsletters_table)
+
+        if where_clause:
+            newsletter_query = newsletter_query.where(where_clause)
+
+        newsletter_result = self.conn.execute(newsletter_query).fetchall()
 
         impressions_query = (
             select(impressions_table.c.newsletter_id, impressions_table.c.position, articles_table)
@@ -102,7 +109,9 @@ class DbNewsletterRepository(DatabaseRepository):
         )
 
         impressions_result = self.conn.execute(impressions_query).fetchall()
+        return self._convert_to_newsletter_objs(newsletter_result, impressions_result)
 
+    def _convert_to_newsletter_objs(self, newsletter_result, impressions_result):
         impressions_by_newsletter_id = defaultdict(list)
         for row in impressions_result:
             impressions_by_newsletter_id[row.newsletter_id].append(
@@ -134,26 +143,6 @@ class DbNewsletterRepository(DatabaseRepository):
                 created_at=row.created_at,
             )
             for row in newsletter_result
-        ]
-
-    def fetch_impressions_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> list[Impression]:
-        impressions_table = self.tables["impressions"]
-
-        query = select(
-            impressions_table.c.newsletter_id,
-            impressions_table.c.article_id,
-            impressions_table.c.position,
-        ).where(
-            impressions_table.c.newsletter_id.in_(newsletter_ids),
-        )
-        rows = self.conn.execute(query).fetchall()
-        return [
-            Impression(
-                newsletter_id=row.newsletter_id,
-                article_id=row.article_id,
-                position=row.position,
-            )
-            for row in rows
         ]
 
 
