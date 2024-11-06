@@ -31,7 +31,7 @@ class S3ClicksRepository(S3Repository):
 
     def store_as_parquet(
         self,
-        clicks: list[Click],
+        clicks: dict[UUID, list[Click]],
         bucket_name: str,
         file_prefix: str,
         start_time: datetime = None,
@@ -136,16 +136,18 @@ class DbClicksRepository(DatabaseRepository):
         ]
 
 
-def extract_and_flatten(clicks: list[Click]) -> list[dict]:
-    def flatten(click: Click):
+def extract_and_flatten(clicks_by_user: dict[UUID, list[Click]]) -> list[dict]:
+    def flatten(profile_id, click: Click):
         row = {}
+        row["profile_id"] = str(profile_id)
         row["newsletter_id"] = str(click.newsletter_id)
         row["article_id"] = str(click.article_id)
         row["timestamp"] = click.timestamp
         return row
 
-    final_list = []
-    for click in clicks:
-        final_list.append(flatten(click))
+    flattened_rows = []
+    for profile_id, clicks in clicks_by_user.items():
+        for click in clicks:
+            flattened_rows.append(flatten(profile_id, click))
 
-    return final_list
+    return flattened_rows
