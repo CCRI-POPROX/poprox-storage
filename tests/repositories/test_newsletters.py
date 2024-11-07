@@ -87,12 +87,13 @@ def test_fetch_newsletters(db_engine):
         dbNewsletterRepository.store_newsletter(newsletter_2)
 
         results = dbNewsletterRepository.fetch_newsletters(accounts)
-        assert 2 == len(results)
-        user_1_newsletter = results[user_account_1.account_id]
-        assert 1 == len(user_1_newsletter)
-        assert 2 == len(user_1_newsletter[newsletter_1.newsletter_id])
-        assert "subhead-1" == user_1_newsletter[newsletter_1.newsletter_id][0].subhead
+        assert len(results) == 2
 
-        user_2_newsletter = results[user_account_2.account_id]
-        assert 1 == len(user_2_newsletter)
-        assert 1 == len(user_2_newsletter[newsletter_2.newsletter_id])
+        user_1_newsletter = results[0]
+        assert user_1_newsletter.newsletter_id == newsletter_1_id
+        assert len(user_1_newsletter.articles) == 2
+        assert "subhead-1" == user_1_newsletter.articles[0].subhead
+
+        user_2_newsletter = results[1]
+        assert user_2_newsletter.newsletter_id == newsletter_2_id
+        assert len(user_2_newsletter.articles) == 1
