@@ -30,9 +30,10 @@ class DbDemographicsRepository(DatabaseRepository):
                 account_id=demographic.account_id,
                 gender=demographic.gender,
                 birth_year=demographic.birth_year,
-                zip5=demographic.zip5,
+                zip3=demographic.zip3,
                 education=demographic.education,
                 race=demographic.race,
+                email_client=demographic.email_client,
             )
             .returning(demographics_tbl.c.demographic_id)
         )
@@ -50,12 +51,37 @@ class DbDemographicsRepository(DatabaseRepository):
                 account_id=row.account_id,
                 gender=row.gender,
                 birth_year=row.birth_year,
-                zip5="",
+                zip3=row.zip3,
                 education=row.education,
                 race=row.race,
             )
             for row in result
         ]
+
+    # fetching latest demographic info
+    def fetch_latest_demographics_by_account_id(self, account_id: UUID) -> Demographics:
+        demographics_tbl = self.tables["demographics"]
+
+        demo_query = (
+            select(demographics_tbl)
+            .where(demographics_tbl.c.account_id == account_id)
+            .order_by(demographics_tbl.c.created_at.desc())
+            .limit(1)
+        )
+        result = self.conn.execute(demo_query).fetchone()
+
+        if result is None:
+            return None
+
+        return Demographics(
+            account_id=result.account_id,
+            gender=result.gender,
+            birth_year=result.birth_year,
+            zip3=result.zip3,
+            education=result.education,
+            race=result.race,
+            email_client=result.email_client,
+        )
 
 
 class S3DemographicsRepository(S3Repository):
