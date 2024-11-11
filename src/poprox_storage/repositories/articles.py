@@ -80,6 +80,10 @@ class DbArticleRepository(DatabaseRepository):
         article_table = self.tables["articles"]
         return self._get_articles(article_table, article_table.c.article_id.in_(ids))
 
+    def fetch_article_by_external_id(self, id_: str) -> Article:
+        article_table = self.tables["articles"]
+        return self._get_articles(article_table, article_table.c.external_id == id_)[0]
+
     def fetch_article_mentions(self, articles: list[Article]) -> list[Article]:
         article_lookup = {article.article_id: article for article in articles}
         article_ids = [article.article_id for article in articles]
@@ -254,12 +258,14 @@ class DbArticleRepository(DatabaseRepository):
                 article_id=row.article_id,
                 headline=row.headline,
                 subhead=row.subhead,
+                body=row.body,
                 url=row.url,
                 preview_image_id=row.preview_image_id,
-                published_at=row.published_at,
                 source=row.source,
                 external_id=row.external_id,
                 raw_data=row.raw_data,
+                published_at=row.published_at,
+                created_at=row.created_at,
             )
             for row in result
         ]
@@ -327,6 +333,31 @@ class S3ArticleRepository(S3Repository):
         ]
 
         return articles
+
+    def fetch_nitf_file_keys(self, prefix):
+        """
+        Retrieve the names of AP NITF XML files from S3 in sorted order
+
+        Parameters
+        ----------
+        prefix : str
+            The S3 key prefix to list
+
+        Returns
+        -------
+        List[str]
+            A list of the names of each retrieved file
+            in reverse chronological order
+        """
+        response = self.s3_client.list_objects_v2(Bucket=DEV_BUCKET_NAME, Prefix=prefix)
+
+        files = sorted(response.get("Contents", []), key=lambda d: d["LastModified"], reverse=True)
+
+        return [f["Key"] for f in files]
+
+    def fetch_nitf_file_contents(self, file_key):
+        file_contents = self._get_s3_file(file_key)
+        return file_contents
 
     def store_as_parquet(
         self,

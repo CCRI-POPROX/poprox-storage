@@ -20,7 +20,7 @@ def inject_repos(handler):
     from functools import wraps
     from typing import get_type_hints
 
-    from poprox_storage.aws import DB_ENGINE
+    from poprox_storage.aws import DB_ENGINE, DEV_BUCKET_NAME
     from poprox_storage.repositories.data_stores.db import DatabaseRepository
     from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -38,7 +38,7 @@ def inject_repos(handler):
                 if class_obj in DatabaseRepository._repository_types:
                     repos[param] = class_obj(conn)
                 elif class_obj in S3Repository._repository_types:
-                    repos[param] = class_obj(conn)
+                    repos[param] = class_obj(DEV_BUCKET_NAME)
 
             return handler(event, context, **repos)
 

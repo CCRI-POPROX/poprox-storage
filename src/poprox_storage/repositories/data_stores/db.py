@@ -1,13 +1,10 @@
 import logging
+from datetime import datetime
 from functools import wraps
 from typing import Any, get_type_hints
 from uuid import UUID
 
-from sqlalchemy import (
-    Connection,
-    MetaData,
-    Table,
-)
+from sqlalchemy import Connection, MetaData, Table
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError, InternalError
 
@@ -75,6 +72,9 @@ class DatabaseRepository:
 
         if addl_fields:
             fields.update(addl_fields)
+
+        if "created_at" in fields:
+            fields["created_at"] = fields["created_at"] or datetime.now()
 
         return self._upsert_and_return_id(
             self.conn,
