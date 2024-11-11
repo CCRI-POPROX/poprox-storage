@@ -9,7 +9,6 @@ from sqlalchemy import (
     null,
     or_,
     select,
-    update,
 )
 
 from poprox_concepts import Account
@@ -107,23 +106,21 @@ class DbAccountRepository(DatabaseRepository):
             account_id=row.account_id, email=row.email, status=row.status, source=source, subsource=subsource
         )
 
+    ######################### storing & fetching the zip code #########################
 
-######################### storing & fetching the zip code #########################
-    
     def store_zip5(self, account_id: UUID, zip5: str) -> bool:
         account_tbl = self.tables["accounts"]
         query = sqlalchemy.update(account_tbl).values(zip5=zip5).where(account_tbl.c.account_id == account_id)
-        result = self.conn.execute(query)    
+        result = self.conn.execute(query)
         return result.rowcount > 0
-    
+
     def fetch_zip5(self, account_id: UUID) -> str | None:
         account_tbl = self.tables["accounts"]
         query = sqlalchemy.select(account_tbl.c.zip5).where(account_tbl.c.account_id == account_id)
         result = self.conn.execute(query).one_or_none()
         return result.zip5 if result else None
 
-######################### storing & fetching the zip code #########################
-
+    ######################### storing & fetching the zip code #########################
 
     def fetch_unassigned_accounts(self, start_date: date, end_date: date):
         account_tbl = self.tables["accounts"]

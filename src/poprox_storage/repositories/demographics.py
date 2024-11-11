@@ -57,7 +57,7 @@ class DbDemographicsRepository(DatabaseRepository):
             )
             for row in result
         ]
-        
+
     # fetching latest demographic info
     def fetch_latest_demographics_by_account_id(self, account_id: UUID) -> Demographics:
         demographics_tbl = self.tables["demographics"]
@@ -110,7 +110,3 @@ def convert_to_records(demographics: list[Demographics]) -> list[dict]:
         )
 
     return records
-
-
-
-
