@@ -3,13 +3,7 @@ from datetime import date
 from uuid import UUID
 
 import sqlalchemy
-from sqlalchemy import (
-    Connection,
-    and_,
-    null,
-    or_,
-    select,
-)
+from sqlalchemy import Connection, and_, null, or_, select
 
 from poprox_concepts import Account
 from poprox_concepts.api.tracking import LoginLinkData
@@ -236,3 +230,38 @@ class DbAccountRepository(DatabaseRepository):
             data=link_data.data,
         )
         self.conn.execute(query)
+
+    def end_consent_for_account(self, account_id: UUID):
+        consent_tbl = self.tables["account_consent_log"]
+        update_query = (
+            consent_tbl.update()
+            .where(
+                consent_tbl.c.account_id == account_id,
+                consent_tbl.c.ended_at == null(),
+            )
+            .values(ended_at=sqlalchemy.text("NOW()"))
+        )
+        self.conn.execute(update_query)
+
+    def remove_email_for_account(self, account_id: UUID):
+        account_tbl = self.tables["accounts"]
+        update_query = (
+            account_tbl.update()
+            .where(
+                account_tbl.c.account_id == account_id,
+                account_tbl.c.email != null(),
+            )
+            .values(email=null())
+        )
+        self.conn.execute(update_query)
+
+    def set_deletion_for_account(self, account_id: UUID):
+        account_tbl = self.tables["accounts"]
+        update_query = (
+            account_tbl.update()
+            .where(
+                account_tbl.c.account_id == account_id,
+            )
+            .values(is_deleted=True)
+        )
+        self.conn.execute(update_query)
