@@ -182,6 +182,7 @@ def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
             record["newsletter_id"] = str(newsletter.newsletter_id)
             record["article_id"] = str(impression.article.article_id)
             record["position"] = impression.position
+            record["created_at"] = newsletter.created_at
             records.append(record)
         impression_records.extend(records)
     return impression_records
