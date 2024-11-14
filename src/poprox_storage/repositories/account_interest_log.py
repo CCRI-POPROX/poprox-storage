@@ -1,10 +1,12 @@
 import logging
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Connection, func, select
 
 from poprox_concepts.domain import AccountInterest
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
+from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -82,3 +84,31 @@ class DbAccountInterestRepository(DatabaseRepository):
             for row in results
         ]
         return results
+
+
+class S3AccountInterestRepository(S3Repository):
+    def store_as_parquet(
+        self,
+        interests: list[AccountInterest],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = convert_to_records(interests)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
+
+def convert_to_records(interests: list[AccountInterest]) -> list[dict]:
+    records = []
+    for interest in interests:
+        records.append(
+            {
+                "account_id": str(interest.account_id),
+                "entity_id": str(interest.entity_id),
+                "entity_name": interest.entity_name,
+                "preference": interest.preference,
+                "frequency": interest.frequency,
+            }
+        )
+
+    return records
