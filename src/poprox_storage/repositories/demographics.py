@@ -101,11 +101,12 @@ def convert_to_records(demographics: list[Demographics]) -> list[dict]:
     for demo in demographics:
         records.append(
             {
-                "account_id": demo.account_id,
+                "account_id": str(demo.account_id),
                 "birth_year": demo.birth_year,
                 "education": demo.education,
                 "gender": demo.gender,
                 "race": demo.race,
+                "zip3": demo.zip3,
             }
         )
 
