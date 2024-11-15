@@ -146,7 +146,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         survey_table = self.tables["qualtrics_surveys"]
         survey_calendar_table = self.tables["qualtrics_survey_calendar"]
 
-        date = date or datetime.date.today()
+        date = date or datetime.today().date()
 
         query = (
             select(survey_table)
