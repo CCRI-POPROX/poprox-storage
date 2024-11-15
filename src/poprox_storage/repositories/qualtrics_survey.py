@@ -142,7 +142,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             {"survey_id": survey.survey_id},
         )
 
-    def fetch_latest_survey_sent(self, date: datetime.date = None) -> UUID:
+    def fetch_latest_survey_sent(self, date: datetime.date = None) -> QualtricsSurvey | None:
         survey_table = self.tables["qualtrics_surveys"]
         survey_calendar_table = self.tables["qualtrics_survey_calendar"]
 
@@ -156,6 +156,9 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             .limit(1)
         )
         row = self.conn.execute(query).fetchone()
+
+        if row is None:
+            return None
 
         return QualtricsSurvey(
             survey_id=row.survey_id,
