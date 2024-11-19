@@ -116,6 +116,22 @@ class DbAccountRepository(DatabaseRepository):
 
     ######################### storing & fetching the zip code #########################
 
+    def store_compensation(self, account_id: UUID, compensation: str) -> bool:
+        account_tbl = self.tables["accounts"]
+        query = (
+            sqlalchemy.update(account_tbl)
+            .values(compensation=compensation)
+            .where(account_tbl.c.account_id == account_id)
+        )
+        result = self.conn.execute(query)
+        return result.rowcount > 0
+
+    def fetch_compensation(self, account_id: UUID) -> str | None:
+        account_tbl = self.tables["accounts"]
+        query = sqlalchemy.select(account_tbl.c.compensation).where(account_tbl.c.account_id == account_id)
+        result = self.conn.execute(query).one_or_none()
+        return result.compensation if result else None
+
     def fetch_unassigned_accounts(self, start_date: date, end_date: date):
         account_tbl = self.tables["accounts"]
         assignment_tbl = self.tables["expt_assignments"]
