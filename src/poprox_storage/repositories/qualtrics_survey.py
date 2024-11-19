@@ -109,7 +109,9 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
 
         survey_ids = survey_ids or []
 
-        instance_query = select(survey_instance_table).where(survey_instance_table.c.account_id == account.account_id)
+        instance_query = select(survey_instance_table, survey_responses_table).where(
+            survey_instance_table.c.account_id == account.account_id
+        )
 
         if survey_ids:
             instance_query = instance_query.where(survey_instance_table.c.survey_id.in_(survey_ids))
@@ -117,14 +119,16 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         response_query = instance_query.join(
             survey_responses_table,
             survey_instance_table.c.survey_instance_id == survey_responses_table.c.survey_instance_id,
-        )
+        ).order_by(survey_responses_table.c.created_at.desc())
         results = self.conn.execute(response_query).fetchall()
 
         return [
             (
-                QualtricsSurveyInstance(row.survey_instance_id, row.survey_id, row.account_id),
+                QualtricsSurveyInstance(
+                    survey_instance_id=row.survey_instance_id, survey_id=row.survey_id, account_id=row.account_id
+                ),
                 QualtricsSurveyResponse(
-                    row.survey_response_id,
+                    survey_response_id=row.survey_response_id,
                     survey_instance_id=row.survey_instance_id,
                     qualtrics_response_id=row.qualtrics_response_id,
                     raw_data=row.raw_data,
