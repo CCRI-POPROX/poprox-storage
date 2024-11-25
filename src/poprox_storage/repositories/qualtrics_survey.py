@@ -167,6 +167,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         return QualtricsSurvey(
             survey_id=row.survey_id,
             qualtrics_id=row.qualtrics_id,
+            base_url=row.base_url,
             continuation_token=row.continuation_token,
             active=row.active,
         )
