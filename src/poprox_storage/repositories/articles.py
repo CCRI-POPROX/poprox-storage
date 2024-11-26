@@ -449,19 +449,8 @@ def extract_and_flatten(articles):
     def flatten(article):
         result = article.__dict__
         result["article_id"] = str(result["article_id"])
-        mentions = result["mentions"]
         del result["mentions"]
         del result["preview_image_id"]
-        del result["source"]
-        del result["external_id"]
-        mention_dict = {}
-        for mention in mentions:
-            key = mention.entity.entity_type + "_" + mention.entity.name
-            if key not in mention_dict or (key in mention_dict and mention.source == "AP-Editorial"):
-                mention_dict[key] = mention
-        result["mentions"] = {}
-        for key, value in mention_dict.items():
-            result["mentions"][key] = value.relevance
         return result
 
     return [flatten(article) for article in articles]
@@ -472,10 +461,12 @@ def extract_and_flatten_mentions(mentions):
         result = mention.__dict__
         result["article_id"] = str(result["article_id"])
         result["mention_id"] = str(result["mention_id"])
-        entity = result["entity"].__dict__
-        entity["entity_id"] = str(entity["entity_id"])
-        entity["external_id"] = str(entity["external_id"])
-        result["entity"] = entity
+        entity = result["entity"]
+        del result["entity"]
+        result["entity_id"] = str(entity.entity_id)
+        result["entity_type"] = entity.entity_type
+        result["external_id"] = str(entity.external_id)
+        result["entity_name"] = entity.name
         return result
 
     return [flatten(mention) for mention in mentions]
