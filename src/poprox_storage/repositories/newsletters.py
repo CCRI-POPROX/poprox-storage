@@ -105,6 +105,31 @@ class DbNewsletterRepository(DatabaseRepository):
             for row in rows
         ]
 
+    def fetch_most_recent_newsletter(self, account_id, since: datetime) -> Newsletter | None:
+        # XXX - this does not currently fetch impressions due to this feature not being needed.
+        newsletters_table = self.tables["newsletters"]
+
+        query = (
+            select(newsletters_table)
+            .where(newsletters_table.c.account_id == account_id and newsletters_table.c.created_at < since)
+            .order_by(newsletters_table.c.created_at.desc())
+            .limit(1)
+        )
+
+        row = self.conn.execute(query).fetchone()
+
+        if row is None:
+            return None
+        return Newsletter(
+            newsletter_id=row.newsletter_id,
+            account_id=row.account_id,
+            treatment_id=row.treatment_id,
+            impressions=[],
+            subject=row.email_subject,
+            body_html=row.html,
+            created_at=row.created_at,
+        )
+
     def _fetch_newsletters(self, newsletters_table, impressions_table, articles_table, where_clause=None):
         newsletter_query = select(newsletters_table)
 

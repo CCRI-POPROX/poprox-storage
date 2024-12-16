@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -17,6 +18,7 @@ class QualtricsSurveyInstance(BaseModel):
     survey_instance_id: UUID | None = None
     survey_id: UUID
     account_id: UUID
+    created_at: datetime | None = None
 
 
 class QualtricsSurveyResponse(BaseModel):
