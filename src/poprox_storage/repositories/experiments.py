@@ -10,7 +10,6 @@ from poprox_storage.concepts.experiment import (
     Group,
     Phase,
     Recommender,
-    Team,
     Treatment,
 )
 from poprox_storage.concepts.manifest import ManifestFile, parse_manifest_toml
@@ -37,13 +36,12 @@ class DbExperimentRepository(DatabaseRepository):
     def store_experiment(
         self,
         experiment: Experiment,
-        assignments: dict[str, list[Account]] | None = None,
+        assignments: dict[str, list[Account]],
+        dataset_id: UUID,
     ):
         assignments = assignments or {}
         self.conn.commit()
         with self.conn.begin():
-            experiment.owner.team_id = self._insert_expt_team(experiment.owner)
-            dataset_id = self._insert_expt_dataset(experiment.owner)
             experiment_id = self._insert_experiment(dataset_id, experiment)
 
             for group in experiment.groups:
@@ -232,27 +230,6 @@ class DbExperimentRepository(DatabaseRepository):
         )
         self.conn.execute(assignment_query)
 
-    def fetch_dataset_by_assignment(self, assignment_id):
-        dataset_table = self.tables["datasets"]
-        experiment_table = self.tables["experiments"]
-        group_table = self.tables["expt_groups"]
-        assignment_table = self.tables["expt_assignments"]
-        query = (
-            select(dataset_table.c.dataset_id)
-            .join(
-                experiment_table,
-                dataset_table.c.dataset_id == experiment_table.c.dataset_id,
-            )
-            .join(
-                group_table,
-                group_table.c.experiment_id == experiment_table.c.experiment_id,
-            )
-            .join(assignment_table, assignment_table.c.group_id == group_table.c.group_id)
-            .where(assignment_table.c.assignment_id == assignment_id)
-        )
-
-        return self._id_query(query)[0]
-
     def _insert_experiment(self, dataset_id: UUID, experiment: Experiment) -> UUID | None:
         return self._insert_model(
             "experiments",
@@ -262,28 +239,6 @@ class DbExperimentRepository(DatabaseRepository):
                 "team_id": experiment.owner.team_id,
             },
             exclude={"owner", "phases"},
-            commit=False,
-        )
-
-    def _insert_expt_team(self, team: Team) -> UUID | None:
-        team_id = self._insert_model("teams", team, exclude={"members"}, commit=False)
-        for account_id in team.members:
-            self._insert_team_membership(team_id, account_id)
-        return team_id
-
-    def _insert_team_membership(self, team_id: UUID, account_id: UUID) -> UUID | None:
-        return self._upsert_and_return_id(
-            self.conn,
-            self.tables["team_memberships"],
-            {"team_id": team_id, "account_id": account_id},
-            commit=False,
-        )
-
-    def _insert_expt_dataset(self, team: Team) -> UUID | None:
-        return self._upsert_and_return_id(
-            self.conn,
-            self.tables["datasets"],
-            {"team_id": team.team_id},
             commit=False,
         )
 
