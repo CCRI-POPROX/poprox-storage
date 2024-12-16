@@ -106,6 +106,7 @@ class DbNewsletterRepository(DatabaseRepository):
         ]
 
     def fetch_most_recent_newsletter(self, account_id, since: datetime) -> Newsletter | None:
+        # XXX - this does not currently fetch impressions due to this feature not being needed.
         newsletters_table = self.tables["newsletters"]
 
         query = (
