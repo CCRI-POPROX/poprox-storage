@@ -253,22 +253,6 @@ class DbExperimentRepository(DatabaseRepository):
 
         return self._id_query(query)[0]
 
-    def fetch_account_alias(self, dataset_id, account_id):
-        alias_table = self.tables["account_aliases"]
-        query = select(alias_table.c.alias_id).where(
-            and_(
-                alias_table.c.account_id == account_id,
-                alias_table.c.dataset_id == dataset_id,
-            )
-        )
-        return self._id_query(query)[0]
-
-    def fetch_account_aliases(self, dataset_id: UUID) -> dict[UUID, UUID]:
-        alias_table = self.tables["account_aliases"]
-        query = select(alias_table.c.account_id, alias_table.c.alias_id).where(alias_table.c.dataset_id == dataset_id)
-        rows = self.conn.execute(query).fetchall()
-        return {row.account_id: row.alias_id for row in rows}
-
     def _insert_experiment(self, dataset_id: UUID, experiment: Experiment) -> UUID | None:
         return self._insert_model(
             "experiments",
