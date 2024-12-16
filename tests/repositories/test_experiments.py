@@ -1,4 +1,4 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import sqlalchemy
 
@@ -51,6 +51,6 @@ def test_store_experiment():
         except sqlalchemy.exc.IntegrityError:
             ...
 
-        experiment_id = experiment_repo.store_experiment(experiment)
+        experiment_id = experiment_repo.store_experiment(experiment, [], uuid4())
 
         assert isinstance(experiment_id, UUID)
