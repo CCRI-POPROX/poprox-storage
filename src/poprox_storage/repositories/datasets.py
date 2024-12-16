@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import Connection, Table, and_, select
 
-from poprox_concepts import Account
+from poprox_concepts import Account, Team
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 
@@ -17,10 +17,10 @@ class DbDatasetRepository(DatabaseRepository):
             "expt_groups",
         )
 
-    def store_new_dataset(self, accounts: list[Account]) -> UUID:
+    def store_new_dataset(self, accounts: list[Account], owner: Team | None = None) -> UUID:
         self.conn.commit()
         with self.conn.begin():
-            dataset_id = self._insert_dataset()
+            dataset_id = self._insert_dataset(owner)
 
             for account in accounts:
                 self._insert_account_alias(dataset_id, account)
@@ -64,11 +64,11 @@ class DbDatasetRepository(DatabaseRepository):
         rows = self.conn.execute(query).fetchall()
         return {row.account_id: row.alias_id for row in rows}
 
-    def _insert_dataset(self) -> UUID | None:
+    def _insert_dataset(self, team: Team | None) -> UUID | None:
         return self._upsert_and_return_id(
             self.conn,
             self.tables["datasets"],
-            {},
+            {"team_id": team.team_id if team else None},
             commit=False,
         )
 
