@@ -88,6 +88,21 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             {"survey_id": survey.survey_id, "account_id": account_id},
         )
 
+    def fetch_survey_instance(self, survey_instance_id: UUID) -> QualtricsSurveyInstance | None:
+        survey_instance_table = self.tables["qualtrics_survey_instances"]
+
+        query = select(survey_instance_table).where(survey_instance_table.c.survey_instance_id == survey_instance_id)
+        row = self.conn.execute(query).fetchone()
+
+        if row is None:
+            return None
+        return QualtricsSurveyInstance(
+            survey_instance_id=row.survey_instance_id,
+            survey_id=row.survey_id,
+            account_id=row.account_id,
+            created_at=row.created_at,
+        )
+
     def store_survey_response(self, response: QualtricsSurveyResponse) -> UUID | None:
         survey_responses_table = self.tables["qualtrics_survey_responses"]
         return self._upsert_and_return_id(
