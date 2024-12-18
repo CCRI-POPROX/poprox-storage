@@ -9,11 +9,12 @@ from sqlalchemy import (
     Table,
     and_,
     func,
+    insert,
     select,
 )
 from tqdm import tqdm
 
-from poprox_concepts import Article, Entity, Mention
+from poprox_concepts import Article, Entity, Image, Mention
 from poprox_storage.aws import DEV_BUCKET_NAME, s3
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -31,6 +32,7 @@ class DbArticleRepository(DatabaseRepository):
             "articles",
             "entities",
             "mentions",
+            "article_image_associations",
             "impressions",
         )
 
@@ -202,11 +204,21 @@ class DbArticleRepository(DatabaseRepository):
                         mention.article_id = article_id
                         mention.entity.entity_id = entity_id
                         mention.mention_id = self.store_mention(mention)
+                if article.images:
+                    for image in article.images:
+                        self.store_image_association(article.article_id, image.image_id)
+
             except RuntimeError as exc:
                 logger.error(exc)
                 failed += 1
 
         return failed
+    
+    def store_image_association(self, article_id: str, image_id: str):
+        associations_table = self.tables["article_image_associations"]
+        insert_stmt = insert(associations_table).values({"article_id": article_id, "image_id": image_id
+        })
+        self.conn.execute(insert_stmt)
 
     def store_article(self, article: Article) -> UUID | None:
         return self._insert_model(
