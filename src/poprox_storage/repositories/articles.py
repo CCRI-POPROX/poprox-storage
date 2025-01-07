@@ -246,6 +246,7 @@ class DbArticleRepository(DatabaseRepository):
             and_(
                 inner_query.c.source == article_table.c.source,
                 inner_query.c.external_id == article_table.c.external_id,
+                inner_query.c.updated_at == article_table.c.created_at,
             ),
         )
         query = select(article_table).select_from(join_query)
