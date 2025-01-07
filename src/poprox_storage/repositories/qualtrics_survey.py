@@ -1,7 +1,8 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
+import boto3
 from sqlalchemy import (
     Connection,
     select,
@@ -9,11 +10,12 @@ from sqlalchemy import (
 
 from poprox_concepts.domain import Account
 from poprox_storage.concepts.qualtrics_survey import (
+    QualtricsCleanResponse,
     QualtricsSurvey,
     QualtricsSurveyInstance,
     QualtricsSurveyResponse,
 )
-from poprox_storage.repositories.data_stores.db import DatabaseRepository
+from poprox_storage.repositories.data_stores import DatabaseRepository, S3Repository
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -29,6 +31,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             "qualtrics_survey_calendar",
             "qualtrics_survey_instances",
             "qualtrics_survey_responses",
+            "qualtrics_clean_responses",
         )
 
     def fetch_survey(self, survey_id: UUID) -> QualtricsSurvey:
@@ -152,6 +155,43 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             for row in results
         ]
 
+    def store_clean_response(self, response: QualtricsCleanResponse):
+        clean_table = self.tables["qualtrics_clean_responses"]
+
+        return self._upsert_and_return_id(self.conn, clean_table, response.model_dump())
+
+    def fetch_clean_responses_since(self, days_ago=1) -> list[QualtricsCleanResponse]:
+        surveys_table = self.tables["qualtrics_surveys"]
+        instances_table = self.tables["qualtrics_survey_instances"]
+        responses_table = self.tables["qualtrics_clean_responses"]
+
+        cutoff = datetime.now() - timedelta(days=days_ago)
+
+        response_query = (
+            select(responses_table, instances_table, surveys_table)
+            .join(
+                instances_table,
+                responses_table.c.survey_instance_id == instances_table.c.survey_instance_id,
+            )
+            .join(surveys_table, instances_table.c.survey_id == surveys_table.c.survey_id)
+            .where(responses_table.c.created_at >= cutoff)
+        )
+        results = self.conn.execute(response_query).fetchall()
+
+        return [
+            QualtricsCleanResponse(
+                account_id=row.account_id,
+                survey_id=row.survey_id,
+                qualtrics_id=row.qualtrics_id,
+                survey_code=row.survey_code,
+                survey_response_id=row.survey_response_id,
+                survey_instance_id=row.survey_instance_id,
+                response_values=row.response_values,
+                created_at=row.created_at,
+            )
+            for row in results
+        ]
+
     def store_latest_survey_sent(self, survey: QualtricsSurvey) -> UUID:
         survey_calendar_table = self.tables["qualtrics_survey_calendar"]
 
@@ -169,7 +209,10 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
 
         query = (
             select(survey_table)
-            .join(survey_calendar_table, survey_table.c.survey_id == survey_calendar_table.c.survey_id)
+            .join(
+                survey_calendar_table,
+                survey_table.c.survey_id == survey_calendar_table.c.survey_id,
+            )
             .where(survey_calendar_table.c.created_at <= date)
             .order_by(survey_calendar_table.c.created_at.desc())
             .limit(1)
@@ -186,3 +229,77 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             continuation_token=row.continuation_token,
             active=row.active,
         )
+
+
+class S3QualtricsSurveyRepository(S3Repository):
+    def __init__(self, bucket_name):
+        super().__init__(bucket_name)
+        self.s3_client = boto3.client("s3")
+
+    def store_as_parquet(
+        self,
+        responses: list[QualtricsCleanResponse],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = extract_and_flatten(responses)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
+
+def extract_and_flatten(responses: list[QualtricsCleanResponse]):
+    non_question_fields = [
+        "status",
+        "endDate",
+        "duration",
+        "finished",
+        "progress",
+        "startDate",
+        "recordedDate",
+        "userLanguage",
+    ]
+
+    def flatten(response: QualtricsCleanResponse):
+        """
+        Flatten each response into multiple rows to create tall format
+
+        survey_response_id, qid, response_value
+        1, 1, -2
+        1, 2, 1
+        1, 3, 4
+
+        Parameters
+        ----------
+        response : QualtricsCleanResponse
+            A Qualtrics survey response that has already been sanitized of PII
+
+        Returns
+        -------
+        list[dict]
+            The records/rows produced by flattening the response
+        """
+        survey_response_id = response.survey_response_id
+        response_values = response.response_values
+
+        return [
+            {
+                "account_id": str(response.account_id),
+                "survey_id": str(response.survey_id),
+                "qualtrics_id": response.qualtrics_id,
+                "survey_code": response.survey_code,
+                "survey_response_id": str(survey_response_id),
+                "qid": key,
+                "response_value": val,
+                "finished": response_values["finished"],
+                "progress": response_values["progress"],
+                "recorded_date": response_values["recordedDate"],
+            }
+            for key, val in response_values.items()
+            if key not in non_question_fields
+        ]
+
+    rows = []
+    for response in responses:
+        rows.extend(flatten(response))
+
+    return rows
