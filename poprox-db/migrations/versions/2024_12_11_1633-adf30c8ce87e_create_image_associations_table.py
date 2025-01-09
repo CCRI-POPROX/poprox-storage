@@ -7,9 +7,8 @@ Create Date: 2024-12-11 16:33:01.573897
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = 'adf30c8ce87e'
@@ -41,6 +40,12 @@ def upgrade() -> None:
         ["image_id"],
         ["image_id"],
     )
+    op.create_unique_constraint(
+        "uq_article_image_associations",
+        "article_image_associations",
+        ["article_id", "image_id"]
+    )
+
 
 
 def downgrade() -> None:
