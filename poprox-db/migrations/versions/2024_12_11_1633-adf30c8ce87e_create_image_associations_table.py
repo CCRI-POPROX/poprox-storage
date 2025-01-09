@@ -43,7 +43,7 @@ def upgrade() -> None:
     op.create_unique_constraint(
         "uq_article_image_associations",
         "article_image_associations",
-        ["article_id", "image_id"]
+        ("article_id", "image_id")
     )
 
 
