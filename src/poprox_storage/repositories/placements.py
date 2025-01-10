@@ -16,7 +16,7 @@ class DbPlacementRepository(DatabaseRepository):
         self.tables: dict[str, Table] = self._load_tables("article_placements")
 
     # Store a placement in the database
-    def store_placement(self, placement: ArticlePlacement) -> None:
+    def store_placement(self, placement: ArticlePlacement) -> UUID | None:
         return self._insert_model("article_placements", placement)
 
     # Fetch a placement by its ID
