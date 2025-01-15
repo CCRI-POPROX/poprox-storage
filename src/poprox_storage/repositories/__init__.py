@@ -18,7 +18,6 @@ from poprox_storage.repositories.qualtrics_survey import DbQualtricsSurveyReposi
 from poprox_storage.repositories.teams import DbTeamRepository
 
 
-
 def inject_repos(handler):
     from functools import wraps
     from typing import get_type_hints
