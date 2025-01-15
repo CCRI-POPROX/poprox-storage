@@ -59,6 +59,7 @@ class DbImageRepository(DatabaseRepository):
                 source=result.source,
                 external_id=result.external_id,
                 raw_data=result.raw_data,
+                caption=result.caption,
             )
 
     def fetch_image_by_id(self, image_id: str) -> Image | None:
@@ -142,5 +143,12 @@ def create_ap_image(ap_item):
     item_id = ap_item.get("altids", {}).get("itemid", None)
 
     preview_url = ap_item.get("renditions", {}).get("preview", {}).get("href", None)
-    ap_image = Image(url=preview_url, source="AP", external_id=item_id, raw_data=ap_item)
+    description_caption = ap_item.get("description_caption", None)
+    ap_image = Image(
+        url=preview_url,
+        source="AP",
+        external_id=item_id,
+        raw_data=ap_item,
+        caption=description_caption,
+    )
     return ap_image
