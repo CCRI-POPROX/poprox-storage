@@ -16,6 +16,7 @@ class DbDatasetRepository(DatabaseRepository):
             "experiments",
             "expt_assignments",
             "expt_groups",
+            "teams"
         )
 
     def store_new_dataset(self, accounts: list[Account], owner: Team | None = None) -> UUID:
@@ -66,10 +67,21 @@ class DbDatasetRepository(DatabaseRepository):
         return {row.account_id: row.alias_id for row in rows}
 
     def _insert_dataset(self, team: Team | None) -> UUID | None:
+        team_id = self._upsert_and_return_id(
+            self.conn,
+            self.tables["teams"],
+            {
+                "team_id": team.team_id if team else None,
+                "team_name": team.team_name if team else None
+            },
+            constraint="teams_pkey",
+            commit=False
+        )
+
         return self._upsert_and_return_id(
             self.conn,
             self.tables["datasets"],
-            {"team_id": team.team_id if team else None},
+            {"team_id": team_id if team_id else None},
             commit=False,
         )
 
