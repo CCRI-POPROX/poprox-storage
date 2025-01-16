@@ -77,6 +77,7 @@ class DbImageRepository(DatabaseRepository):
                 source=result.source,
                 external_id=result.external_id,
                 raw_data=result.raw_data,
+                caption=result.caption,
             )
 
 
