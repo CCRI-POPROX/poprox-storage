@@ -2,12 +2,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import (
-    Connection,
-    Table,
-    insert,
-    select,
-)
+from sqlalchemy import Connection, Table, and_, insert, select
 
 from poprox_concepts.domain import Account, Article, Impression, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -111,7 +106,7 @@ class DbNewsletterRepository(DatabaseRepository):
 
         query = (
             select(newsletters_table)
-            .where(newsletters_table.c.account_id == account_id and newsletters_table.c.created_at < since)
+            .where(and_(newsletters_table.c.account_id == account_id, newsletters_table.c.created_at < since))
             .order_by(newsletters_table.c.created_at.desc())
             .limit(1)
         )
