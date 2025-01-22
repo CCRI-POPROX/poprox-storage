@@ -3,7 +3,6 @@ from uuid import UUID
 from sqlalchemy import Connection, Table, and_, select
 
 from poprox_concepts import Account
-from poprox_storage.concepts.experiment import Team
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 
@@ -19,10 +18,10 @@ class DbDatasetRepository(DatabaseRepository):
             "teams"
         )
 
-    def store_new_dataset(self, accounts: list[Account], owner: Team | None = None) -> UUID:
+    def store_new_dataset(self, accounts: list[Account], team_id: UUID) -> UUID:
         self.conn.commit()
         with self.conn.begin():
-            dataset_id = self._insert_dataset(owner)
+            dataset_id = self._insert_dataset(team_id)
 
             for account in accounts:
                 self._insert_account_alias(dataset_id, account)
@@ -66,22 +65,11 @@ class DbDatasetRepository(DatabaseRepository):
         rows = self.conn.execute(query).fetchall()
         return {row.account_id: row.alias_id for row in rows}
 
-    def _insert_dataset(self, team: Team | None) -> UUID | None:
-        team_id = self._upsert_and_return_id(
-            self.conn,
-            self.tables["teams"],
-            {
-                "team_id": team.team_id if team else None,
-                "team_name": team.team_name if team else None
-            },
-            constraint="teams_pkey",
-            commit=False
-        )
-
+    def _insert_dataset(self, team_id: UUID) -> UUID | None:
         return self._upsert_and_return_id(
             self.conn,
             self.tables["datasets"],
-            {"team_id": team_id if team_id else None},
+            {"team_id": team_id},
             commit=False,
         )
 
