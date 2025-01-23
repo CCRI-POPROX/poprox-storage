@@ -281,3 +281,14 @@ class DbAccountRepository(DatabaseRepository):
             .values(is_deleted=True)
         )
         self.conn.execute(update_query)
+
+    def generate_rec_id(self, account_id: UUID):
+        today = date.today()
+        yy = str(today.year)[-2:]
+        mm = str(today.month).zfill(2)
+        random_string = account_id.hex[:6]
+        rec_id = f"{yy}.{mm}.{random_string}"
+
+        account_tbl = self.tables["accounts"]
+        update_query = account_tbl.update().where(account_tbl.c.account_id == account_id).values(rec_id=rec_id)
+        self.conn.execute(update_query)
