@@ -134,6 +134,21 @@ class DbClicksRepository(DatabaseRepository):
             )
             for row in result
         ]
+    
+    # TODO
+    # delete a click (article) from the clicks table for a specific account and article ID
+    
+    def delete_click(self, account_id: UUID, article_id: UUID):
+        
+        click_table = self.tables["clicks"]
+        with self.conn.begin():
+            stmt = click_table.delete().where(
+                and_(
+                    click_table.c.account_id == account_id,
+                    click_table.c.article_id == article_id,
+                )
+            )
+            self.conn.execute(stmt)
 
 
 def extract_and_flatten(clicks_by_user: dict[UUID, list[Click]]) -> list[dict]:
@@ -151,3 +166,5 @@ def extract_and_flatten(clicks_by_user: dict[UUID, list[Click]]) -> list[dict]:
             flattened_rows.append(flatten(profile_id, click))
 
     return flattened_rows
+
+
