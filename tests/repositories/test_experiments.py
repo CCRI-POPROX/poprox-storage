@@ -59,7 +59,7 @@ def test_store_experiment():
             ...
 
         experiment.owner.team_id = team_repo.store_team(experiment.owner)
-        dataset_id = dataset_repo.store_new_dataset([account], experiment.owner)
+        dataset_id = dataset_repo.store_new_dataset([account], experiment.owner.team_id)
         experiment_id = experiment_repo.store_experiment(experiment, [], dataset_id)
 
         assert isinstance(experiment_id, UUID)
