@@ -71,8 +71,7 @@ class DbNewsletterRepository(DatabaseRepository):
 
         if accounts:
             where_clause = and_(
-                where_clause,
-                newsletters_table.c.account_id.in_([acct.account_id for acct in accounts])
+                where_clause, newsletters_table.c.account_id.in_([acct.account_id for acct in accounts])
             )
 
         return self._fetch_newsletters(

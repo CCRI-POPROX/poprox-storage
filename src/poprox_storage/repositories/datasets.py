@@ -10,12 +10,7 @@ class DbDatasetRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
         self.tables: dict[str, Table] = self._load_tables(
-            "account_aliases",
-            "datasets",
-            "experiments",
-            "expt_assignments",
-            "expt_groups",
-            "teams"
+            "account_aliases", "datasets", "experiments", "expt_assignments", "expt_groups", "teams"
         )
 
     def store_new_dataset(self, accounts: list[Account], team_id: UUID) -> UUID:

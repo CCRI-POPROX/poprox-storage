@@ -132,9 +132,11 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             where_clause = and_(where_clause, survey_instance_table.c.survey_id.in_(survey_ids))
 
         return self._fetch_survey_responses(where_clause)
-    
+
     def fetch_survey_responses_since(
-        self, days_ago: int, accounts: list[Account] | None = None, 
+        self,
+        days_ago: int,
+        accounts: list[Account] | None = None,
     ) -> list[tuple[QualtricsSurveyInstance, QualtricsSurveyResponse]]:
         instances_table = self.tables["qualtrics_survey_instances"]
 
@@ -148,7 +150,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         return self._fetch_survey_responses(where_clause)
 
     def _fetch_survey_responses(
-        self, where_clause = None
+        self, where_clause=None
     ) -> list[tuple[QualtricsSurveyInstance, QualtricsSurveyResponse]]:
         survey_instance_table = self.tables["qualtrics_survey_instances"]
         survey_responses_table = self.tables["qualtrics_survey_responses"]
@@ -162,7 +164,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
 
         if where_clause is not None:
             response_query = response_query.where(where_clause)
-        
+
         response_query = response_query.order_by(survey_responses_table.c.created_at.desc())
         results = self.conn.execute(response_query).fetchall()
 
@@ -186,7 +188,9 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
 
         return self._upsert_and_return_id(self.conn, clean_table, response.model_dump())
 
-    def fetch_clean_responses_since(self, days_ago=1, accounts: list[Account] | None = None) -> list[QualtricsCleanResponse]:
+    def fetch_clean_responses_since(
+        self, days_ago=1, accounts: list[Account] | None = None
+    ) -> list[QualtricsCleanResponse]:
         surveys_table = self.tables["qualtrics_surveys"]
         instances_table = self.tables["qualtrics_survey_instances"]
         responses_table = self.tables["qualtrics_clean_responses"]
@@ -206,7 +210,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         if accounts:
             account_ids = [acct.account_id for acct in accounts]
             response_query = response_query.where(instances_table.c.account_id.in_(account_ids))
-        
+
         results = self.conn.execute(response_query).fetchall()
 
         return [
