@@ -186,7 +186,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
 
         return self._upsert_and_return_id(self.conn, clean_table, response.model_dump())
 
-    def fetch_clean_responses_since(self, days_ago=1) -> list[QualtricsCleanResponse]:
+    def fetch_clean_responses_since(self, days_ago=1, accounts: list[Account] | None = None) -> list[QualtricsCleanResponse]:
         surveys_table = self.tables["qualtrics_surveys"]
         instances_table = self.tables["qualtrics_survey_instances"]
         responses_table = self.tables["qualtrics_clean_responses"]
@@ -202,6 +202,11 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             .join(surveys_table, instances_table.c.survey_id == surveys_table.c.survey_id)
             .where(responses_table.c.created_at >= cutoff)
         )
+
+        if accounts:
+            account_ids = [acct.account_id for acct in accounts]
+            response_query = response_query.where(instances_table.c.account_id.in_(account_ids))
+        
         results = self.conn.execute(response_query).fetchall()
 
         return [
