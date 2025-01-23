@@ -20,8 +20,8 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column("qualtrics_clean_responses", sa.Column("account_id", sa.UUID, nullable=False))
     op.add_column("qualtrics_clean_responses", sa.Column("survey_id", sa.UUID, nullable=False))
-    op.add_column("qualtrics_clean_responses", sa.Column("qualtrics_id", sa.UUID, nullable=False))
-    op.add_column("qualtrics_clean_responses", sa.Column("survey_code", sa.UUID, nullable=True))
+    op.add_column("qualtrics_clean_responses", sa.Column("qualtrics_id", sa.String, nullable=False))
+    op.add_column("qualtrics_clean_responses", sa.Column("survey_code", sa.String, nullable=True))
 
     op.create_foreign_key(
         "fk_qualtrics_clean_responses_account_id",
