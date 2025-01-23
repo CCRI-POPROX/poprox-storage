@@ -5,6 +5,7 @@ from uuid import UUID
 import boto3
 from sqlalchemy import (
     Connection,
+    and_,
     select,
 )
 
@@ -123,21 +124,46 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         self, account: Account, survey_ids: list[UUID] | None = None
     ) -> list[tuple[QualtricsSurveyInstance, QualtricsSurveyResponse]]:
         survey_instance_table = self.tables["qualtrics_survey_instances"]
-        survey_responses_table = self.tables["qualtrics_survey_responses"]
+
+        where_clause = survey_instance_table.c.account_id == account.account_id
 
         survey_ids = survey_ids or []
-
-        instance_query = select(survey_instance_table, survey_responses_table).where(
-            survey_instance_table.c.account_id == account.account_id
-        )
-
         if survey_ids:
-            instance_query = instance_query.where(survey_instance_table.c.survey_id.in_(survey_ids))
+            where_clause = and_(where_clause, survey_instance_table.c.survey_id.in_(survey_ids))
+
+        return self._fetch_survey_responses(where_clause)
+    
+    def fetch_survey_responses_since(
+        self, days_ago: int, accounts: list[Account] | None = None, 
+    ) -> list[tuple[QualtricsSurveyInstance, QualtricsSurveyResponse]]:
+        instances_table = self.tables["qualtrics_survey_instances"]
+
+        cutoff = datetime.now() - timedelta(days=days_ago)
+        where_clause = instances_table.c.created_at >= cutoff
+
+        if accounts:
+            account_ids = [acct.account_id for acct in accounts]
+            where_clause = and_(where_clause, instances_table.c.account_id.in_(account_ids))
+
+        return self._fetch_survey_responses(where_clause)
+
+    def _fetch_survey_responses(
+        self, where_clause = None
+    ) -> list[tuple[QualtricsSurveyInstance, QualtricsSurveyResponse]]:
+        survey_instance_table = self.tables["qualtrics_survey_instances"]
+        survey_responses_table = self.tables["qualtrics_survey_responses"]
+
+        instance_query = select(survey_instance_table, survey_responses_table)
 
         response_query = instance_query.join(
             survey_responses_table,
             survey_instance_table.c.survey_instance_id == survey_responses_table.c.survey_instance_id,
-        ).order_by(survey_responses_table.c.created_at.desc())
+        )
+
+        if where_clause is not None:
+            response_query = response_query.where(where_clause)
+        
+        response_query = response_query.order_by(survey_responses_table.c.created_at.desc())
         results = self.conn.execute(response_query).fetchall()
 
         return [
