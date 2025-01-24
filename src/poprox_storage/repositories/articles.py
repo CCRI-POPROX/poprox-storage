@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import defaultdict
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -180,7 +181,7 @@ class DbArticleRepository(DatabaseRepository):
         association_result = self.conn.execute(association_query).fetchall()
 
         # Converting association_result into a dictionary
-        article_image_dict = {}
+        article_image_dict = defaultdict(list)
         for article_id, image_id in association_result:
             if article_id not in article_image_dict:
                 article_image_dict[article_id] = []
