@@ -135,19 +135,18 @@ class DbClicksRepository(DatabaseRepository):
             for row in result
         ]
     
-    # TODO
-    # delete a click (article) from the clicks table for a specific account and article ID
-    
-    def delete_click(self, account_id: UUID, article_id: UUID):
-        
+
+    def hide_click(self, account_id: UUID, article_id: UUID):
         click_table = self.tables["clicks"]
         with self.conn.begin():
-            stmt = click_table.delete().where(
+            # TODO: Change the database query to update a column
+            #       instead of deleting the row(s)
+            stmt = click_table.update().where(
                 and_(
                     click_table.c.account_id == account_id,
                     click_table.c.article_id == article_id,
                 )
-            )
+            ).values(hidden=True)
             self.conn.execute(stmt)
 
 
