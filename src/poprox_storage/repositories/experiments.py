@@ -21,6 +21,7 @@ class DbExperimentRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
         self.tables: dict[str, Table] = self._load_tables(
+            "accounts",
             "account_aliases",
             "datasets",
             "experiments",
@@ -214,6 +215,7 @@ class DbExperimentRepository(DatabaseRepository):
 
     def update_expt_assignment_to_opt_out(self, account_id: UUID) -> UUID | None:
         assignments_tbl = self.tables["expt_assignments"]
+        account_tbl = self.tables["accounts"]
 
         group_ids = self.fetch_active_expt_group_ids()
 
@@ -229,6 +231,13 @@ class DbExperimentRepository(DatabaseRepository):
             .values(opted_out=True)
         )
         self.conn.execute(assignment_query)
+
+        # update placebo rec id
+        rec_id = (
+            f"{str(datetime.date.today().year)[-2:]}.{str(datetime.date.today().month).zfill(2)}.{account_id.hex[:6]}"
+        )
+        update_query = account_tbl.update().where(account_tbl.c.account_id == account_id).values(rec_id=rec_id)
+        self.conn.execute(update_query)
 
     def _insert_experiment(self, dataset_id: UUID, experiment: Experiment) -> UUID | None:
         return self._insert_model(
