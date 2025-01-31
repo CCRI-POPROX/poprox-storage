@@ -38,6 +38,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 stmt = insert(impression_table).values(
                     newsletter_id=str(newsletter.newsletter_id),
                     article_id=str(impression.article.article_id),
+                    preview_image_id=str(impression.article.preview_image_id),
                     position=impression.position,
                 )
                 self.conn.execute(stmt)
@@ -134,7 +135,12 @@ class DbNewsletterRepository(DatabaseRepository):
         newsletter_result = self.conn.execute(newsletter_query).fetchall()
 
         impressions_query = (
-            select(impressions_table.c.newsletter_id, impressions_table.c.position, articles_table)
+            select(
+                impressions_table.c.newsletter_id,
+                impressions_table.c.preview_image_id,
+                impressions_table.c.position,
+                articles_table,
+            )
             .join(
                 impressions_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
@@ -151,6 +157,7 @@ class DbNewsletterRepository(DatabaseRepository):
             impressions_by_newsletter_id[row.newsletter_id].append(
                 Impression(
                     newsletter_id=row.newsletter_id,
+                    preview_image_id=row.preview_image_id,
                     position=row.position,
                     article=Article(
                         article_id=row.article_id,
