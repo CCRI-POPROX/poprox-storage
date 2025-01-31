@@ -6,11 +6,10 @@ Create Date: 2025-01-31 16:07:04.005073
 
 """
 from typing import Sequence, Union
-from sqlalchemy.dialects.postgresql import JSONB
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
+from sqlalchemy.dialects.postgresql import JSONB
 
 # revision identifiers, used by Alembic.
 revision: str = 'b02a1eb29fee'
@@ -25,7 +24,7 @@ def upgrade() -> None:
         "impressions",
         sa.Column(
             "experiment_extra",
-            JSONB
+            JSONB,
         ),
     )
 

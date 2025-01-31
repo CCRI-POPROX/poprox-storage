@@ -39,7 +39,7 @@ class DbNewsletterRepository(DatabaseRepository):
                     newsletter_id=str(newsletter.newsletter_id),
                     article_id=str(impression.article.article_id),
                     position=impression.position,
-                    experiment_extra=impression.experiment_extra
+                    experiment_extra=impression.experiment_extra,
                 )
                 self.conn.execute(stmt)
 
@@ -88,7 +88,7 @@ class DbNewsletterRepository(DatabaseRepository):
             impressions_table.c.newsletter_id,
             impressions_table.c.article_id,
             impressions_table.c.position,
-            impressions_table.c.experiment_extra
+            impressions_table.c.experiment_extra,
         ).where(
             impressions_table.c.newsletter_id.in_(newsletter_ids),
         )
@@ -98,7 +98,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 newsletter_id=row.newsletter_id,
                 article_id=row.article_id,
                 position=row.position,
-                experiment_extra=row.experiment_extra
+                experiment_extra=row.experiment_extra,
             )
             for row in rows
         ]
