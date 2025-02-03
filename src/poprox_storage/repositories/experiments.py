@@ -22,7 +22,6 @@ class DbExperimentRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
         self.tables: dict[str, Table] = self._load_tables(
-            "accounts",
             "account_aliases",
             "datasets",
             "experiments",
