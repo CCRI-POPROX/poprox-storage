@@ -56,7 +56,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Drop the FK constraint before dropping the table
     op.drop_constraint(
-        "fk_article_placements_articles",
+        "fk_articles_placements_articles",
         "article_placements",
         type_="foreignkey",
     )
