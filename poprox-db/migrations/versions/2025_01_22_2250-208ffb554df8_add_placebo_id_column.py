@@ -1,4 +1,4 @@
-"""add rec_id column
+"""add placebo_id column
 
 Revision ID: 208ffb554df8
 Revises: f6ccafdb5b24
@@ -19,8 +19,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("accounts", sa.Column("rec_id", sa.String(), nullable=True))
+    op.add_column("accounts", sa.Column("placebo_id", sa.String(), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column("accounts", "rec_id")
+    op.drop_column("accounts", "placebo_id")
