@@ -1,7 +1,6 @@
 import datetime
 from uuid import UUID
 
-from accounts import DbAccountRepository
 from sqlalchemy import Connection, Table, and_, select, update
 
 from poprox_concepts import Account
@@ -14,6 +13,7 @@ from poprox_storage.concepts.experiment import (
     Treatment,
 )
 from poprox_storage.concepts.manifest import ManifestFile, parse_manifest_toml
+from poprox_storage.repositories.accounts import DbAccountRepository
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
