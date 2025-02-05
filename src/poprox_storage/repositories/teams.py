@@ -18,7 +18,7 @@ class DbTeamRepository(DatabaseRepository):
         self,
         team: Team,
     ):
-        team_id = self._insert_model("teams", team, exclude={"members"}, commit=False)
+        team_id = self._insert_model("teams", team, exclude={"members"}, constraint="teams_pkey", commit=False)
         for account_id in team.members:
             self._insert_team_membership(team_id, account_id)
         return team_id
