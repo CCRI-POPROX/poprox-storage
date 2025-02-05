@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import sqlalchemy
 from sqlalchemy import Connection, and_, null, or_, select
@@ -283,8 +283,12 @@ class DbAccountRepository(DatabaseRepository):
         self.conn.execute(update_query)
 
     def set_placebo_id(self, account_id: UUID):
-        placebo_id = f"{str(date.today().year)[-2:]}.{str(date.today().month).zfill(2)}.{account_id.hex[:6]}"
-
         account_tbl = self.tables["accounts"]
-        update_query = account_tbl.update().where(account_tbl.c.account_id == account_id).values(placebo_id=placebo_id)
+        update_query = (
+            account_tbl.update()
+            .where(
+                account_tbl.c.account_id == account_id,
+            )
+            .values(placebo_id=uuid4())
+        )
         self.conn.execute(update_query)
