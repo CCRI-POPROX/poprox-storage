@@ -80,7 +80,26 @@ class DbArticleRepository(DatabaseRepository):
 
     def fetch_articles_by_id(self, ids: list[UUID]) -> list[Article]:
         article_table = self.tables["articles"]
-        return self._get_articles(article_table, article_table.c.article_id.in_(ids))
+
+        query = select(article_table).where(article_table.c.article_id.in_(ids))
+
+        result = self.conn.execute(query).fetchall()
+        return [
+            Article(
+                article_id=row.article_id,
+                headline=row.headline,
+                subhead=row.subhead,
+                body=row.body,
+                url=row.url,
+                preview_image_id=row.preview_image_id,
+                source=row.source,
+                external_id=row.external_id,
+                raw_data=row.raw_data,
+                published_at=row.published_at,
+                created_at=row.created_at,
+            )
+            for row in result
+        ]
 
     def fetch_article_by_external_id(self, id_: str) -> Article:
         article_table = self.tables["articles"]

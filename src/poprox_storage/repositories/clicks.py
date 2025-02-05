@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import and_, insert, select
+from sqlalchemy import and_, insert, select, true
 
 from poprox_concepts import Account, Click
 from poprox_storage.aws import s3
@@ -58,7 +58,8 @@ class DbClicksRepository(DatabaseRepository):
                 stmt = stmt.values(created_at=created_at)
             self.conn.execute(stmt)
 
-    def fetch_clicks(self, accounts: list[Account]) -> dict[UUID, list[Click]]:
+    def fetch_clicks(self, accounts: list[Account], include_hidden=False) -> dict[UUID, list[Click]]:
+        """"""
         click_table = self.tables["clicks"]
 
         click_query = select(
@@ -66,7 +67,13 @@ class DbClicksRepository(DatabaseRepository):
             click_table.c.article_id,
             click_table.c.newsletter_id,
             click_table.c.created_at,
-        ).where(click_table.c.account_id.in_([acct.account_id for acct in accounts]))
+        ).where(
+            click_table.c.account_id.in_([acct.account_id for acct in accounts])
+        )
+
+        if include_hidden:
+            click_query = click_query.filter(click_table.c.hidden != True)
+
         click_result = self.conn.execute(click_query).fetchall()
 
         clicked_articles = defaultdict(list)
@@ -139,8 +146,6 @@ class DbClicksRepository(DatabaseRepository):
     def hide_click(self, account_id: UUID, article_id: UUID):
         click_table = self.tables["clicks"]
         with self.conn.begin():
-            # TODO: Change the database query to update a column
-            #       instead of deleting the row(s)
             stmt = click_table.update().where(
                 and_(
                     click_table.c.account_id == account_id,
@@ -148,6 +153,7 @@ class DbClicksRepository(DatabaseRepository):
                 )
             ).values(hidden=True)
             self.conn.execute(stmt)
+        self.conn.commit()
 
 
 def extract_and_flatten(clicks_by_user: dict[UUID, list[Click]]) -> list[dict]:
