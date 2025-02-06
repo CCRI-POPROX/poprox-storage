@@ -11,8 +11,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '316ffc744a8b'
-down_revision: Union[str, None] = 'f6ccafdb5b24'
+revision: str = "316ffc744a8b"
+down_revision: Union[str, None] = "f6ccafdb5b24"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -39,9 +39,10 @@ def upgrade() -> None:
         ["survey_id"],
     )
 
+
 def downgrade() -> None:
-    op.drop_constraint("fk_survey_calendar_survey_id", "qualtrics_survey_calendar", type_="foreignkey")
     op.drop_constraint("fk_qualtrics_clean_responses_account_id", "qualtrics_clean_responses", type_="foreignkey")
+    op.drop_constraint("fk_qualtrics_clean_responses_survey_id", "qualtrics_clean_responses", type_="foreignkey")
 
     op.drop_column("qualtrics_clean_responses", "survey_code")
     op.drop_column("qualtrics_clean_responses", "qualtrics_id")
