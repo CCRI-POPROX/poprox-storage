@@ -44,6 +44,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             survey_table.c.base_url,
             survey_table.c.continuation_token,
             survey_table.c.active,
+            survey_table.c.question_metadata,
         ).where(survey_table.c.survey_id == survey_id)
         row = self.conn.execute(query).fetchone()
         return QualtricsSurvey(
@@ -52,6 +53,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             base_url=row.base_url,
             continuation_token=row.continuation_token,
             active=row.active,
+            question_metadata=row.question_metadata,
         )
 
     def fetch_active_surveys(self) -> list[QualtricsSurvey]:
@@ -62,6 +64,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             survey_table.c.base_url,
             survey_table.c.continuation_token,
             survey_table.c.active,
+            survey_table.c.question_metadata,
         ).where(survey_table.c.active)
         results = self.conn.execute(query).fetchall()
         return [
@@ -71,6 +74,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
                 base_url=row.base_url,
                 continuation_token=row.continuation_token,
                 active=row.active,
+                question_metadata=row.question_metadata,
             )
             for row in results
         ]
@@ -263,6 +267,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             base_url=row.base_url,
             continuation_token=row.continuation_token,
             active=row.active,
+            question_metadata=row.question_metadata,
         )
 
 
