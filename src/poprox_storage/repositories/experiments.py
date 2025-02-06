@@ -13,7 +13,6 @@ from poprox_storage.concepts.experiment import (
     Treatment,
 )
 from poprox_storage.concepts.manifest import ManifestFile, parse_manifest_toml
-from poprox_storage.repositories.accounts import DbAccountRepository
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -230,10 +229,6 @@ class DbExperimentRepository(DatabaseRepository):
             .values(opted_out=True)
         )
         self.conn.execute(assignment_query)
-
-        # update placebo id
-        account_repo = DbAccountRepository()
-        account_repo.set_placebo_id(account_id)
 
     def _insert_experiment(self, dataset_id: UUID, experiment: Experiment) -> UUID | None:
         return self._insert_model(
