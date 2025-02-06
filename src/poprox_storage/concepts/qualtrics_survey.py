@@ -13,6 +13,7 @@ class QualtricsSurvey(BaseModel):
     base_url: str
     continuation_token: str | None
     active: bool
+    question_metadata: dict[str, Any] | None = None
 
 
 class QualtricsSurveyInstance(BaseModel):
