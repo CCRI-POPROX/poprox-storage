@@ -45,8 +45,6 @@ class DbExperimentRepository(DatabaseRepository):
         for group in experiment.groups:
             group.group_id = self._insert_expt_group(experiment_id, group)
             for account in assignments.get(group.name, []):
-                self._insert_account_alias(dataset_id, account)
-
                 assignment = Assignment(account_id=account.account_id, group_id=group.group_id)
                 self._insert_expt_assignment(assignment)
 
