@@ -14,12 +14,10 @@ class DbDatasetRepository(DatabaseRepository):
         )
 
     def store_new_dataset(self, accounts: list[Account], team_id: UUID) -> UUID:
-        self.conn.commit()
-        with self.conn.begin():
-            dataset_id = self._insert_dataset(team_id)
+        dataset_id = self._insert_dataset(team_id)
 
-            for account in accounts:
-                self._insert_account_alias(dataset_id, account)
+        for account in accounts:
+            self._insert_account_alias(dataset_id, account)
 
         return dataset_id
 
