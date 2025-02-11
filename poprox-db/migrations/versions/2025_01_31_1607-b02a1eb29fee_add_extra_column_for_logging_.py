@@ -1,4 +1,4 @@
-"""add experiment_extra for locality experiment logging
+"""add extra column for recommender logging
 
 Revision ID: b02a1eb29fee
 Revises: f6ccafdb5b24
@@ -23,7 +23,7 @@ def upgrade() -> None:
     op.add_column(
         "impressions",
         sa.Column(
-            "experiment_extra",
+            "extra",
             JSONB,
         ),
     )
@@ -31,4 +31,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Drop the new primary key column
-    op.drop_column("impressions", "experiment_extra")
+    op.drop_column("impressions", "extra")
