@@ -52,6 +52,7 @@ class DbNewsletterRepository(DatabaseRepository):
                     article_id=str(impression.article.article_id),
                     preview_image_id=preview_image_id,
                     position=impression.position,
+                    extra=impression.extra,
                 )
                 self.conn.execute(stmt)
 
@@ -107,6 +108,7 @@ class DbNewsletterRepository(DatabaseRepository):
             impressions_table.c.newsletter_id,
             impressions_table.c.article_id,
             impressions_table.c.position,
+            impressions_table.c.extra,
         ).where(
             impressions_table.c.newsletter_id.in_(newsletter_ids),
         )
@@ -116,6 +118,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 newsletter_id=row.newsletter_id,
                 article_id=row.article_id,
                 position=row.position,
+                extra=row.extra,
             )
             for row in rows
         ]
@@ -229,6 +232,7 @@ def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
             record["article_id"] = str(impression.article.article_id)
             record["position"] = impression.position
             record["created_at"] = newsletter.created_at
+            record["extra"] = impression.extra
             records.append(record)
         impression_records.extend(records)
     return impression_records
