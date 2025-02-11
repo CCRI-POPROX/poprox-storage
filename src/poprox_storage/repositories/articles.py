@@ -10,9 +10,9 @@ from sqlalchemy import (
     Table,
     and_,
     func,
-    insert,
     select,
 )
+from sqlalchemy.dialects.postgresql import insert
 from tqdm import tqdm
 
 from poprox_concepts import Article, Entity, Mention
@@ -236,7 +236,11 @@ class DbArticleRepository(DatabaseRepository):
 
     def store_image_association(self, article_id: str, image_id: str):
         associations_table = self.tables["article_image_associations"]
-        insert_stmt = insert(associations_table).values({"article_id": article_id, "image_id": image_id})
+        insert_stmt = (
+            insert(associations_table)
+            .values({"article_id": article_id, "image_id": image_id})
+            .on_conflict_do_nothing(constraint="uq_article_image_associations")
+        )
         self.conn.execute(insert_stmt)
 
     def store_article(self, article: Article) -> UUID | None:

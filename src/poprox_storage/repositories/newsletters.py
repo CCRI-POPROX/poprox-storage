@@ -67,18 +67,25 @@ class DbNewsletterRepository(DatabaseRepository):
             newsletters_table.c.account_id.in_([acct.account_id for acct in accounts]),
         )
 
-    def fetch_newsletters_since(self, days_ago=90) -> list[Newsletter]:
+    def fetch_newsletters_since(self, days_ago=90, accounts: list[Account] | None = None) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
 
         cutoff = datetime.now() - timedelta(days=days_ago)
 
+        where_clause = newsletters_table.c.created_at >= cutoff
+
+        if accounts:
+            where_clause = and_(
+                where_clause, newsletters_table.c.account_id.in_([acct.account_id for acct in accounts])
+            )
+
         return self._fetch_newsletters(
             newsletters_table,
             impressions_table,
             articles_table,
-            newsletters_table.c.created_at >= cutoff,
+            where_clause,
         )
 
     def fetch_newsletters_by_treatment_id(self, expt_treatment_ids: list[UUID]) -> list[Newsletter]:
