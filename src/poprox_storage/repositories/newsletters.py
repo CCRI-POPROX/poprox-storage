@@ -2,7 +2,14 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import Connection, Table, and_, insert, select
+from sqlalchemy import (
+    Connection,
+    Table,
+    and_,
+    insert,
+    null,
+    select,
+)
 
 from poprox_concepts.domain import Account, Article, Impression, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -35,10 +42,15 @@ class DbNewsletterRepository(DatabaseRepository):
             self.conn.execute(stmt)
 
             for impression in newsletter.impressions:
+                if impression.article.preview_image_id:
+                    preview_image_id = str(impression.article.preview_image_id)
+                else:
+                    preview_image_id = null()
+
                 stmt = insert(impression_table).values(
                     newsletter_id=str(newsletter.newsletter_id),
                     article_id=str(impression.article.article_id),
-                    preview_image_id=str(impression.article.preview_image_id),
+                    preview_image_id=preview_image_id,
                     position=impression.position,
                 )
                 self.conn.execute(stmt)
