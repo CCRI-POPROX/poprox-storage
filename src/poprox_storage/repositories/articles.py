@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import defaultdict
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -168,6 +169,25 @@ class DbArticleRepository(DatabaseRepository):
             )
             mentions.append(mention)
         return mentions
+
+    def fetch_associated_image_ids(self, articles: list[Article]) -> dict[UUID, list[UUID]]:
+        association_table = self.tables["article_image_associations"]
+
+        article_ids = [a.article_id for a in articles]
+        association_query = select(association_table.c.article_id, association_table.c.image_id).where(
+            association_table.c.article_id.in_(article_ids)
+        )
+
+        association_result = self.conn.execute(association_query).fetchall()
+
+        # Converting association_result into a dictionary
+        article_image_dict = defaultdict(list)
+        for article_id, image_id in association_result:
+            if article_id not in article_image_dict:
+                article_image_dict[article_id] = []
+            article_image_dict[article_id].append(image_id)
+
+        return article_image_dict
 
     def fetch_article_by_url(self, article_url: str, newsletter_id: UUID | None = None) -> UUID | None:
         impression_table = self.tables["impressions"]
