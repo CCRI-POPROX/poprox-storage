@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import and_, insert, select, true
+from sqlalchemy import and_, insert, not_, select
 
 from poprox_concepts import Account, Click
 from poprox_storage.aws import s3
@@ -71,8 +71,8 @@ class DbClicksRepository(DatabaseRepository):
             click_table.c.account_id.in_([acct.account_id for acct in accounts])
         )
 
-        if include_hidden:
-            click_query = click_query.filter(click_table.c.hidden != True)
+        if not include_hidden:
+            click_query = click_query.filter(not_(click_table.c.hidden))
 
         click_result = self.conn.execute(click_query).fetchall()
 
