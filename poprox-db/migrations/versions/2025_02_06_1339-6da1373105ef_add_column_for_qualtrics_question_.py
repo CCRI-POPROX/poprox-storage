@@ -19,7 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("qualtrics_surveys", sa.Column("question_metadata", JSONB, nullable=True))
+    op.add_column("qualtrics_surveys", sa.Column("question_metadata_raw", JSONB, nullable=True))
 
 
 def downgrade() -> None:
