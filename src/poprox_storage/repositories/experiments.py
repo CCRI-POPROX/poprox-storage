@@ -40,28 +40,24 @@ class DbExperimentRepository(DatabaseRepository):
         dataset_id: UUID,
     ):
         assignments = assignments or {}
-        self.conn.commit()
-        with self.conn.begin():
-            experiment_id = self._insert_experiment(dataset_id, experiment)
+        experiment_id = self._insert_experiment(dataset_id, experiment)
 
-            for group in experiment.groups:
-                group.group_id = self._insert_expt_group(experiment_id, group)
-                for account in assignments.get(group.name, []):
-                    self._insert_account_alias(dataset_id, account)
+        for group in experiment.groups:
+            group.group_id = self._insert_expt_group(experiment_id, group)
+            for account in assignments.get(group.name, []):
+                assignment = Assignment(account_id=account.account_id, group_id=group.group_id)
+                self._insert_expt_assignment(assignment)
 
-                    assignment = Assignment(account_id=account.account_id, group_id=group.group_id)
-                    self._insert_expt_assignment(assignment)
+        for recommender in experiment.recommenders:
+            recommender.recommender_id = self._insert_expt_recommender(
+                experiment_id,
+                recommender,
+            )
 
-            for recommender in experiment.recommenders:
-                recommender.recommender_id = self._insert_expt_recommender(
-                    experiment_id,
-                    recommender,
-                )
-
-            for phase in experiment.phases:
-                phase.phase_id = self._insert_expt_phase(experiment_id, phase)
-                for treatment in phase.treatments:
-                    self._insert_expt_treatment(phase.phase_id, treatment)
+        for phase in experiment.phases:
+            phase.phase_id = self._insert_expt_phase(experiment_id, phase)
+            for treatment in phase.treatments:
+                self._insert_expt_treatment(phase.phase_id, treatment)
 
         return experiment_id
 
