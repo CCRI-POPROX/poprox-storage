@@ -129,7 +129,7 @@ class DbNewsletterRepository(DatabaseRepository):
 
         query = (
             select(newsletters_table)
-            .where(and_(newsletters_table.c.account_id == account_id, newsletters_table.c.created_at < since))
+            .where(and_(newsletters_table.c.account_id == account_id, newsletters_table.c.created_at >= since))
             .order_by(newsletters_table.c.created_at.desc())
             .limit(1)
         )
