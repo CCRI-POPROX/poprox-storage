@@ -2,14 +2,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import (
-    Connection,
-    Table,
-    and_,
-    insert,
-    null,
-    select,
-)
+from sqlalchemy import Connection, Table, and_, insert, null, select
 
 from poprox_concepts.domain import Account, Article, Impression, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -53,6 +46,8 @@ class DbNewsletterRepository(DatabaseRepository):
                     preview_image_id=preview_image_id,
                     position=impression.position,
                     extra=impression.extra,
+                    headline=impression.headline,
+                    subhead=impression.subhead,
                 )
                 self.conn.execute(stmt)
 
@@ -109,6 +104,8 @@ class DbNewsletterRepository(DatabaseRepository):
             impressions_table.c.article_id,
             impressions_table.c.position,
             impressions_table.c.extra,
+            impressions_table.c.headline,
+            impressions_table.c.subhead,
         ).where(
             impressions_table.c.newsletter_id.in_(newsletter_ids),
         )
@@ -119,6 +116,8 @@ class DbNewsletterRepository(DatabaseRepository):
                 article_id=row.article_id,
                 position=row.position,
                 extra=row.extra,
+                headline=row.headline,
+                subhead=row.subhead,
             )
             for row in rows
         ]
