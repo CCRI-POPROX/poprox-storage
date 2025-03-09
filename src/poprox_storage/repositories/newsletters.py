@@ -2,9 +2,9 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from poprox_concepts.domain import Account, Article, Impression, Newsletter
 from sqlalchemy import Connection, Table, and_, insert, null, select
 
+from poprox_concepts.domain import Account, Article, Impression, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
