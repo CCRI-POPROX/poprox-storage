@@ -241,22 +241,38 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         )
 
     def fetch_latest_survey_sent(self, date: datetime.date = None) -> QualtricsSurvey | None:
+        latest_survey = self._fetch_latest_survey_sent(date=date)
+
+        return latest_survey
+
+    def fetch_latest_survey_sent_from_collection(
+        self, survey_ids: list[UUID], date: datetime.date = None
+    ) -> QualtricsSurvey | None:
+        survey_calendar_table = self.tables["qualtrics_survey_calendar"]
+
+        where_clause = survey_calendar_table.c.survey_id.in_(survey_ids)
+        latest_survey = self._fetch_latest_survey_sent(where_clause, date)
+
+        return latest_survey
+
+    def _fetch_latest_survey_sent(self, where_clause=None, date: datetime.date = None) -> QualtricsSurvey | None:
         survey_table = self.tables["qualtrics_surveys"]
         survey_calendar_table = self.tables["qualtrics_survey_calendar"]
 
         date = date or datetime.today().date()
 
-        query = (
-            select(survey_table)
-            .join(
-                survey_calendar_table,
-                survey_table.c.survey_id == survey_calendar_table.c.survey_id,
-            )
-            .where(survey_calendar_table.c.created_at <= date)
-            .order_by(survey_calendar_table.c.created_at.desc())
-            .limit(1)
+        query = select(survey_table).join(
+            survey_calendar_table,
+            survey_table.c.survey_id == survey_calendar_table.c.survey_id,
         )
-        row = self.conn.execute(query).fetchone()
+
+        if where_clause is not None:
+            query = query.where(and_(where_clause, survey_calendar_table.c.created_at <= date))
+        else:
+            query = query.where(survey_calendar_table.c.created_at <= date)
+
+        query = query.order_by(survey_calendar_table.c.created_at.desc()).limit(1)
+        row = self.conn.executre(query).fetchone()
 
         if row is None:
             return None
