@@ -182,10 +182,21 @@ class DbExperimentRepository(DatabaseRepository):
         return recommender_lookup_by_group
 
     def fetch_active_expt_assignments(self, date: datetime.date | None = None) -> dict[UUID, Assignment]:
-        assignments_tbl = self.tables["expt_assignments"]
-
         group_ids = self.fetch_active_expt_group_ids(date)
+        group_lookup_by_account = self._fetch_assignments_by_group_ids(group_ids)
 
+        return group_lookup_by_account
+
+    def fetch_assignments_by_experiment_id(self, experiment_id: UUID) -> dict[UUID, Assignment]:
+        experiment = self.fetch_experiment_by_id(experiment_id)
+
+        group_ids = [group.id for group in experiment.groups]
+        group_lookup_by_account = self._fetch_assignments_by_group_ids(group_ids)
+
+        return group_lookup_by_account
+
+    def _fetch_assignments_by_group_ids(self, group_ids: list[UUID]) -> dict[UUID, Assignment]:
+        assignments_tbl = self.tables["expt_assignments"]
         group_query = select(
             assignments_tbl.c.assignment_id,
             assignments_tbl.c.account_id,
