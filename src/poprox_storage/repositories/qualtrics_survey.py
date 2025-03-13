@@ -35,6 +35,15 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             "qualtrics_clean_responses",
         )
 
+    def store_qualtrics_survey(self, qualtrics_id: str, survey_url: str) -> UUID | None:
+        survey_table = self.tables["qualtrics_surveys"]
+        return self._upsert_and_return_id(
+            self.conn,
+            survey_table,
+            {"qualtrics_id": qualtrics_id, "base_url": survey_url},
+            constraint="uq_qualtrics_id",
+        )
+
     def fetch_survey(self, survey_id: UUID) -> QualtricsSurvey:
         survey_table = self.tables["qualtrics_surveys"]
 
