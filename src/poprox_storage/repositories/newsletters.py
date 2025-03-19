@@ -160,6 +160,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 impressions_table.c.newsletter_id,
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
+                impressions_table.c.extra,
                 articles_table,
             )
             .join(
@@ -175,24 +176,7 @@ class DbNewsletterRepository(DatabaseRepository):
     def _convert_to_newsletter_objs(self, newsletter_result, impressions_result):
         impressions_by_newsletter_id = defaultdict(list)
         for row in impressions_result:
-            impressions_by_newsletter_id[row.newsletter_id].append(
-                Impression(
-                    newsletter_id=row.newsletter_id,
-                    preview_image_id=row.preview_image_id,
-                    position=row.position,
-                    article=Article(
-                        article_id=row.article_id,
-                        headline=row.headline,
-                        subhead=row.subhead,
-                        url=row.url,
-                        preview_image_id=row.preview_image_id,
-                        published_at=row.published_at,
-                        source=row.source,
-                        external_id=row.external_id,
-                        raw_data=row.raw_data,
-                    ),
-                )
-            )
+            impressions_by_newsletter_id[row.newsletter_id].append(self._convert_to_impression_obj(row))
 
         return [
             Newsletter(
@@ -206,6 +190,25 @@ class DbNewsletterRepository(DatabaseRepository):
             )
             for row in newsletter_result
         ]
+
+    def _convert_to_impression_obj(self, row):
+        return Impression(
+            newsletter_id=row.newsletter_id,
+            preview_image_id=row.preview_image_id,
+            position=row.position,
+            extra=row.extra,
+            article=Article(
+                article_id=row.article_id,
+                headline=row.headline,
+                subhead=row.subhead,
+                url=row.url,
+                preview_image_id=row.preview_image_id,
+                published_at=row.published_at,
+                source=row.source,
+                external_id=row.external_id,
+                raw_data=row.raw_data,
+            ),
+        )
 
 
 class S3NewsletterRepository(S3Repository):
