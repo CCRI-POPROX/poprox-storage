@@ -286,7 +286,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             question_metadata_raw=row.question_metadata_raw,
         )
 
-    def fetch_survey_metadata(self, survey_ids: list[UUID]) -> list[QualtricsSurvey]:
+    def fetch_surveys(self, survey_ids: list[UUID]) -> list[QualtricsSurvey]:
         survey_table = self.tables["qualtrics_surveys"]
 
         query = select(
