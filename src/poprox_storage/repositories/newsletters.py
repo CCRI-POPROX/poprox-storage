@@ -235,7 +235,7 @@ def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
             record["position"] = impression.position
             record["created_at"] = newsletter.created_at
             for k, v in impression.extra.items():
-                record[str[k]] = v
+                record[str(k)] = v
             records.append(record)
         impression_records.extend(records)
     return impression_records
