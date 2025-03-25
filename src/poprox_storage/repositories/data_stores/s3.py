@@ -62,12 +62,9 @@ class S3Repository:
         all_keys = set()
         for record in records:
             all_keys.update(record.keys())
-        
+
         # Define a schema that includes all possible fields
-        schema = pa.schema([
-        pa.field(key, pa.string()) 
-            for key in all_keys
-        ])
+        schema = pa.schema([pa.field(key, pa.string()) for key in all_keys])
         arrow_table = pa.Table.from_pylist(records, schema=schema)
 
         with s3.open_output_stream(f"{bucket_name}/{file_name}") as file_:
