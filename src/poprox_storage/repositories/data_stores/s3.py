@@ -50,6 +50,8 @@ class S3Repository:
         file_prefix: str,
         start_time: datetime = None,
     ):
+        import json
+
         import pyarrow as pa
         import pyarrow.parquet as pq
         from pyarrow import fs
@@ -59,8 +61,19 @@ class S3Repository:
         start_time = start_time or datetime.now()
         file_name = f"{file_prefix}_{start_time.strftime('%Y%m%d-%H%M%S')}.parquet"
 
-        all_fields = {}
+        # Flatten records (convert nested dicts to JSON strings)
+        flattened_records = []
         for record in records:
+            flattened_record = {}
+            for key, value in record.items():
+                if isinstance(value, dict):
+                    flattened_record[key] = json.dumps(value)  # Convert dict to JSON string
+                else:
+                    flattened_record[key] = value
+            flattened_records.append(flattened_record)
+
+        all_fields = {}
+        for record in flattened_records:
             for key, value in record.items():
                 if value is None:
                     continue
@@ -80,7 +93,7 @@ class S3Repository:
 
         # Define a schema that includes all possible fields
         schema = pa.schema([pa.field(key, all_fields.get(key, pa.string())) for key in all_fields])
-        arrow_table = pa.Table.from_pylist(records, schema=schema)
+        arrow_table = pa.Table.from_pylist(flattened_records, schema=schema)
 
         with s3.open_output_stream(f"{bucket_name}/{file_name}") as file_:
             pq.write_table(arrow_table, file_)
