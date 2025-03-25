@@ -59,12 +59,27 @@ class S3Repository:
         start_time = start_time or datetime.now()
         file_name = f"{file_prefix}_{start_time.strftime('%Y%m%d-%H%M%S')}.parquet"
 
-        all_keys = set()
+        all_fields = {}
         for record in records:
-            all_keys.update(record.keys())
+            for key, value in record.items():
+                if value is None:
+                    continue
+                if key not in all_fields:
+                    if isinstance(value, str):
+                        all_fields[key] = pa.string()
+                    elif isinstance(value, int):
+                        all_fields[key] = pa.int64()
+                    elif isinstance(value, float):
+                        all_fields[key] = pa.float64()
+                    elif isinstance(value, bool):
+                        all_fields[key] = pa.bool_()
+                    elif isinstance(value, datetime):
+                        all_fields[key] = pa.timestamp("us")
+                    else:
+                        all_fields[key] = pa.string()  # fallback as string
 
         # Define a schema that includes all possible fields
-        schema = pa.schema([pa.field(key, pa.string()) for key in all_keys])
+        schema = pa.schema([pa.field(key, all_fields.get(key, pa.string())) for key in all_fields])
         arrow_table = pa.Table.from_pylist(records, schema=schema)
 
         with s3.open_output_stream(f"{bucket_name}/{file_name}") as file_:
