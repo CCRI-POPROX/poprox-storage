@@ -225,12 +225,6 @@ class S3NewsletterRepository(S3Repository):
 
 def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
     impression_records = []
-    extra_keys = set()  # To collect all possible extra keys
-
-    for newsletter in newsletters:
-        for impression in newsletter.impressions:
-            extra_keys.update(impression.extra.keys())
-
     for newsletter in newsletters:
         records = []
         for impression in newsletter.impressions:
@@ -240,8 +234,8 @@ def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
             record["article_id"] = str(impression.article.article_id)
             record["position"] = impression.position
             record["created_at"] = newsletter.created_at
-            for key in extra_keys:
-                record[str(key)] = impression.extra.get(key)
+            for k, v in impression.extra.items():
+                record[str(k)] = v
             records.append(record)
         impression_records.extend(records)
     return impression_records
