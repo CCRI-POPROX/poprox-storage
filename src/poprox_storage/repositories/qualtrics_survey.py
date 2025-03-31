@@ -272,7 +272,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             query = query.where(survey_calendar_table.c.created_at <= date)
 
         query = query.order_by(survey_calendar_table.c.created_at.desc()).limit(1)
-        row = self.conn.executre(query).fetchone()
+        row = self.conn.execute(query).fetchone()
 
         if row is None:
             return None
