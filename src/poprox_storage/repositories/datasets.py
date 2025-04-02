@@ -74,39 +74,42 @@ class DbDatasetRepository(DatabaseRepository):
         articles_table = self.tables["articles"]
         alias_table = self.tables["account_aliases"]
 
-        # TODO: Pull back the profile id and not the account id
+        alias_newsletter_query = (
+            select(
+                alias_table.c.account_id,
+                newsletters_table.c.newsletter_id,
+            )
+            .join(newsletters_table, alias_table.c.account_id == newsletters_table.c.account_id)
+            .where(
+                and_(
+                    alias_table.c.dataset_id == dataset_id,
+                    newsletters_table.c.created_at >= start,
+                    newsletters_table.c.created_at <= end,
+                )
+            )
+        ).subquery()
+
         newsletter_query = (
             select(
+                alias_newsletter_query.c.account_id,
                 newsletters_table.c.newsletter_id,
                 newsletters_table.c.account_id,
                 newsletters_table.c.html,
                 newsletters_table.c.created_at,
                 newsletters_table.c.email_subject,
                 newsletters_table.c.treatment_id,
-                alias_table,
             )
-            .where(
-                and_(
-                    newsletters_table.c.created_at >= start,
-                    newsletters_table.c.created_at <= end,
-                )
-            )
-            .join(alias_table, alias_table.c.account_id == newsletters_table.c.account_id)
-            .where(
-                and_(
-                    alias_table.c.dataset_id == dataset_id,
-                )
+            .join(
+                newsletters_table,
+                newsletters_table.c.newsletter_id == alias_newsletter_query.c.newsletter_id
             )
         )
 
-        executed_query = self.conn.execute(newsletter_query)
+        newsletter_result = self.conn.execute(newsletter_query).fetchall()
 
-        newsletter_result = executed_query.fetchall()
-
-        # TODO: Rewrite this to avoid using a large WHERE...IN clause by joining with some version of the above
         impressions_query = (
             select(
-                impressions_table.c.newsletter_id,
+                alias_newsletter_query.c.newsletter_id,
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
@@ -123,9 +126,12 @@ class DbDatasetRepository(DatabaseRepository):
             )
             .join(
                 impressions_table,
+                alias_newsletter_query.c.newsletter_id == impressions_table.c.newsletter_id
+            )
+            .join(
+                articles_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
             )
-            .where(impressions_table.c.newsletter_id.in_([row.newsletter_id for row in newsletter_result]))
         )
 
         impressions_result = self.conn.execute(impressions_query).fetchall()
