@@ -89,21 +89,15 @@ class DbDatasetRepository(DatabaseRepository):
             )
         ).subquery()
 
-        newsletter_query = (
-            select(
-                alias_newsletter_query.c.account_id,
-                newsletters_table.c.newsletter_id,
-                newsletters_table.c.account_id,
-                newsletters_table.c.html,
-                newsletters_table.c.created_at,
-                newsletters_table.c.email_subject,
-                newsletters_table.c.treatment_id,
-            )
-            .join(
-                newsletters_table,
-                newsletters_table.c.newsletter_id == alias_newsletter_query.c.newsletter_id
-            )
-        )
+        newsletter_query = select(
+            alias_newsletter_query.c.account_id,
+            newsletters_table.c.newsletter_id,
+            newsletters_table.c.account_id,
+            newsletters_table.c.html,
+            newsletters_table.c.created_at,
+            newsletters_table.c.email_subject,
+            newsletters_table.c.treatment_id,
+        ).join(newsletters_table, newsletters_table.c.newsletter_id == alias_newsletter_query.c.newsletter_id)
 
         newsletter_result = self.conn.execute(newsletter_query).fetchall()
 
@@ -124,10 +118,7 @@ class DbDatasetRepository(DatabaseRepository):
                 articles_table.c.preview_image_id,
                 articles_table.c.body,
             )
-            .join(
-                impressions_table,
-                alias_newsletter_query.c.newsletter_id == impressions_table.c.newsletter_id
-            )
+            .join(impressions_table, alias_newsletter_query.c.newsletter_id == impressions_table.c.newsletter_id)
             .join(
                 articles_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
