@@ -48,6 +48,7 @@ class DbNewsletterRepository(DatabaseRepository):
                     extra=impression.extra,
                     headline=impression.headline,
                     subhead=impression.subhead,
+                    pipeline_name=impression.pipeline_name,
                 )
                 self.conn.execute(stmt)
 
@@ -106,6 +107,7 @@ class DbNewsletterRepository(DatabaseRepository):
             impressions_table.c.extra,
             impressions_table.c.headline,
             impressions_table.c.subhead,
+            impressions_table.c.pipeline_name,
         ).where(
             impressions_table.c.newsletter_id.in_(newsletter_ids),
         )
@@ -118,6 +120,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 extra=row.extra,
                 headline=row.headline,
                 subhead=row.subhead,
+                pipeline_name=row.pipeline_name,
             )
             for row in rows
         ]
@@ -161,6 +164,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
+                impressions_table.c.pipeline_name,
                 articles_table,
             )
             .join(
@@ -197,6 +201,7 @@ class DbNewsletterRepository(DatabaseRepository):
             preview_image_id=row.preview_image_id,
             position=row.position,
             extra=row.extra,
+            pipeline_name=row.pipeline_name,
             article=Article(
                 article_id=row.article_id,
                 headline=row.headline,
