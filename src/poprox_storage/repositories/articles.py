@@ -40,52 +40,46 @@ class DbArticleRepository(DatabaseRepository):
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         cutoff = datetime.now() - timedelta(days=days_ago)
-        return self._get_articles(
-            article_table,
-            article_table.c.published_at > cutoff,
-        )
+        query = select(article_table).where(article_table.c.published_at > cutoff)
+        return self._get_articles(query)
 
     def fetch_articles_before(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         cutoff = datetime.now() - timedelta(days=days_ago)
-        return self._get_articles(
-            article_table,
-            article_table.c.published_at < cutoff,
-        )
+        query = select(article_table).where(article_table.c.published_at < cutoff)
+        return self._get_articles(query)
 
     def fetch_articles_ingested_since(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         cutoff = datetime.now() - timedelta(days=days_ago)
-        return self._get_articles(
-            article_table,
-            article_table.c.created_at > cutoff,
-        )
+        query = select(article_table).where(article_table.c.created_at > cutoff)
+        return self._get_articles(query)
 
     def fetch_articles_ingested_before(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         cutoff = datetime.now() - timedelta(days=days_ago)
-        return self._get_articles(
-            article_table,
-            article_table.c.created_at < cutoff,
-        )
+        query = select(article_table).where(article_table.c.created_at < cutoff)
+        return self._get_articles(query)
 
     def fetch_articles_ingested_between(self, start_date, end_date) -> list[Article]:
         article_table = self.tables["articles"]
-        return self._get_articles(
-            article_table,
+
+        query = select(article_table).where(
             and_(
                 article_table.c.created_at <= end_date,
                 article_table.c.created_at >= start_date,
-            ),
+            )
         )
+        return self._get_articles(query)
 
     def fetch_articles_by_id(self, ids: list[UUID]) -> list[Article]:
         article_table = self.tables["articles"]
-        return self._get_articles(article_table, article_table.c.article_id.in_(ids))
+        query = select(article_table).where(article_table.c.article_id.in_(ids))
+        return self._get_articles(query)
 
     def fetch_article_by_external_id(self, id_: str) -> Article:
         article_table = self.tables["articles"]
-        return self._get_articles(article_table, article_table.c.external_id == id_)[0]
+        return self._get_deduped_articles(article_table, article_table.c.external_id == id_)[0]
 
     def fetch_article_mentions(self, articles: list[Article]) -> list[Article]:
         article_lookup = {article.article_id: article for article in articles}
@@ -263,7 +257,7 @@ class DbArticleRepository(DatabaseRepository):
             constraint="uq_mentions",
         )
 
-    def _get_articles(self, article_table: Table, where_clause=None) -> list[Article]:
+    def _get_deduped_articles(self, article_table: Table, where_clause=None) -> list[Article]:
         # Select only the most recent article row for each source/external id pair
         inner_query = (
             select(
@@ -288,7 +282,12 @@ class DbArticleRepository(DatabaseRepository):
 
         if where_clause is not None:
             query = query.where(where_clause)
-        result = self.conn.execute(query).fetchall()
+
+        return self._get_articles(query)
+
+    def _get_articles(self, article_query) -> list[Article]:
+        result = self.conn.execute(article_query).fetchall()
+
         return [
             Article(
                 article_id=row.article_id,
