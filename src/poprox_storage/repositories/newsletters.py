@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import Connection, Table, and_, insert, null, select
 
+from poprox_concepts.api.recommendations import RecommenderInfo
 from poprox_concepts.domain import Account, Article, Impression, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -31,6 +32,9 @@ class DbNewsletterRepository(DatabaseRepository):
                 content=[rec.model_dump_json() for rec in newsletter.articles],
                 email_subject=newsletter.subject,
                 html=newsletter.body_html,
+                recommender_name=newsletter.recommender_info.name if newsletter.recommender_info else None,
+                recommender_version=newsletter.recommender_info.version if newsletter.recommender_info else None,
+                recommender_hash=newsletter.recommender_info.hash if newsletter.recommender_info else None,
             )
             self.conn.execute(stmt)
 
@@ -48,7 +52,6 @@ class DbNewsletterRepository(DatabaseRepository):
                     extra=impression.extra,
                     headline=impression.headline,
                     subhead=impression.subhead,
-                    pipeline_name=impression.pipeline_name,
                 )
                 self.conn.execute(stmt)
 
@@ -107,7 +110,6 @@ class DbNewsletterRepository(DatabaseRepository):
             impressions_table.c.extra,
             impressions_table.c.headline,
             impressions_table.c.subhead,
-            impressions_table.c.pipeline_name,
         ).where(
             impressions_table.c.newsletter_id.in_(newsletter_ids),
         )
@@ -120,7 +122,6 @@ class DbNewsletterRepository(DatabaseRepository):
                 extra=row.extra,
                 headline=row.headline,
                 subhead=row.subhead,
-                pipeline_name=row.pipeline_name,
             )
             for row in rows
         ]
@@ -148,6 +149,11 @@ class DbNewsletterRepository(DatabaseRepository):
             subject=row.email_subject,
             body_html=row.html,
             created_at=row.created_at,
+            recommender_info=RecommenderInfo(
+                name=row.recommender_name,
+                version=row.recommender_version,
+                hash=row.recommender_hash,
+            ),
         )
 
     def _fetch_newsletters(self, newsletters_table, impressions_table, articles_table, where_clause=None):
@@ -164,7 +170,6 @@ class DbNewsletterRepository(DatabaseRepository):
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
-                impressions_table.c.pipeline_name,
                 articles_table,
             )
             .join(
@@ -191,6 +196,11 @@ class DbNewsletterRepository(DatabaseRepository):
                 subject=row.email_subject,
                 body_html=row.html,
                 created_at=row.created_at,
+                recommender_info=RecommenderInfo(
+                    name=row.recommender_name,
+                    version=row.recommender_version,
+                    hash=row.recommender_hash,
+                ),
             )
             for row in newsletter_result
         ]
@@ -201,7 +211,6 @@ class DbNewsletterRepository(DatabaseRepository):
             preview_image_id=row.preview_image_id,
             position=row.position,
             extra=row.extra,
-            pipeline_name=row.pipeline_name,
             article=Article(
                 article_id=row.article_id,
                 headline=row.headline,
