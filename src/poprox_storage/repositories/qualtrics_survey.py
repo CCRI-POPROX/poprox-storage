@@ -281,7 +281,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             query = query.where(survey_calendar_table.c.created_at <= date)
 
         query = query.order_by(survey_calendar_table.c.created_at.desc()).limit(1)
-        row = self.conn.executre(query).fetchone()
+        row = self.conn.execute(query).fetchone()
 
         if row is None:
             return None
@@ -294,6 +294,31 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             active=row.active,
             question_metadata_raw=row.question_metadata_raw,
         )
+
+    def fetch_survey_metadata(self, survey_ids: list[UUID]) -> list[QualtricsSurvey]:
+        survey_table = self.tables["qualtrics_surveys"]
+
+        query = select(
+            survey_table.c.survey_id,
+            survey_table.c.qualtrics_id,
+            survey_table.c.base_url,
+            survey_table.c.continuation_token,
+            survey_table.c.active,
+            survey_table.c.question_metadata_raw,
+        ).where(survey_table.c.survey_id.in_(survey_ids))
+
+        results = self.conn.execute(query).fetchall()
+        return [
+            QualtricsSurvey(
+                survey_id=row.survey_id,
+                qualtrics_id=row.qualtrics_id,
+                base_url=row.base_url,
+                continuation_token=row.continuation_token,
+                active=row.active,
+                question_metadata_raw=row.question_metadata_raw,
+            )
+            for row in results
+        ]
 
 
 class S3QualtricsSurveyRepository(S3Repository):
