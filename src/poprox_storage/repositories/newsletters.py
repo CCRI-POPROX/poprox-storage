@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import Connection, Table, and_, insert, null, select
 
+from poprox_concepts.api.recommendations import RecommenderInfo
 from poprox_concepts.domain import Account, Article, Impression, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -31,6 +32,9 @@ class DbNewsletterRepository(DatabaseRepository):
                 content=[rec.model_dump_json() for rec in newsletter.articles],
                 email_subject=newsletter.subject,
                 html=newsletter.body_html,
+                recommender_name=newsletter.recommender_info.name if newsletter.recommender_info else None,
+                recommender_version=newsletter.recommender_info.version if newsletter.recommender_info else None,
+                recommender_hash=newsletter.recommender_info.hash if newsletter.recommender_info else None,
             )
             self.conn.execute(stmt)
 
@@ -145,6 +149,11 @@ class DbNewsletterRepository(DatabaseRepository):
             subject=row.email_subject,
             body_html=row.html,
             created_at=row.created_at,
+            recommender_info=RecommenderInfo(
+                name=row.recommender_name,
+                version=row.recommender_version,
+                hash=row.recommender_hash,
+            ),
         )
 
     def _fetch_newsletters(self, newsletters_table, impressions_table, articles_table, where_clause=None):
@@ -187,6 +196,11 @@ class DbNewsletterRepository(DatabaseRepository):
                 subject=row.email_subject,
                 body_html=row.html,
                 created_at=row.created_at,
+                recommender_info=RecommenderInfo(
+                    name=row.recommender_name,
+                    version=row.recommender_version,
+                    hash=row.recommender_hash,
+                ),
             )
             for row in newsletter_result
         ]
