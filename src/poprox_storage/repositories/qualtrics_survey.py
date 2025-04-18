@@ -326,6 +326,9 @@ class S3QualtricsSurveyRepository(S3Repository):
         super().__init__(bucket_name)
         self.s3_client = boto3.client("s3")
 
+    def fetch_survey(self, survey_file_key):
+        return self._get_s3_file(survey_file_key)
+
     def store_as_parquet(
         self,
         responses: list[QualtricsCleanResponse],
