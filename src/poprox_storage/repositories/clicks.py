@@ -142,7 +142,7 @@ def extract_and_flatten(clicks_by_user: dict[UUID, list[Click]]) -> list[dict]:
         row["profile_id"] = str(profile_id)
         row["newsletter_id"] = str(click.newsletter_id)
         row["article_id"] = str(click.article_id)
-        row["timestamp"] = click.timestamp
+        row["clicked_at"] = click.timestamp
         return row
 
     flattened_rows = []
