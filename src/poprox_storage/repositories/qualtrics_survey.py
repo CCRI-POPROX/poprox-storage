@@ -376,7 +376,7 @@ def extract_and_flatten(responses: list[QualtricsCleanResponse]):
 
         return [
             {
-                "account_id": str(response.account_id),
+                "profile_id": str(response.account_id),
                 "survey_id": str(response.survey_id),
                 "qualtrics_id": response.qualtrics_id,
                 "survey_code": response.survey_code,
