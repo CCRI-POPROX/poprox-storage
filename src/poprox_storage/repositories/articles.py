@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
 import boto3
@@ -31,10 +31,11 @@ class DbArticleRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables: dict[str, Table] = self._load_tables(
             "articles",
-            "entities",
-            "mentions",
             "article_image_associations",
+            "candidate_articles",
+            "entities",
             "impressions",
+            "mentions",
         )
 
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
@@ -200,6 +201,18 @@ class DbArticleRepository(DatabaseRepository):
         else:
             return None
 
+    def fetch_candidates(self, date: date) -> list[Article]:
+        article_table = self.tables["articles"]
+        candidate_table = self.tables["candidate_articles"]
+
+        query = (
+            select(article_table)
+            .join(article_table, candidate_table.c.article_id == article_table.c.article_id)
+            .where(candidate_table.c.date == date)
+        )
+
+        return self._get_articles(query)
+
     def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
 
@@ -227,6 +240,15 @@ class DbArticleRepository(DatabaseRepository):
                 failed += 1
 
         return failed
+
+    def store_candidates(self, articles: list[Article], date: date):
+        candidates_table = self.tables["candidate_articles"]
+        insert_stmt = (
+            insert(candidates_table)
+            .values([{"article_id": article.article_id, "date": date} for article in articles])
+            .on_conflict_do_nothing(constraint="uq_candidate_articles")
+        )
+        self.conn.execute(insert_stmt)
 
     def store_image_association(self, article_id: str, image_id: str):
         associations_table = self.tables["article_image_associations"]
