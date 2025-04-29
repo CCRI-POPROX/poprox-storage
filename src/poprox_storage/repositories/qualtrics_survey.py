@@ -151,14 +151,14 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         days_ago: int,
         accounts: list[Account] | None = None,
     ) -> list[tuple[QualtricsSurveyInstance, QualtricsSurveyResponse]]:
-        instances_table = self.tables["qualtrics_survey_instances"]
+        responses_table = self.tables["qualtrics_survey_responses"]
 
         cutoff = datetime.now() - timedelta(days=days_ago)
-        where_clause = instances_table.c.created_at >= cutoff
+        where_clause = responses_table.c.created_at >= cutoff
 
         if accounts:
             account_ids = [acct.account_id for acct in accounts]
-            where_clause = and_(where_clause, instances_table.c.account_id.in_(account_ids))
+            where_clause = and_(where_clause, responses_table.c.account_id.in_(account_ids))
 
         return self._fetch_survey_responses(where_clause)
 
