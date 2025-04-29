@@ -168,7 +168,12 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
         survey_instance_table = self.tables["qualtrics_survey_instances"]
         survey_responses_table = self.tables["qualtrics_survey_responses"]
 
-        instance_query = select(survey_instance_table, survey_responses_table)
+        instance_query = select(
+            survey_instance_table.c.survey_instance_id,
+            survey_instance_table.c.survey_id,
+            survey_instance_table.c.account_id,
+            survey_responses_table
+        )
 
         response_query = instance_query.join(
             survey_responses_table,
@@ -191,6 +196,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
                     survey_instance_id=row.survey_instance_id,
                     qualtrics_response_id=row.qualtrics_response_id,
                     raw_data=row.raw_data,
+                    created_at=row.created_at,
                 ),
             )
             for row in results
