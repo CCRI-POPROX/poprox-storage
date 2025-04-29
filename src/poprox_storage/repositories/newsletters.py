@@ -160,8 +160,6 @@ class DbNewsletterRepository(DatabaseRepository):
         return [
             Impression(
                 newsletter_id=row.newsletter_id,
-                headline=row.headline,
-                subhead=row.subhead,
                 article=Article(
                     article_id=row.article_id,
                     headline=row.headline,
