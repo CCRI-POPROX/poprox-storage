@@ -57,40 +57,31 @@ class DbNewsletterRepository(DatabaseRepository):
                 )
                 self.conn.execute(stmt)
 
-    def store_newsletter_feedback(self, account_id: list[UUID], newsletter_id: list[UUID], ispositive: bool):
+    def store_newsletter_feedback(self, account_id: UUID, newsletter_id: UUID, is_positive: bool | None):
         newsletter_table = self.tables["newsletters"]
 
-        self.conn.commit()
-        with self.conn.begin():
-            stmt = (
-                update(newsletter_table)
-                .where(
-                    and_(newsletter_table.c.newsletter_id == newsletter_id, newsletter_table.c.account_id == account_id)
-                )
-                .values(
-                    feedback=ispositive,
-                )
+        stmt = (
+            update(newsletter_table)
+            .where(and_(newsletter_table.c.newsletter_id == newsletter_id, newsletter_table.c.account_id == account_id))
+            .values(
+                feedback=is_positive,
             )
-            self.conn.execute(stmt)
+        )
+        self.conn.execute(stmt)
 
-    def store_impression_feedback(self, article_id: list[UUID], newsletter_id: list[UUID], ispositive: bool):
+    def store_impression_feedback(self, impression_id: UUID, is_positive: bool | None):
         impressions_table = self.tables["impressions"]
 
-        self.conn.commit()
-        with self.conn.begin():
-            stmt = (
-                update(impressions_table)
-                .where(
-                    and_(
-                        impressions_table.c.newsletter_id == newsletter_id,
-                        impressions_table.c.article_id == article_id,
-                    )
-                )
-                .values(
-                    feedback=ispositive,
-                )
+        stmt = (
+            update(impressions_table)
+            .where(
+                impressions_table.c.impression_id == impression_id,
             )
-            self.conn.execute(stmt)
+            .values(
+                feedback=is_positive,
+            )
+        )
+        self.conn.execute(stmt)
 
     def fetch_newsletters(self, accounts: list[Account]) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
@@ -147,9 +138,9 @@ class DbNewsletterRepository(DatabaseRepository):
                 impressions_table.c.article_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
-                articles_table.c.headline,
+                impressions_table.c.headline,
+                impressions_table.c.subhead,
                 articles_table.c.url,
-                articles_table.c.subhead,
             )
             .join(
                 articles_table,
@@ -163,6 +154,8 @@ class DbNewsletterRepository(DatabaseRepository):
         return [
             Impression(
                 newsletter_id=row.newsletter_id,
+                headline=row.headline,
+                subhead=row.subhead,
                 article=Article(
                     article_id=row.article_id,
                     headline=row.headline,
