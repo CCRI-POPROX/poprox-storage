@@ -172,7 +172,7 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             survey_instance_table.c.survey_instance_id,
             survey_instance_table.c.survey_id,
             survey_instance_table.c.account_id,
-            survey_responses_table
+            survey_responses_table,
         )
 
         response_query = instance_query.join(
@@ -205,7 +205,9 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
     def store_clean_response(self, response: QualtricsCleanResponse):
         clean_table = self.tables["qualtrics_clean_responses"]
 
-        return self._upsert_and_return_id(self.conn, clean_table, response.model_dump())
+        return self._upsert_and_return_id(
+            self.conn, clean_table, response.model_dump(), constraint="qualtrics_clean_responses_pkey"
+        )
 
     def fetch_clean_responses_since(
         self, days_ago=1, accounts: list[Account] | None = None
