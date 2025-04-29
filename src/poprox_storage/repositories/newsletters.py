@@ -2,7 +2,15 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import Connection, Table, and_, insert, null, select
+from sqlalchemy import (
+    Connection,
+    Table,
+    and_,
+    insert,
+    null,
+    select,
+    update,
+)
 
 from poprox_concepts.api.recommendations import RecommenderInfo
 from poprox_concepts.domain import Account, Article, Impression, Newsletter
@@ -55,6 +63,32 @@ class DbNewsletterRepository(DatabaseRepository):
                 )
                 self.conn.execute(stmt)
 
+    def store_newsletter_feedback(self, account_id: UUID, newsletter_id: UUID, is_positive: bool | None):
+        newsletter_table = self.tables["newsletters"]
+
+        stmt = (
+            update(newsletter_table)
+            .where(and_(newsletter_table.c.newsletter_id == newsletter_id, newsletter_table.c.account_id == account_id))
+            .values(
+                feedback=is_positive,
+            )
+        )
+        self.conn.execute(stmt)
+
+    def store_impression_feedback(self, impression_id: UUID, is_positive: bool | None):
+        impressions_table = self.tables["impressions"]
+
+        stmt = (
+            update(impressions_table)
+            .where(
+                impressions_table.c.impression_id == impression_id,
+            )
+            .values(
+                feedback=is_positive,
+            )
+        )
+        self.conn.execute(stmt)
+
     def fetch_newsletters(self, accounts: list[Account]) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
         impressions_table = self.tables["impressions"]
@@ -102,22 +136,36 @@ class DbNewsletterRepository(DatabaseRepository):
 
     def fetch_impressions_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> list[Impression]:
         impressions_table = self.tables["impressions"]
+        articles_table = self.tables["articles"]
 
-        query = select(
-            impressions_table.c.newsletter_id,
-            impressions_table.c.article_id,
-            impressions_table.c.position,
-            impressions_table.c.extra,
-            impressions_table.c.headline,
-            impressions_table.c.subhead,
-        ).where(
-            impressions_table.c.newsletter_id.in_(newsletter_ids),
+        query = (
+            select(
+                impressions_table.c.newsletter_id,
+                impressions_table.c.article_id,
+                impressions_table.c.position,
+                impressions_table.c.extra,
+                impressions_table.c.headline,
+                impressions_table.c.subhead,
+                articles_table.c.url,
+            )
+            .join(
+                articles_table,
+                articles_table.c.article_id == impressions_table.c.article_id,
+            )
+            .where(
+                impressions_table.c.newsletter_id.in_(newsletter_ids),
+            )
         )
         rows = self.conn.execute(query).fetchall()
         return [
             Impression(
                 newsletter_id=row.newsletter_id,
-                article_id=row.article_id,
+                article=Article(
+                    article_id=row.article_id,
+                    headline=row.headline,
+                    url=row.url,
+                    subhead=row.subhead,
+                ),
                 position=row.position,
                 extra=row.extra,
                 headline=row.headline,
