@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 
 db_user = os.environ.get("POPROX_DB_USER", "postgres")
 db_password = os.environ.get("POPROX_DB_PASSWORD", "")
-db_port = os.environ.get("POPROX_DB_PORT", "5433")
+db_port = os.environ.get("POPROX_DB_PORT", "5432")
 
 DEFAULT_PG_URL = f"postgresql://{db_user}:{db_password}@127.0.0.1:{db_port}/poprox"
 

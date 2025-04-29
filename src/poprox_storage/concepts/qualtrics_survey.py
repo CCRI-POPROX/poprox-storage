@@ -28,6 +28,7 @@ class QualtricsSurveyResponse(BaseModel):
     survey_instance_id: UUID | None
     qualtrics_response_id: str
     raw_data: dict
+    created_at: datetime | None = None
 
 
 class QualtricsCleanResponse(BaseModel):

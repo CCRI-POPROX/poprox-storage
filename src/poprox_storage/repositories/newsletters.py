@@ -12,6 +12,7 @@ from sqlalchemy import (
     update,
 )
 
+from poprox_concepts.api.recommendations import RecommenderInfo
 from poprox_concepts.domain import Account, Article, Impression, Newsletter
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -39,6 +40,9 @@ class DbNewsletterRepository(DatabaseRepository):
                 content=[rec.model_dump_json() for rec in newsletter.articles],
                 email_subject=newsletter.subject,
                 html=newsletter.body_html,
+                recommender_name=newsletter.recommender_info.name if newsletter.recommender_info else None,
+                recommender_version=newsletter.recommender_info.version if newsletter.recommender_info else None,
+                recommender_hash=newsletter.recommender_info.hash if newsletter.recommender_info else None,
             )
             self.conn.execute(stmt)
 
@@ -54,6 +58,8 @@ class DbNewsletterRepository(DatabaseRepository):
                     preview_image_id=preview_image_id,
                     position=impression.position,
                     extra=impression.extra,
+                    headline=impression.headline,
+                    subhead=impression.subhead,
                 )
                 self.conn.execute(stmt)
 
@@ -164,6 +170,8 @@ class DbNewsletterRepository(DatabaseRepository):
                 ),
                 position=row.position,
                 extra=row.extra,
+                headline=row.headline,
+                subhead=row.subhead,
             )
             for row in rows
         ]
@@ -174,7 +182,7 @@ class DbNewsletterRepository(DatabaseRepository):
 
         query = (
             select(newsletters_table)
-            .where(and_(newsletters_table.c.account_id == account_id, newsletters_table.c.created_at < since))
+            .where(and_(newsletters_table.c.account_id == account_id, newsletters_table.c.created_at >= since))
             .order_by(newsletters_table.c.created_at.desc())
             .limit(1)
         )
@@ -191,6 +199,11 @@ class DbNewsletterRepository(DatabaseRepository):
             subject=row.email_subject,
             body_html=row.html,
             created_at=row.created_at,
+            recommender_info=RecommenderInfo(
+                name=row.recommender_name,
+                version=row.recommender_version,
+                hash=row.recommender_hash,
+            ),
         )
 
     def _fetch_newsletters(self, newsletters_table, impressions_table, articles_table, where_clause=None):
@@ -206,6 +219,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 impressions_table.c.newsletter_id,
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
+                impressions_table.c.extra,
                 articles_table,
             )
             .join(
@@ -221,24 +235,7 @@ class DbNewsletterRepository(DatabaseRepository):
     def _convert_to_newsletter_objs(self, newsletter_result, impressions_result):
         impressions_by_newsletter_id = defaultdict(list)
         for row in impressions_result:
-            impressions_by_newsletter_id[row.newsletter_id].append(
-                Impression(
-                    newsletter_id=row.newsletter_id,
-                    preview_image_id=row.preview_image_id,
-                    position=row.position,
-                    article=Article(
-                        article_id=row.article_id,
-                        headline=row.headline,
-                        subhead=row.subhead,
-                        url=row.url,
-                        preview_image_id=row.preview_image_id,
-                        published_at=row.published_at,
-                        source=row.source,
-                        external_id=row.external_id,
-                        raw_data=row.raw_data,
-                    ),
-                )
-            )
+            impressions_by_newsletter_id[row.newsletter_id].append(self._convert_to_impression_obj(row))
 
         return [
             Newsletter(
@@ -249,9 +246,33 @@ class DbNewsletterRepository(DatabaseRepository):
                 subject=row.email_subject,
                 body_html=row.html,
                 created_at=row.created_at,
+                recommender_info=RecommenderInfo(
+                    name=row.recommender_name,
+                    version=row.recommender_version,
+                    hash=row.recommender_hash,
+                ),
             )
             for row in newsletter_result
         ]
+
+    def _convert_to_impression_obj(self, row):
+        return Impression(
+            newsletter_id=row.newsletter_id,
+            preview_image_id=row.preview_image_id,
+            position=row.position,
+            extra=row.extra,
+            article=Article(
+                article_id=row.article_id,
+                headline=row.headline,
+                subhead=row.subhead,
+                url=row.url,
+                preview_image_id=row.preview_image_id,
+                published_at=row.published_at,
+                source=row.source,
+                external_id=row.external_id,
+                raw_data=row.raw_data,
+            ),
+        )
 
 
 class S3NewsletterRepository(S3Repository):
@@ -272,12 +293,16 @@ def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
         records = []
         for impression in newsletter.impressions:
             record = {}
-            record["account_id"] = str(newsletter.account_id)
+            record["profile_id"] = str(newsletter.account_id)
             record["newsletter_id"] = str(newsletter.newsletter_id)
             record["article_id"] = str(impression.article.article_id)
             record["position"] = impression.position
             record["created_at"] = newsletter.created_at
-            record["extra"] = impression.extra
+            record["headline"] = impression.headline
+            record["subhead"] = impression.subhead
+            if impression.extra:
+                for k, v in impression.extra.items():
+                    record[str(k)] = v
             records.append(record)
         impression_records.extend(records)
     return impression_records

@@ -10,6 +10,7 @@ from poprox_storage.concepts.experiment import (
     Group,
     Phase,
     Recommender,
+    Team,
     Treatment,
 )
 from poprox_storage.concepts.manifest import ManifestFile, parse_manifest_toml
@@ -63,20 +64,115 @@ class DbExperimentRepository(DatabaseRepository):
 
     def fetch_experiment_by_id(self, experiment_id: str) -> Experiment | None:
         expt_table = self.tables["experiments"]
+
         expt_query = select(expt_table).where(expt_table.c.experiment_id == experiment_id)
 
         result = self.conn.execute(expt_query).first()
         if not result:
             return None
-        else:
-            return Experiment(
-                experiment_id=result.experiment_id,
-                dataset_id=result.dataset_id,
-                description=result.description,
-                start_date=result.start_date,
-                end_date=result.end_date,
-                phases=[],
+
+        expt = Experiment(
+            experiment_id=result.experiment_id,
+            dataset_id=result.dataset_id,
+            description=result.description,
+            start_date=result.start_date,
+            end_date=result.end_date,
+            team=None,
+            phases=[],
+        )
+
+        # add team and phases
+        expt.owner = self.fetch_team(result.team_id)
+        expt.phases = self.fetch_experiment_phases(experiment_id)
+        return expt
+
+    def fetch_experiment_phases(self, experiment_id: UUID) -> list[Phase]:
+        treatment_table = self.tables["expt_treatments"]
+        recommenders_table = self.tables["expt_recommenders"]
+        phases_table = self.tables["expt_phases"]
+
+        recommenders = self.fetch_experient_recommenders(experiment_id)
+        groups = self.fetch_experiment_groups(experiment_id)
+
+        phase_query = select(phases_table).where(phases_table.c.experiment_id == experiment_id)
+        phase_rows = self.conn.execute(phase_query).all()
+        phases = {
+            row.phase_id: Phase(
+                phase_id=row.phase_id,
+                name=row.phase_name,
+                start_date=row.start_date,
+                end_date=row.end_date,
+                treatments=[],
             )
+            for row in phase_rows
+        }
+
+        # build the treatments and add to phases
+        treatment_query = (
+            select(treatment_table)
+            .join(
+                recommenders_table,
+                treatment_table.c.recommender_id == recommenders_table.c.recommender_id,
+            )
+            .where(recommenders_table.c.experiment_id == experiment_id)
+        )
+        treatment_rows = self.conn.execute(treatment_query).all()
+
+        for row in treatment_rows:
+            phases[row.phase_id].treatments.append(
+                Treatment(
+                    treatment_id=row.treatment_id,
+                    group=groups.get(row.group_id),
+                    recommender=recommenders.get(row.recommender_id),
+                )
+            )
+
+        return list(phases.values())
+
+    def fetch_team(self, team_id: UUID) -> Team:
+        team_table = self.tables["teams"]
+        team_member_table = self.tables["team_memberships"]
+
+        team_query = select(team_table).where(team_table.c.team_id == team_id)
+        team_result = self.conn.execute(team_query).first()
+
+        team_member_query = select(team_member_table).where(team_member_table.c.team_id == team_id)
+        team_member_results = self.conn.execute(team_member_query).all()
+
+        if team_result:
+            return Team(
+                team_id=team_id,
+                team_name=team_result.team_name,
+                members=[row.account_id for row in team_member_results],
+            )
+        else:
+            return None
+
+    def fetch_experiment_groups(self, experiment_id: UUID) -> dict[UUID, Group]:
+        """Fetches all Group objects for an experiment.
+        Returned dictionary maps group_id to recommender object."""
+        groups_table = self.tables["expt_groups"]
+
+        group_query = select(groups_table).where(groups_table.c.experiment_id == experiment_id)
+        group_rows = self.conn.execute(group_query).all()
+        # XXX: we do not currently store the minium size after ingesting an experiment.
+        return {row.group_id: Group(group_id=row.group_id, name=row.group_name, minimum_size=1) for row in group_rows}
+
+    def fetch_experient_recommenders(self, experiment_id: UUID) -> dict[UUID, Recommender]:
+        """Fetches all Recommender objects for an experiment.
+        Returned dictionary maps recommender_id to recommender object."""
+
+        recommenders_table = self.tables["expt_recommenders"]
+
+        # get recommenders
+        recommender_query = select(recommenders_table).where(recommenders_table.c.experiment_id == experiment_id)
+        recommender_rows = self.conn.execute(recommender_query).all()
+        return {
+            row.recommender_id: Recommender(
+                recommender_id=row.recommender_id, name=row.recommender_name, url=row.endpoint_url
+            )
+            for row in recommender_rows
+        }
 
     def fetch_active_expt_group_ids(self, date: datetime.date | None = None) -> list[UUID]:
         groups_tbl = self.tables["expt_groups"]
@@ -182,10 +278,20 @@ class DbExperimentRepository(DatabaseRepository):
         return recommender_lookup_by_group
 
     def fetch_active_expt_assignments(self, date: datetime.date | None = None) -> dict[UUID, Assignment]:
-        assignments_tbl = self.tables["expt_assignments"]
-
         group_ids = self.fetch_active_expt_group_ids(date)
+        group_lookup_by_account = self._fetch_assignments_by_group_ids(group_ids)
 
+        return group_lookup_by_account
+
+    def fetch_assignments_by_experiment_id(self, experiment_id: UUID) -> dict[UUID, Assignment]:
+        experiment = self.fetch_experiment_by_id(experiment_id)
+        group_ids = [group.id for group in experiment.groups]
+        group_lookup_by_account = self._fetch_assignments_by_group_ids(group_ids)
+
+        return group_lookup_by_account
+
+    def _fetch_assignments_by_group_ids(self, group_ids: list[UUID]) -> dict[UUID, Assignment]:
+        assignments_tbl = self.tables["expt_assignments"]
         group_query = select(
             assignments_tbl.c.assignment_id,
             assignments_tbl.c.account_id,
