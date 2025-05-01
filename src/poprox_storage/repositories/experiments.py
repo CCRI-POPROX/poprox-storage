@@ -430,3 +430,26 @@ class S3ExperimentRepository(S3Repository):
     def fetch_manifest(self, manifest_file_key) -> ManifestFile:
         manifest_toml = self._get_s3_file(manifest_file_key)
         return parse_manifest_toml(manifest_toml)
+
+
+class S3AssignmentsRepository(S3Repository):
+    def store_as_parquet(
+        self,
+        assignments: list[Assignment],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ) -> str:
+        records = self._extract_and_flatten(assignments)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
+    def extract_and_flatten(self, assignments: list[Assignment]) -> list[dict]:
+        records = []
+        for assignment in assignments:
+            record = {}
+            record["profile_id"] = assignment.account_id
+            record["group_id"] = assignment.group_id
+            record["opted_out"] = assignment.opted_out
+            records.append(record)
+
+        return records

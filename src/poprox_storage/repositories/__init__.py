@@ -9,6 +9,7 @@ from poprox_storage.repositories.datasets import DbDatasetRepository
 from poprox_storage.repositories.demographics import DbDemographicsRepository, S3DemographicsRepository
 from poprox_storage.repositories.experiments import (
     DbExperimentRepository,
+    S3AssignmentsRepository,
     S3ExperimentRepository,
 )
 from poprox_storage.repositories.images import DbImageRepository, S3ImageRepository
@@ -62,6 +63,7 @@ __all__ = [
     "DbTeamRepository",
     "S3AccountInterestRepository",
     "S3ArticleRepository",
+    "S3AssignmentsRepository",
     "S3ClicksRepository",
     "S3DemographicsRepository",
     "S3ExperimentRepository",
