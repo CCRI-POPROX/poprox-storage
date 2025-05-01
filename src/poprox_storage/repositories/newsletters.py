@@ -280,12 +280,13 @@ class S3NewsletterRepository(S3Repository):
         bucket_name: str,
         file_prefix: str,
         start_time: datetime = None,
+        include_treatment: bool = False,
     ) -> str:
-        records = extract_and_flatten(newsletters)
+        records = extract_and_flatten(newsletters, include_treatment=include_treatment)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
-def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
+def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool = False) -> list[dict]:
     impression_records = []
     for newsletter in newsletters:
         records = []
@@ -298,6 +299,8 @@ def extract_and_flatten(newsletters: list[Newsletter]) -> list[dict]:
             record["created_at"] = newsletter.created_at
             record["headline"] = impression.headline
             record["subhead"] = impression.subhead
+            if include_treatment:
+                record["treatment_id"] = str(newsletter.treatment_id)
             if impression.extra:
                 for k, v in impression.extra.items():
                     record[str(k)] = v
