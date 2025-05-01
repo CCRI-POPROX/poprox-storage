@@ -32,12 +32,12 @@ class S3Repository:
 
     def __init_subclass__(cls, *args, **kwargs):
         """
-        Gets called once for each loaded class that sub-classes DatabaseRepository
+        Gets called once for each loaded class that sub-classes S3Repository
         """
 
         cls._repository_types.add(cls)
 
-    def _get_s3_file(self, key):
+    def fetch_file_contents(self, key):
         load_path = f"s3://{self.bucket_name}/{key}"
 
         with smart_open(load_path, "r") as f:

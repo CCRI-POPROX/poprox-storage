@@ -379,7 +379,7 @@ class S3ArticleRepository(S3Repository):
         return [f["Key"] for f in files]
 
     def fetch_nitf_file_contents(self, file_key):
-        file_contents = self._get_s3_file(file_key)
+        file_contents = self.fetch_file_contents(file_key)
         return file_contents
 
     def store_as_parquet(
