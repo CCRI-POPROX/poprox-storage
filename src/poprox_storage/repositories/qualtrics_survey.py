@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
 import boto3
@@ -212,11 +212,39 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
     def fetch_clean_responses_since(
         self, days_ago=1, accounts: list[Account] | None = None
     ) -> list[QualtricsCleanResponse]:
-        surveys_table = self.tables["qualtrics_surveys"]
         instances_table = self.tables["qualtrics_survey_instances"]
         responses_table = self.tables["qualtrics_clean_responses"]
 
         cutoff = datetime.now() - timedelta(days=days_ago)
+        where_clause = responses_table.c.created_at >= cutoff
+
+        if accounts:
+            account_ids = [acct.account_id for acct in accounts]
+            where_clause = and_(where_clause, instances_table.c.account_id.in_(account_ids))
+
+        return self._fetch_clean_responses(where_clause)
+
+    def fetch_clean_responses_between(
+        self, start_date: date, end_date: date, accounts: list[Account] | None = None
+    ) -> list[QualtricsCleanResponse]:
+        instances_table = self.tables["qualtrics_survey_instances"]
+        responses_table = self.tables["qualtrics_clean_responses"]
+
+        where_clause = and_(
+            responses_table.c.created_at >= start_date,
+            responses_table.c.created_at <= end_date,
+        )
+
+        if accounts:
+            account_ids = [acct.account_id for acct in accounts]
+            where_clause = and_(where_clause, instances_table.c.account_id.in_(account_ids))
+
+        return self._fetch_clean_responses(where_clause)
+
+    def _fetch_clean_responses(self, where_clause) -> list[QualtricsCleanResponse]:
+        surveys_table = self.tables["qualtrics_surveys"]
+        instances_table = self.tables["qualtrics_survey_instances"]
+        responses_table = self.tables["qualtrics_clean_responses"]
 
         response_query = (
             select(responses_table, instances_table, surveys_table)
@@ -225,12 +253,8 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
                 responses_table.c.survey_instance_id == instances_table.c.survey_instance_id,
             )
             .join(surveys_table, instances_table.c.survey_id == surveys_table.c.survey_id)
-            .where(responses_table.c.created_at >= cutoff)
+            .where(where_clause)
         )
-
-        if accounts:
-            account_ids = [acct.account_id for acct in accounts]
-            response_query = response_query.where(instances_table.c.account_id.in_(account_ids))
 
         results = self.conn.execute(response_query).fetchall()
 
