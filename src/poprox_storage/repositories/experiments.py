@@ -285,7 +285,7 @@ class DbExperimentRepository(DatabaseRepository):
 
     def fetch_assignments_by_experiment_id(self, experiment_id: UUID) -> dict[UUID, Assignment]:
         experiment = self.fetch_experiment_by_id(experiment_id)
-        group_ids = [group.id for group in experiment.groups]
+        group_ids = [group.group_id for group in experiment.groups]
         group_lookup_by_account = self._fetch_assignments_by_group_ids(group_ids)
 
         return group_lookup_by_account
