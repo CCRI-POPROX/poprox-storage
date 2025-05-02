@@ -208,6 +208,18 @@ class DbAccountRepository(DatabaseRepository):
         account_ids = self._id_query(account_query)
         return self.fetch_accounts(account_ids)
 
+    def fetch_subscribed_accounts_between(self, start_date, end_date) -> list[Account]:
+        subscription_tbl = self.tables["subscriptions"]
+
+        account_query = select(subscription_tbl.c.account_id).where(
+            and_(
+                subscription_tbl.c.started <= end_date,
+                or_(subscription_tbl.c.ended >= start_date, subscription_tbl.c.ended == null()),
+            )
+        )
+        account_ids = self._id_query(account_query)
+        return self.fetch_accounts(account_ids)
+
     def fetch_subscription_for_account(self, account_id: UUID) -> UUID | None:
         subscription_tbl = self.tables["subscriptions"]
         query = subscription_tbl.select().where(
