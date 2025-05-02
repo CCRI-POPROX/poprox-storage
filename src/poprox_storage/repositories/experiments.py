@@ -431,6 +431,33 @@ class S3ExperimentRepository(S3Repository):
         manifest_toml = self._get_s3_file(manifest_file_key)
         return parse_manifest_toml(manifest_toml)
 
+    def store_as_parquet(
+        self,
+        experiment: Experiment,
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ) -> str:
+        records = self._extract_and_flatten(experiment)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
+    def _extract_and_flatten(self, experiment: Experiment) -> list[dict]:
+        records = []
+        for phase in experiment.phases:
+            for treatment in phase.treatments:
+                record = {}
+                record["treatment_id"] = str(treatment.treatment_id)
+                record["phase_id"] = str(phase.phase_id)
+                record["phase_name"] = str(phase.name)
+                record["group_id"] = str(treatment.group.group_id)
+                record["group_name"] = str(treatment.group.name)
+                record["recommender_id"] = str(treatment.recommender.recommender_id)
+                record["recommender_name"] = str(treatment.recommender.name)
+                record["recommender_url"] = str(treatment.recommender.url)
+                records.append(record)
+
+        return records
+
 
 class S3AssignmentsRepository(S3Repository):
     def store_as_parquet(
