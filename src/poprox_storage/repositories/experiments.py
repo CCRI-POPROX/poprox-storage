@@ -443,13 +443,13 @@ class S3AssignmentsRepository(S3Repository):
         records = self._extract_and_flatten(assignments)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
-    def extract_and_flatten(self, assignments: list[Assignment]) -> list[dict]:
+    def _extract_and_flatten(self, assignments: list[Assignment]) -> list[dict]:
         records = []
         for assignment in assignments:
             record = {}
-            record["profile_id"] = assignment.account_id
-            record["group_id"] = assignment.group_id
-            record["opted_out"] = assignment.opted_out
+            record["profile_id"] = str(assignment.account_id)
+            record["group_id"] = str(assignment.group_id)
+            record["opted_out"] = int(assignment.opted_out or False)
             records.append(record)
 
         return records
