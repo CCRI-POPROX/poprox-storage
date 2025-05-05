@@ -105,6 +105,22 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             {"survey_id": survey.survey_id, "account_id": account_id},
         )
 
+    def fetch_sent_survey_instances(self) -> list[QualtricsSurveyInstance]:
+        survey_instance_table = self.tables["qualtrics_survey_instances"]
+
+        query = select(survey_instance_table)
+        results = self.conn.execute(query).fetchall()
+
+        return [
+            QualtricsSurveyInstance(
+                survey_instance_id=row.survey_instance_id,
+                survey_id=row.survey_id,
+                account_id=row.account_id,
+                created_at=row.created_at,
+            )
+            for row in results
+        ]
+
     def fetch_survey_instance(self, survey_instance_id: UUID) -> QualtricsSurveyInstance | None:
         survey_instance_table = self.tables["qualtrics_survey_instances"]
 
