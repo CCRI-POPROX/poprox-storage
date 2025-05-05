@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
 
 import boto3
@@ -285,6 +285,7 @@ class DbArticleRepository(DatabaseRepository):
             query = query.where(where_clause)
 
         return _fetch_articles(self.conn, query)
+
 
 def _fetch_articles(conn, article_query) -> list[Article]:
     result = conn.execute(article_query).fetchall()

@@ -20,11 +20,7 @@ logger.setLevel(logging.DEBUG)
 class DbCandidatePoolRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
-        self.tables: dict[str, Table] = self._load_tables(
-            "articles",
-            "candidate_pools",
-            "candidate_articles"
-        )
+        self.tables: dict[str, Table] = self._load_tables("articles", "candidate_pools", "candidate_articles")
 
     def store_candidate_pool(self, pool_type: str, articles: list[Article]):
         candidate_pools_table = self.tables["candidate_pools"]
@@ -32,15 +28,16 @@ class DbCandidatePoolRepository(DatabaseRepository):
 
         candidate_pool_id: UUID = uuid4()
 
-        set_insert_stmt = (
-            insert(candidate_pools_table)
-            .values({"candidate_pool_id": candidate_pool_id, "pool_type": pool_type})
+        set_insert_stmt = insert(candidate_pools_table).values(
+            {"candidate_pool_id": candidate_pool_id, "pool_type": pool_type}
         )
         self.conn.execute(set_insert_stmt)
 
         insert_stmt = (
             insert(candidate_articles_table)
-            .values([{"candidate_pool_id": candidate_pool_id, "article_id": article.article_id} for article in articles])
+            .values(
+                [{"candidate_pool_id": candidate_pool_id, "article_id": article.article_id} for article in articles]
+            )
             .on_conflict_do_nothing(constraint="uq_candidate_articles")
         )
         self.conn.execute(insert_stmt)
@@ -72,4 +69,3 @@ class DbCandidatePoolRepository(DatabaseRepository):
         result = self.conn.execute(query).fetchone()
 
         return result.candidate_pool_id
-
