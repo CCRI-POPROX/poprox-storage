@@ -19,14 +19,22 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.create_table(
-        "candidate_articles",
-        sa.Column("article_id",sa.UUID, nullable=False),
-        sa.Column("candidate_on", sa.Date, nullable=False),
+        "candidate_pools",
+        sa.Column("candidate_pool_id", sa.UUID, primary_key=True),
+        sa.Column("pool_type", sa.String, nullable=False),
         sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
-    op.create_unique_constraint("uq_candidate_articles", "candidate_articles", ("article_id", "candidate_on"))
+
+    op.create_table(
+        "candidate_articles",
+        sa.Column("candidate_pool_id", sa.UUID, primary_key=True),
+        sa.Column("article_id",sa.UUID, nullable=False),
+        sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
+    )
+    op.create_unique_constraint("uq_candidate_articles", "candidate_articles", ("candidate_pool_id", "article_id"))
 
 
 def downgrade() -> None:
     op.drop_constraint("uq_candidate_articles", "candidate_articles")
     op.drop_table("candidate_articles")
+    op.drop_table("candidate_pools")

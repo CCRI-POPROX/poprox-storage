@@ -14,6 +14,7 @@ from poprox_storage.repositories.experiments import (
 from poprox_storage.repositories.images import DbImageRepository, S3ImageRepository
 from poprox_storage.repositories.newsletters import DbNewsletterRepository, S3NewsletterRepository
 from poprox_storage.repositories.placements import DbPlacementRepository
+from poprox_storage.repositories.pools import DbCandidatePoolRepository
 from poprox_storage.repositories.qualtrics_survey import DbQualtricsSurveyRepository, S3QualtricsSurveyRepository
 from poprox_storage.repositories.teams import DbTeamRepository
 
@@ -51,6 +52,7 @@ __all__ = [
     "DbAccountInterestRepository",
     "DbAccountRepository",
     "DbArticleRepository",
+    "DbCandidatePoolRepository",
     "DbClicksRepository",
     "DbDatasetRepository",
     "DbDemographicsRepository",
