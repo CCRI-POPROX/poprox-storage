@@ -31,35 +31,36 @@ class DbArticleRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables: dict[str, Table] = self._load_tables(
             "articles",
-            "entities",
-            "mentions",
             "article_image_associations",
+            "candidate_articles",
+            "entities",
             "impressions",
+            "mentions",
         )
 
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         cutoff = datetime.now() - timedelta(days=days_ago)
         query = select(article_table).where(article_table.c.published_at > cutoff)
-        return self._get_articles(query)
+        return _fetch_articles(self.conn, query)
 
     def fetch_articles_before(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         cutoff = datetime.now() - timedelta(days=days_ago)
         query = select(article_table).where(article_table.c.published_at < cutoff)
-        return self._get_articles(query)
+        return _fetch_articles(self.conn, query)
 
     def fetch_articles_ingested_since(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         cutoff = datetime.now() - timedelta(days=days_ago)
         query = select(article_table).where(article_table.c.created_at > cutoff)
-        return self._get_articles(query)
+        return _fetch_articles(self.conn, query)
 
     def fetch_articles_ingested_before(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
         cutoff = datetime.now() - timedelta(days=days_ago)
         query = select(article_table).where(article_table.c.created_at < cutoff)
-        return self._get_articles(query)
+        return _fetch_articles(self.conn, query)
 
     def fetch_articles_ingested_between(self, start_date, end_date) -> list[Article]:
         article_table = self.tables["articles"]
@@ -70,12 +71,12 @@ class DbArticleRepository(DatabaseRepository):
                 article_table.c.created_at >= start_date,
             )
         )
-        return self._get_articles(query)
+        return _fetch_articles(self.conn, query)
 
     def fetch_articles_by_id(self, ids: list[UUID]) -> list[Article]:
         article_table = self.tables["articles"]
         query = select(article_table).where(article_table.c.article_id.in_(ids))
-        return self._get_articles(query)
+        return _fetch_articles(self.conn, query)
 
     def fetch_article_by_external_id(self, id_: str) -> Article:
         article_table = self.tables["articles"]
@@ -283,27 +284,28 @@ class DbArticleRepository(DatabaseRepository):
         if where_clause is not None:
             query = query.where(where_clause)
 
-        return self._get_articles(query)
+        return _fetch_articles(self.conn, query)
 
-    def _get_articles(self, article_query) -> list[Article]:
-        result = self.conn.execute(article_query).fetchall()
 
-        return [
-            Article(
-                article_id=row.article_id,
-                headline=row.headline,
-                subhead=row.subhead,
-                body=row.body,
-                url=row.url,
-                preview_image_id=row.preview_image_id,
-                source=row.source,
-                external_id=row.external_id,
-                raw_data=row.raw_data,
-                published_at=row.published_at,
-                created_at=row.created_at,
-            )
-            for row in result
-        ]
+def _fetch_articles(conn, article_query) -> list[Article]:
+    result = conn.execute(article_query).fetchall()
+
+    return [
+        Article(
+            article_id=row.article_id,
+            headline=row.headline,
+            subhead=row.subhead,
+            body=row.body,
+            url=row.url,
+            preview_image_id=row.preview_image_id,
+            source=row.source,
+            external_id=row.external_id,
+            raw_data=row.raw_data,
+            published_at=row.published_at,
+            created_at=row.created_at,
+        )
+        for row in result
+    ]
 
 
 class S3ArticleRepository(S3Repository):
