@@ -22,10 +22,11 @@ def upgrade() -> None:
         "impressions",
         "impression_id",
         sa.UUID,
-        primary_key=True,
         server_default=sa.text("gen_random_uuid()")
     )
+    op.create_primary_key("pk_impressions", "impressions", ["impression_id"])
 
 
 def downgrade() -> None:
+    op.drop_constraint("pk_impressions", "impressions", type_='primary')
     op.drop_column("impressions", "impression_id")
