@@ -104,6 +104,7 @@ class DbDatasetRepository(DatabaseRepository):
         impressions_query = (
             select(
                 alias_newsletter_query.c.newsletter_id,
+                impressions_table.c.impression_id,
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
@@ -149,6 +150,7 @@ class DbDatasetRepository(DatabaseRepository):
 
     def _convert_to_impression_obj(self, row):
         return Impression(
+            impression_id=row.impression_id,
             newsletter_id=row.newsletter_id,
             preview_image_id=row.preview_image_id,
             position=row.position,

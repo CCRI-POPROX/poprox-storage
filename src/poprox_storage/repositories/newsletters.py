@@ -140,6 +140,7 @@ class DbNewsletterRepository(DatabaseRepository):
 
         query = (
             select(
+                impressions_table.c.impression_id,
                 impressions_table.c.newsletter_id,
                 impressions_table.c.article_id,
                 impressions_table.c.position,
@@ -159,6 +160,7 @@ class DbNewsletterRepository(DatabaseRepository):
         rows = self.conn.execute(query).fetchall()
         return [
             Impression(
+                impression_id=row.impression_id,
                 newsletter_id=row.newsletter_id,
                 article=Article(
                     article_id=row.article_id,
@@ -214,6 +216,7 @@ class DbNewsletterRepository(DatabaseRepository):
 
         impressions_query = (
             select(
+                impressions_table.c.impression_id,
                 impressions_table.c.newsletter_id,
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
@@ -255,6 +258,7 @@ class DbNewsletterRepository(DatabaseRepository):
 
     def _convert_to_impression_obj(self, row):
         return Impression(
+            impression_id=row.impression_id,
             newsletter_id=row.newsletter_id,
             preview_image_id=row.preview_image_id,
             position=row.position,
