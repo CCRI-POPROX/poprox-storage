@@ -20,13 +20,15 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column(
         "impressions",
-        "impression_id",
-        sa.UUID,
-        server_default=sa.text("gen_random_uuid()")
+        sa.Column(
+            "impression_id",
+            sa.UUID,
+            primary_key=True,
+            server_default=sa.text("gen_random_uuid()")
+        )
+
     )
-    op.create_primary_key("pk_impressions", "impressions", ["impression_id"])
 
 
 def downgrade() -> None:
-    op.drop_constraint("pk_impressions", "impressions", type_='primary')
     op.drop_column("impressions", "impression_id")
