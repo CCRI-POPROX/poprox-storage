@@ -49,8 +49,8 @@ class DbCandidatePoolRepository(DatabaseRepository):
         articles_table = self.tables["articles"]
 
         query = (
-            select(candidate_articles_table)
-            .join(articles_table, candidate_articles_table.c.article_id == articles_table.c.article_id)
+            select(articles_table)
+            .join(candidate_articles_table, candidate_articles_table.c.article_id == articles_table.c.article_id)
             .where(candidate_articles_table.c.candidate_pool_id == candidate_pool_id)
         )
 
