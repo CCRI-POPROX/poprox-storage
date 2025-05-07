@@ -27,14 +27,23 @@ def upgrade() -> None:
 
     op.create_table(
         "candidate_articles",
-        sa.Column("candidate_pool_id", sa.UUID, primary_key=True),
+        sa.Column("candidate_pool_id", sa.UUID, nullable=False),
         sa.Column("article_id",sa.UUID, nullable=False),
         sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
+    op.create_foreign_key(
+        "fk_candidate_articles_pool_id",
+        "candidate_articles",
+        "candidate_pools",
+        ["candidate_pool_id"],
+        ["candidate_pool_id"],
+    )
+
     op.create_unique_constraint("uq_candidate_articles", "candidate_articles", ("candidate_pool_id", "article_id"))
 
 
 def downgrade() -> None:
     op.drop_constraint("uq_candidate_articles", "candidate_articles")
+    op.drop_constraint("fk_candidate_articles_pool_id", "candidate_articles", type_="foreignkey")
     op.drop_table("candidate_articles")
     op.drop_table("candidate_pools")
