@@ -56,7 +56,7 @@ class DbCandidatePoolRepository(DatabaseRepository):
 
         return _fetch_articles(self.conn, query)
 
-    def fetch_latest_pool_of_type(self, candidate_pool_type: str) -> UUID:
+    def fetch_latest_pool_of_type(self, candidate_pool_type: str) -> UUID | None:
         candidate_pools_table = self.tables["candidate_pools"]
 
         query = (
@@ -68,4 +68,4 @@ class DbCandidatePoolRepository(DatabaseRepository):
 
         result = self.conn.execute(query).fetchone()
 
-        return result.candidate_pool_id
+        return result.candidate_pool_id if result else None
