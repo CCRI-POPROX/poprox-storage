@@ -24,6 +24,9 @@ def test_store_and_load_experiment():
     with DB_ENGINE.connect() as conn:
         clear_tables(
             conn,
+            "account_consent_log",
+            "account_interest_log",
+            "demographics",
             "account_aliases",
             "team_memberships",
             "expt_assignments",

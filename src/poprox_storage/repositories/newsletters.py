@@ -146,6 +146,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 impressions_table.c.extra,
                 impressions_table.c.headline,
                 impressions_table.c.subhead,
+                impressions_table.c.feedback,
                 articles_table.c.url,
             )
             .join(
@@ -155,6 +156,7 @@ class DbNewsletterRepository(DatabaseRepository):
             .where(
                 impressions_table.c.newsletter_id.in_(newsletter_ids),
             )
+            .order_by(impressions_table.c.position.asc())
         )
         rows = self.conn.execute(query).fetchall()
         return [
@@ -170,6 +172,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 extra=row.extra,
                 headline=row.headline,
                 subhead=row.subhead,
+                feedback=row.feedback,
             )
             for row in rows
         ]
@@ -218,6 +221,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
+                impressions_table.c.feedback,
                 articles_table,
             )
             .join(
@@ -259,6 +263,7 @@ class DbNewsletterRepository(DatabaseRepository):
             preview_image_id=row.preview_image_id,
             position=row.position,
             extra=row.extra,
+            feedback=row.feedback,
             article=Article(
                 article_id=row.article_id,
                 headline=row.headline,
