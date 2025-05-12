@@ -221,6 +221,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
+                impressions_table.c.feedback,
                 articles_table,
             )
             .join(
