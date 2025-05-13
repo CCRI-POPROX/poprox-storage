@@ -149,6 +149,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 impressions_table.c.subhead,
                 impressions_table.c.feedback,
                 articles_table.c.url,
+                articles_table.c.preview_image_id,
             )
             .join(
                 articles_table,
@@ -169,6 +170,7 @@ class DbNewsletterRepository(DatabaseRepository):
                     headline=row.headline,
                     url=row.url,
                     subhead=row.subhead,
+                    preview_image_id=row.preview_image_id,
                 ),
                 position=row.position,
                 extra=row.extra,
