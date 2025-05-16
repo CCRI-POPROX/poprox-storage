@@ -63,14 +63,14 @@ class DbNewsletterRepository(DatabaseRepository):
                 )
                 self.conn.execute(stmt)
 
-    def store_newsletter_feedback(self, account_id: UUID, newsletter_id: UUID, is_positive: bool | None):
+    def store_newsletter_feedback(self, account_id: UUID, newsletter_id: UUID, feedback: str | None):
         newsletter_table = self.tables["newsletters"]
 
         stmt = (
             update(newsletter_table)
             .where(and_(newsletter_table.c.newsletter_id == newsletter_id, newsletter_table.c.account_id == account_id))
             .values(
-                feedback=is_positive,
+                feedback=feedback,
             )
         )
         self.conn.execute(stmt)
