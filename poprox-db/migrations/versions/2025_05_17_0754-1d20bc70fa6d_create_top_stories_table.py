@@ -49,7 +49,7 @@ def upgrade() -> None:
 
     # Each position can only have one article per topic (entity)
     op.create_unique_constraint("uq_top_stories_position", "top_stories", ("entity_id", "position", "as_of"))
-    
+
     # Each article can only have one position per topic (entity)
     op.create_unique_constraint("uq_top_stories_topic", "top_stories", ("entity_id", "article_id", "as_of"))
 
