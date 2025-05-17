@@ -21,7 +21,7 @@ def upgrade() -> None:
     op.create_table(
         "top_stories",
         sa.Column("article_id", sa.UUID, nullable=False),
-        sa.Column("entity_id", sa.UUID, nullable=False),
+        sa.Column("entity_id", sa.UUID, nullable=True),
         sa.Column("headline", sa.String, nullable=False),
         sa.Column("position", sa.Integer, nullable=False),
         sa.Column("as_of", sa.DateTime, nullable=False),
