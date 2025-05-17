@@ -206,8 +206,19 @@ class DbArticleRepository(DatabaseRepository):
         entity_table = self.tables["entities"]
 
         entity_query = select(entity_table).where(entity_table.c.name == entity_name)
-        entity_result = self.conn.execute(entity_query).first()
-        return entity_result[0] if entity_result else None
+        row = self.conn.execute(entity_query).first()
+
+        if not row:
+            return None
+
+        return Entity(
+            entity_id=row.entity_id,
+            external_id=row.external_id,
+            name=row.name,
+            entity_type=row.entity_type,
+            source=row.source,
+            raw_data=row.raw_data
+        )
 
     def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
