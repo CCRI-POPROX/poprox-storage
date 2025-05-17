@@ -2,6 +2,7 @@ import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
+from typing import TypeAlias
 from uuid import UUID
 
 import boto3
@@ -25,6 +26,7 @@ logger.setLevel(logging.DEBUG)
 
 NEWS_FILE_KEY = "mockObjects/ap_scraped_data.json"
 
+HeadlinePackage: TypeAlias = dict[str, dict[str, TopNewsHeadline]]
 
 class DbArticleRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
@@ -36,6 +38,7 @@ class DbArticleRepository(DatabaseRepository):
             "entities",
             "impressions",
             "mentions",
+            "top_stories",
         )
 
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
@@ -248,32 +251,18 @@ class DbArticleRepository(DatabaseRepository):
 
         return failed
 
-    def store_headline_packages(self, headline_packages: list[dict[str, dict[str, TopNewsHeadline]]]):
-        failed = 0
-
+    def store_headline_packages(self, headline_packages: list[HeadlinePackage]):
         for headline_package in headline_packages:
-            failed += self.store_top_headlines(headline_package)
+            self.store_top_headlines(headline_package)
 
-        return failed
+    def store_top_headlines(self, headline_package: HeadlinePackage):
+        for topic, headlines in headline_package.items():
+            for external_id, headline in headlines.items():
+                   self.store_top_headline(external_id, headline)
 
-    def store_top_headlines(self, top_headlines: dict[str, dict[str, TopNewsHeadline]]) -> int:
-        failed = 0
+    def store_top_headline(self, external_id: str, top_headline: TopNewsHeadline):
+        top_stories_table = self.tables["top_stories"]
 
-        for topic, headlines in top_headlines:
-            for external_id, headline in headlines:
-                try:
-                    headline_id = self.store_top_headline(external_id, headline)
-                    if headline_id is None:
-                        msg = f"Insert failed for top headline {headline}"
-                        raise RuntimeError(msg)
-
-                except RuntimeError as exc:
-                    logger.error(exc)
-                    failed += 1
-
-        return failed
-
-    def store_top_headline(self, external_id: str, top_headline: TopNewsHeadline) -> UUID | None:
         if not top_headline.article_id:
             article = self.fetch_article_by_external_id(external_id)
             if article:
@@ -284,12 +273,17 @@ class DbArticleRepository(DatabaseRepository):
             if topic:
                 top_headline.entity_id = topic.entity_id
 
-        return self._insert_model(
-            "top_stories",
-            top_headline,
-            exclude={"topic"},
-            constraint="uq_top_stories",
+        insert_stmt = (
+            insert(top_stories_table)
+            .values({
+                "article_id": top_headline.article_id,
+                "entity_id": top_headline.entity_id,
+                "headline": top_headline.headline,
+                "position": top_headline.position,
+                "as_of": top_headline.as_of,
+            })
         )
+        self.conn.execute(insert_stmt)
 
     def store_image_association(self, article_id: str, image_id: str):
         associations_table = self.tables["article_image_associations"]
