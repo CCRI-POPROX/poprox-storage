@@ -28,6 +28,7 @@ NEWS_FILE_KEY = "mockObjects/ap_scraped_data.json"
 
 HeadlinePackage: TypeAlias = dict[str, dict[str, TopNewsHeadline]]
 
+
 class DbArticleRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
@@ -220,7 +221,7 @@ class DbArticleRepository(DatabaseRepository):
             name=row.name,
             entity_type=row.entity_type,
             source=row.source,
-            raw_data=row.raw_data
+            raw_data=row.raw_data,
         )
 
     def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
@@ -258,7 +259,7 @@ class DbArticleRepository(DatabaseRepository):
     def store_top_headlines(self, headline_package: HeadlinePackage):
         for topic, headlines in headline_package.items():
             for external_id, headline in headlines.items():
-                   self.store_top_headline(external_id, headline)
+                self.store_top_headline(external_id, headline)
 
     def store_top_headline(self, external_id: str, top_headline: TopNewsHeadline):
         top_stories_table = self.tables["top_stories"]
@@ -273,15 +274,14 @@ class DbArticleRepository(DatabaseRepository):
             if topic:
                 top_headline.entity_id = topic.entity_id
 
-        insert_stmt = (
-            insert(top_stories_table)
-            .values({
+        insert_stmt = insert(top_stories_table).values(
+            {
                 "article_id": top_headline.article_id,
                 "entity_id": top_headline.entity_id,
                 "headline": top_headline.headline,
                 "position": top_headline.position,
                 "as_of": top_headline.as_of,
-            })
+            }
         )
         self.conn.execute(insert_stmt)
 
