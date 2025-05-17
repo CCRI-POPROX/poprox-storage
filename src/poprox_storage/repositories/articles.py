@@ -15,7 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert
 from tqdm import tqdm
 
-from poprox_concepts import Article, Entity, Mention
+from poprox_concepts.domain import Article, Entity, Mention, TopNewsHeadline
 from poprox_storage.aws import DEV_BUCKET_NAME, s3
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -78,9 +78,10 @@ class DbArticleRepository(DatabaseRepository):
         query = select(article_table).where(article_table.c.article_id.in_(ids))
         return _fetch_articles(self.conn, query)
 
-    def fetch_article_by_external_id(self, id_: str) -> Article:
+    def fetch_article_by_external_id(self, id_: str) -> Article | None:
         article_table = self.tables["articles"]
-        return self._get_deduped_articles(article_table, article_table.c.external_id == id_)[0]
+        deduped = self._get_deduped_articles(article_table, article_table.c.external_id == id_)
+        return deduped[0] if deduped else None
 
     def fetch_article_mentions(self, articles: list[Article]) -> list[Article]:
         article_lookup = {article.article_id: article for article in articles}
@@ -201,6 +202,13 @@ class DbArticleRepository(DatabaseRepository):
         else:
             return None
 
+    def fetch_entity_by_name(self, entity_name: str) -> Entity | None:
+        entity_table = self.tables["entities"]
+
+        entity_query = select(entity_table).where(entity_table.c.name == entity_name)
+        entity_result = self.conn.execute(entity_query).first()
+        return entity_result[0] if entity_result else None
+
     def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
 
@@ -228,6 +236,49 @@ class DbArticleRepository(DatabaseRepository):
                 failed += 1
 
         return failed
+
+    def store_headline_packages(self, headline_packages: list[dict[str, dict[str, TopNewsHeadline]]]):
+        failed = 0
+
+        for headline_package in headline_packages:
+            failed += self.store_top_headlines(headline_package)
+
+        return failed
+
+    def store_top_headlines(self, top_headlines: dict[str, dict[str, TopNewsHeadline]]) -> int:
+        failed = 0
+
+        for topic, headlines in top_headlines:
+            for external_id, headline in headlines:
+                try:
+                    headline_id = self.store_top_headline(external_id, headline)
+                    if headline_id is None:
+                        msg = f"Insert failed for top headline {headline}"
+                        raise RuntimeError(msg)
+
+                except RuntimeError as exc:
+                    logger.error(exc)
+                    failed += 1
+
+        return failed
+
+    def store_top_headline(self, external_id: str, top_headline: TopNewsHeadline) -> UUID | None:
+        if not top_headline.article_id:
+            article = self.fetch_article_by_external_id(external_id)
+            if article:
+                top_headline.article_id = article.article_id
+
+        if not top_headline.entity_id:
+            topic = self.fetch_entity_by_name(top_headline.topic)
+            if topic:
+                top_headline.entity_id = topic.entity_id
+
+        return self._insert_model(
+            "top_stories",
+            top_headline,
+            exclude={"topic"},
+            constraint="uq_top_stories",
+        )
 
     def store_image_association(self, article_id: str, image_id: str):
         associations_table = self.tables["article_image_associations"]
