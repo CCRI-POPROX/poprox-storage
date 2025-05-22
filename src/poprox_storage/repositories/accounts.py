@@ -43,7 +43,7 @@ class DbAccountRepository(DatabaseRepository):
         return self._fetch_acounts(query)
 
     def fetch_accounts_between(self, start_date, end_date) -> list[Account]:
-        """getch all accounts whose created at is between start_date and end_date (inclusive)"""
+        """fetch all accounts whose created at is between start_date and end_date (inclusive)"""
         account_tbl = self.tables["accounts"]
 
         query = select(
