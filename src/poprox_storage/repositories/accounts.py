@@ -34,6 +34,7 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.email,
             account_tbl.c.status,
             account_tbl.c.source,
+            account_tbl.c.subsource,
         )
         if account_ids is not None:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
@@ -47,6 +48,7 @@ class DbAccountRepository(DatabaseRepository):
                 email=row.email,
                 status=row.status,
                 source=row.source,
+                subsource=row.subsource,
             )
             for row in result
         ]
