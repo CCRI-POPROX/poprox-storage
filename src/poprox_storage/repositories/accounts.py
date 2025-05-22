@@ -34,22 +34,27 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.email,
             account_tbl.c.status,
             account_tbl.c.source,
+            account_tbl.c.created_at,
         )
         if account_ids is not None:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
         elif len(account_ids) == 0:
             return []
-        result = self.conn.execute(query).fetchall()
+        return self._fetch_acounts(query)
 
-        return [
-            Account(
-                account_id=row.account_id,
-                email=row.email,
-                status=row.status,
-                source=row.source,
-            )
-            for row in result
-        ]
+    def fetch_accounts_between(self, start_date, end_date) -> list[Account]:
+        """fetch all accounts whose created at is between start_date and end_date (inclusive)"""
+        account_tbl = self.tables["accounts"]
+
+        query = select(
+            account_tbl.c.account_id,
+            account_tbl.c.email,
+            account_tbl.c.status,
+            account_tbl.c.source,
+            account_tbl.c.created_at,
+        ).where(and_(account_tbl.c.created_at >= start_date, account_tbl.c.created_at <= end_date))
+
+        return self._fetch_acounts(query)
 
     def fetch_account_by_email(self, email: str) -> Account | None:
         account_tbl = self.tables["accounts"]
@@ -58,6 +63,7 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.email,
             account_tbl.c.status,
             account_tbl.c.source,
+            account_tbl.c.created_at,
         ).where(account_tbl.c.email == email)
         result = self.conn.execute(query).fetchall()
         accounts = [
@@ -66,6 +72,7 @@ class DbAccountRepository(DatabaseRepository):
                 email=row.email,
                 status=row.status,
                 source=row.source,
+                created_at=row.created_at,
             )
             for row in result
         ]
@@ -315,3 +322,17 @@ class DbAccountRepository(DatabaseRepository):
             .values(placebo_id=uuid4())
         )
         self.conn.execute(update_query)
+
+    def _fetch_acounts(self, account_query) -> list[Account]:
+        result = self.conn.execute(account_query).fetchall()
+
+        return [
+            Account(
+                account_id=row.account_id,
+                email=row.email,
+                status=row.status,
+                source=row.source,
+                created_at=row.created_at,
+            )
+            for row in result
+        ]
