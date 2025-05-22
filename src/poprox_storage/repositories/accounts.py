@@ -34,6 +34,7 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.email,
             account_tbl.c.status,
             account_tbl.c.source,
+            account_tbl.c.subsource,
         )
         if account_ids is not None:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
@@ -46,30 +47,6 @@ class DbAccountRepository(DatabaseRepository):
                 account_id=row.account_id,
                 email=row.email,
                 status=row.status,
-                source=row.source,
-            )
-            for row in result
-        ]
-
-    def fetch_accounts_for_panel_management(
-        self, account_ids: list[UUID] | None = None
-    ) -> list[AccountPanelManagement]:
-        account_tbl = self.tables["accounts"]
-
-        query = select(
-            account_tbl.c.account_id,
-            account_tbl.c.source,
-            account_tbl.c.subsource,
-        )
-        if account_ids is not None:
-            query = query.where(account_tbl.c.account_id.in_(account_ids))
-        elif len(account_ids) == 0:
-            return []
-        result = self.conn.execute(query).fetchall()
-
-        return [
-            AccountPanelManagement(
-                account_id=row.account_id,
                 source=row.source,
                 subsource=row.subsource,
             )
