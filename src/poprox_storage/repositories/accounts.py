@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 import sqlalchemy
 from sqlalchemy import Connection, and_, null, or_, select
 
-from poprox_concepts import Account, AccountPanelManagement
+from poprox_concepts import Account
 from poprox_concepts.api.tracking import LoginLinkData
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
