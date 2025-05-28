@@ -113,7 +113,7 @@ class S3ImageRepository(S3Repository):
         return [f["Key"] for f in files]
 
     def fetch_images_from_file(self, file_key):
-        file_contents = self._get_s3_file(file_key)
+        file_contents = self.fetch_file_contents(file_key)
         return extract_images(file_contents)
 
     def fetch_images_from_files(self, file_keys):
