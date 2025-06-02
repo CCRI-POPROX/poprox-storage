@@ -34,7 +34,7 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.email,
             account_tbl.c.status,
             account_tbl.c.source,
-            account_tbl.c.subsource,
+            account_tbl.c.created_at,
         )
         if account_ids is not None:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
@@ -48,7 +48,6 @@ class DbAccountRepository(DatabaseRepository):
                 email=row.email,
                 status=row.status,
                 source=row.source,
-                subsource=row.subsource,
             )
             for row in result
         ]
@@ -60,6 +59,7 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.email,
             account_tbl.c.status,
             account_tbl.c.source,
+            account_tbl.c.created_at,
         ).where(account_tbl.c.email == email)
         result = self.conn.execute(query).fetchall()
         accounts = [
@@ -68,6 +68,7 @@ class DbAccountRepository(DatabaseRepository):
                 email=row.email,
                 status=row.status,
                 source=row.source,
+                created_at=row.created_at,
             )
             for row in result
         ]
@@ -317,3 +318,17 @@ class DbAccountRepository(DatabaseRepository):
             .values(placebo_id=uuid4())
         )
         self.conn.execute(update_query)
+
+    def _fetch_acounts(self, account_query) -> list[Account]:
+        result = self.conn.execute(account_query).fetchall()
+
+        return [
+            Account(
+                account_id=row.account_id,
+                email=row.email,
+                status=row.status,
+                source=row.source,
+                created_at=row.created_at,
+            )
+            for row in result
+        ]

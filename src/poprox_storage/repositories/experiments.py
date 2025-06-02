@@ -428,7 +428,7 @@ class DbExperimentRepository(DatabaseRepository):
 
 class S3ExperimentRepository(S3Repository):
     def fetch_manifest(self, manifest_file_key) -> ManifestFile:
-        manifest_toml = self._get_s3_file(manifest_file_key)
+        manifest_toml = self.fetch_file_contents(manifest_file_key)
         return parse_manifest_toml(manifest_toml)
 
     def store_as_parquet(

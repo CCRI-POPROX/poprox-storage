@@ -105,6 +105,22 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             {"survey_id": survey.survey_id, "account_id": account_id},
         )
 
+    def fetch_sent_survey_instances(self) -> list[QualtricsSurveyInstance]:
+        survey_instance_table = self.tables["qualtrics_survey_instances"]
+
+        query = select(survey_instance_table)
+        results = self.conn.execute(query).fetchall()
+
+        return [
+            QualtricsSurveyInstance(
+                survey_instance_id=row.survey_instance_id,
+                survey_id=row.survey_id,
+                account_id=row.account_id,
+                created_at=row.created_at,
+            )
+            for row in results
+        ]
+
     def fetch_survey_instance(self, survey_instance_id: UUID) -> QualtricsSurveyInstance | None:
         survey_instance_table = self.tables["qualtrics_survey_instances"]
 
@@ -359,7 +375,7 @@ class S3QualtricsSurveyRepository(S3Repository):
         self.s3_client = boto3.client("s3")
 
     def fetch_survey(self, survey_file_key):
-        return self._get_s3_file(survey_file_key)
+        return self.fetch_file_contents(survey_file_key)
 
     def store_as_parquet(
         self,

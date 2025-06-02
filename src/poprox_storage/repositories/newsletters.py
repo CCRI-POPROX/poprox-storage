@@ -63,14 +63,14 @@ class DbNewsletterRepository(DatabaseRepository):
                 )
                 self.conn.execute(stmt)
 
-    def store_newsletter_feedback(self, account_id: UUID, newsletter_id: UUID, is_positive: bool | None):
+    def store_newsletter_feedback(self, account_id: UUID, newsletter_id: UUID, feedback: str | None):
         newsletter_table = self.tables["newsletters"]
 
         stmt = (
             update(newsletter_table)
             .where(and_(newsletter_table.c.newsletter_id == newsletter_id, newsletter_table.c.account_id == account_id))
             .values(
-                feedback=is_positive,
+                feedback=feedback,
             )
         )
         self.conn.execute(stmt)
@@ -140,13 +140,16 @@ class DbNewsletterRepository(DatabaseRepository):
 
         query = (
             select(
+                impressions_table.c.impression_id,
                 impressions_table.c.newsletter_id,
                 impressions_table.c.article_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
                 impressions_table.c.headline,
                 impressions_table.c.subhead,
+                impressions_table.c.feedback,
                 articles_table.c.url,
+                articles_table.c.preview_image_id,
             )
             .join(
                 articles_table,
@@ -155,21 +158,25 @@ class DbNewsletterRepository(DatabaseRepository):
             .where(
                 impressions_table.c.newsletter_id.in_(newsletter_ids),
             )
+            .order_by(impressions_table.c.position.asc())
         )
         rows = self.conn.execute(query).fetchall()
         return [
             Impression(
+                impression_id=row.impression_id,
                 newsletter_id=row.newsletter_id,
                 article=Article(
                     article_id=row.article_id,
                     headline=row.headline,
                     url=row.url,
                     subhead=row.subhead,
+                    preview_image_id=row.preview_image_id,
                 ),
                 position=row.position,
                 extra=row.extra,
                 headline=row.headline,
                 subhead=row.subhead,
+                feedback=row.feedback,
             )
             for row in rows
         ]
@@ -214,10 +221,12 @@ class DbNewsletterRepository(DatabaseRepository):
 
         impressions_query = (
             select(
+                impressions_table.c.impression_id,
                 impressions_table.c.newsletter_id,
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
+                impressions_table.c.feedback,
                 articles_table,
             )
             .join(
@@ -255,10 +264,12 @@ class DbNewsletterRepository(DatabaseRepository):
 
     def _convert_to_impression_obj(self, row):
         return Impression(
+            impression_id=row.impression_id,
             newsletter_id=row.newsletter_id,
             preview_image_id=row.preview_image_id,
             position=row.position,
             extra=row.extra,
+            feedback=row.feedback,
             article=Article(
                 article_id=row.article_id,
                 headline=row.headline,
