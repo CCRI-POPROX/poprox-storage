@@ -35,6 +35,7 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.status,
             account_tbl.c.source,
             account_tbl.c.created_at,
+            account_tbl.c.subsource,
         )
         if account_ids is not None:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
