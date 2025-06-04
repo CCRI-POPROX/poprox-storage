@@ -45,14 +45,3 @@ class DbTeamRepository(DatabaseRepository):
             {"team_id": team_id, "account_id": account_id},
             commit=False,
         )
-
-
-if __name__ == "__main__":
-    conn = DB_ENGINE.connect()
-    team_repo = DbTeamRepository(conn)
-    teams = team_repo.fetch_teams_for_account("1936ac91-daf0-4af8-9aa1-53a170c514aa")
-    from poprox_storage.repositories.experiments import DbExperimentRepository
-
-    expt_repo = DbExperimentRepository(conn)
-    experiments = expt_repo.fetch_experiments_by_team(list(teams))
-    print(experiments)
