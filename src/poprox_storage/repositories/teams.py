@@ -2,7 +2,6 @@ from uuid import UUID
 
 from sqlalchemy import Connection, Table, select
 
-from poprox_storage.aws import DB_ENGINE
 from poprox_storage.concepts.experiment import Team
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
