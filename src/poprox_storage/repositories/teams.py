@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Connection, Table
+from sqlalchemy import Connection, Table, select
 
 from poprox_storage.concepts.experiment import Team
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -13,6 +13,20 @@ class DbTeamRepository(DatabaseRepository):
             "teams",
             "team_memberships",
         )
+
+    def fetch_teams_for_account(self, account_id: UUID) -> dict[UUID, Team]:
+        """Note -- this does not return other members of teams the current account is in."""
+        team_table = self.tables["teams"]
+        team_member_table = self.tables["team_memberships"]
+        team_member_query = (
+            select(team_member_table, team_table)
+            .join(team_table, team_member_table.c.team_id == team_table.c.team_id)
+            .where(team_member_table.c.account_id == account_id)
+        )
+        team_member_results = self.conn.execute(team_member_query).all()
+        return {
+            row.team_id: Team(team_id=row.team_id, team_name=row.team_name, members=[]) for row in team_member_results
+        }
 
     def store_team(
         self,

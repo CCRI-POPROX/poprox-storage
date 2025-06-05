@@ -86,6 +86,28 @@ class DbExperimentRepository(DatabaseRepository):
         expt.phases = self.fetch_experiment_phases(experiment_id)
         return expt
 
+    def fetch_experiments_by_team(self, team_ids: list[UUID]) -> dict[UUID, Experiment]:
+        expt_table = self.tables["experiments"]
+
+        expt_query = select(expt_table).where(expt_table.c.team_id.in_(team_ids))
+
+        result = self.conn.execute(expt_query).all()
+        retval = {}
+        for row in result:
+            expt = Experiment(
+                experiment_id=row.experiment_id,
+                dataset_id=row.dataset_id,
+                description=row.description,
+                start_date=row.start_date,
+                end_date=row.end_date,
+                team=None,
+                phases=[],
+            )
+            expt.owner = self.fetch_team(row.team_id)
+            expt.phases = self.fetch_experiment_phases(row.experiment_id)
+            retval[row.experiment_id] = expt
+        return retval
+
     def fetch_experiment_phases(self, experiment_id: UUID) -> list[Phase]:
         treatment_table = self.tables["expt_treatments"]
         recommenders_table = self.tables["expt_recommenders"]
