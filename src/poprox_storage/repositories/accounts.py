@@ -34,6 +34,7 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.email,
             account_tbl.c.status,
             account_tbl.c.source,
+            account_tbl.c.subsource,
             account_tbl.c.created_at,
         )
         if account_ids is not None:
