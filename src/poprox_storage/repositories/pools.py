@@ -69,3 +69,21 @@ class DbCandidatePoolRepository(DatabaseRepository):
         result = self.conn.execute(query).fetchone()
 
         return result.candidate_pool_id if result else None
+
+    def fetch_latest_pool_of_type_before(self, pool_type: str, date: date) -> Optional[UUID]:
+        candidate_pools_table = self.tables["candidate_pools"]
+
+        query = (
+            select(candidate_pools_table.c.candidate_pool_id)
+            .where(
+                candidate_pools_table.c.pool_type == pool_type,
+                candidate_pools_table.c.created_at < date
+            )
+            .order_by(desc(candidate_pools_table.c.created_at))
+            .limit(1)
+        )
+
+        result = self.conn.execute(query).fetchone()
+
+        return result.candidate_pool_id if result else None
+
