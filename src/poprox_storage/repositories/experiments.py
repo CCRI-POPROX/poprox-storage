@@ -28,8 +28,8 @@ class DbExperimentRepository(DatabaseRepository):
             "expt_assignments",
             "expt_groups",
             "expt_phases",
-            "expt_recommenders",
             "expt_treatments",
+            "recommenders",
             "teams",
             "team_memberships",
         )
@@ -110,7 +110,7 @@ class DbExperimentRepository(DatabaseRepository):
 
     def fetch_experiment_phases(self, experiment_id: UUID) -> list[Phase]:
         treatment_table = self.tables["expt_treatments"]
-        recommenders_table = self.tables["expt_recommenders"]
+        recommenders_table = self.tables["recommenders"]
         phases_table = self.tables["expt_phases"]
 
         recommenders = self.fetch_experient_recommenders(experiment_id)
@@ -184,7 +184,7 @@ class DbExperimentRepository(DatabaseRepository):
         """Fetches all Recommender objects for an experiment.
         Returned dictionary maps recommender_id to recommender object."""
 
-        recommenders_table = self.tables["expt_recommenders"]
+        recommenders_table = self.tables["recommenders"]
 
         # get recommenders
         recommender_query = select(recommenders_table).where(recommenders_table.c.experiment_id == experiment_id)
@@ -218,7 +218,7 @@ class DbExperimentRepository(DatabaseRepository):
 
     def fetch_treatment_ids_by_experiment_id(self, experiment_id: UUID):
         treatments_tbl = self.tables["expt_treatments"]
-        recommenders_tbl = self.tables["expt_recommenders"]
+        recommenders_tbl = self.tables["recommenders"]
         query = (
             select(treatments_tbl.c.treatment_id)
             .join(
@@ -253,7 +253,7 @@ class DbExperimentRepository(DatabaseRepository):
         return treatment_lookup_by_group
 
     def fetch_treatment_recommender_urls(self, treatment_ids: list[UUID]) -> dict[UUID, str]:
-        recommenders_tbl = self.tables["expt_recommenders"]
+        recommenders_tbl = self.tables["recommenders"]
         treatments_tbl = self.tables["expt_treatments"]
 
         treatment_endpoint_query = (
@@ -273,7 +273,7 @@ class DbExperimentRepository(DatabaseRepository):
     def fetch_active_expt_recommender_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
-        recommenders_tbl = self.tables["expt_recommenders"]
+        recommenders_tbl = self.tables["recommenders"]
         treatments_tbl = self.tables["expt_treatments"]
 
         # Find the groups and associated recommenders for the active experiment phases
@@ -385,7 +385,7 @@ class DbExperimentRepository(DatabaseRepository):
         recommender: Recommender,
     ) -> UUID | None:
         return self._insert_model(
-            "expt_recommenders",
+            "recommenders",
             recommender,
             {
                 "recommender_name": recommender.name,

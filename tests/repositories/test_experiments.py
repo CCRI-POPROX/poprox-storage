@@ -33,7 +33,7 @@ def test_store_and_load_experiment():
             "expt_treatments",
             "expt_groups",
             "expt_phases",
-            "expt_recommenders",
+            "recommenders",
             "experiments",
             "datasets",
             "teams",
