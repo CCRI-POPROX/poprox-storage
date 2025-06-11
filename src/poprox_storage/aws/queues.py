@@ -14,6 +14,7 @@ RECS_QUEUE_URL = os.getenv("GENERATE_RECS_QUEUE_URL")
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 def enqueue_newsletter_request(
     account_id: UUID,
     profile_id: UUID,
