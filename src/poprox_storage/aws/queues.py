@@ -6,10 +6,18 @@ from uuid import UUID
 from poprox_platform.aws import sqs
 
 from poprox_concepts.api.recommendations.versions import ProtocolVersions
+from poprox_concepts.domain import Account
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+RECS_QUEUE_URL = os.getenv("GENERATE_RECS_QUEUE_URL")
+SEND_EMAIL_QUEUE_URL = os.getenv("SEND_EMAIL_QUEUE_URL")
+EMAIL_FROM = ("POPROX News", "no-reply@poprox.ai")
 
 DEFAULT_API_VERSION = ProtocolVersions.VERSION_2_0
 DEFAULT_ENDPOINT_URL = os.getenv("POPROX_DEFAULT_ENDPOINT_URL")
-RECS_QUEUE_URL = os.getenv("GENERATE_RECS_QUEUE_URL")
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -42,3 +50,28 @@ def enqueue_newsletter_request(
         sqs.send_message(queue_url=RECS_QUEUE_URL, message_body=message)
     else:
         logger.warning("Skipping newsletter request since queue URL isn't configured.")
+
+
+def enqueue_email(newsletter_id, account: Account, email_subject, html, unsubscribe_link):
+    message = json.dumps(
+        {
+            "newsletter_id": str(newsletter_id),
+            "account_id": str(account.account_id),
+            "email_to": account.email,
+            "email_subject": email_subject,
+            "email_body": html,
+            "unsubscribe_link": unsubscribe_link,
+        }
+    )
+
+    if SEND_EMAIL_QUEUE_URL:
+        sqs.send_message(queue_url=SEND_EMAIL_QUEUE_URL, message_body=message)
+    else:
+        logger.error(
+            "No SEND_EMAIL_QUEUE_URL is provided. This is OK in development, "
+            "but if you see this in production something terrible has happened."
+        )
+        logger.error("Email not sent:")
+        logger.warning("to: " + account.email)
+        logger.warning("subject: " + email_subject)
+        logger.warning(html)
