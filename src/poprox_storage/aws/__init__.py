@@ -8,6 +8,8 @@ from sqlalchemy import (
 from poprox_storage.aws.auth import Auth
 from poprox_storage.aws.s3 import S3
 
+from .sqs import SQS
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -19,6 +21,7 @@ SESSION = Auth.get_boto3_session(
 )
 
 s3 = S3(SESSION)
+sqs = SQS(SESSION)
 
 DEV_BUCKET_NAME = "poprox-dev"
 
