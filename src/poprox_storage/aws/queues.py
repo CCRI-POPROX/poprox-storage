@@ -3,10 +3,9 @@ import logging
 import os
 from uuid import UUID
 
-from poprox_platform.aws import sqs
-
 from poprox_concepts.api.recommendations.versions import ProtocolVersions
 from poprox_concepts.domain import Account
+from poprox_storage.aws import sqs
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
