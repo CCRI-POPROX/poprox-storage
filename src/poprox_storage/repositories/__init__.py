@@ -20,6 +20,7 @@ from poprox_storage.repositories.placements import DbPlacementRepository
 from poprox_storage.repositories.pools import DbCandidatePoolRepository
 from poprox_storage.repositories.qualtrics_survey import DbQualtricsSurveyRepository, S3QualtricsSurveyRepository
 from poprox_storage.repositories.teams import DbTeamRepository
+from poprox_storage.repositories.tokens import DbTokenRepository
 
 
 def inject_repos(handler):
@@ -65,6 +66,7 @@ __all__ = [
     "DbPlacementRepository",
     "DbQualtricsSurveyRepository",
     "DbTeamRepository",
+    "DbTokenRepository",
     "S3AccountInterestRepository",
     "S3ArticleRepository",
     "S3AssignmentsRepository",
