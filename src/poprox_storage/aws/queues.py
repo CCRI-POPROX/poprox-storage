@@ -31,6 +31,7 @@ def enqueue_newsletter_request(
     endpoint_warm: bool = False,
     api_version: ProtocolVersions = DEFAULT_API_VERSION,
     compensation_banner: bool = False,
+    template: str = None,
 ):
     message = json.dumps(
         {
@@ -42,6 +43,7 @@ def enqueue_newsletter_request(
             "endpoint_warm": endpoint_warm,
             "api_version": api_version.value,
             "compensation_banner": compensation_banner,
+            "template": template,
         }
     )
 
