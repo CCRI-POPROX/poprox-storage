@@ -271,6 +271,18 @@ class DbExperimentRepository(DatabaseRepository):
 
         return endpoints_by_treatment
 
+    def fetch_treatment_templates(self, treatment_ids: list[UUID]) -> dict[UUID, str]:
+        treatments_tbl = self.tables["expt_treatments"]
+
+        treatment_endpoint_query = select(treatments_tbl.c.treatment_id, treatments_tbl.c.templates).where(
+            treatments_tbl.c.treatment_id.in_(treatment_ids)
+        )
+
+        result = self.conn.execute(treatment_endpoint_query).fetchall()
+        endpoints_by_treatment = {row[0]: row[1] for row in result}
+
+        return endpoints_by_treatment
+
     def fetch_active_expt_recommender_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
         groups_tbl = self.tables["expt_groups"]
         phases_tbl = self.tables["expt_phases"]
