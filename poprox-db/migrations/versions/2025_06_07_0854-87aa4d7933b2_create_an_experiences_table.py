@@ -47,7 +47,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint("fk_top_stories_team_id", "experiences", type_="foreignkey")
+    op.drop_constraint("fk_experiences_team_id", "experiences", type_="foreignkey")
     op.drop_constraint("fk_experiences_recommender_id", "experiences", type_="foreignkey")
 
     op.drop_table("experiences")
