@@ -56,8 +56,6 @@ class ManifestPhase(BaseModel):
 class ManifestPhaseAssignment(BaseModel):
     recommender: str
     template: str | None = Field(default=None)
-    entry_survey: str | None = Field(default=None)
-    exit_survey: str | None = Field(default=None)
 
 
 class ManifestRecommender(BaseModel):
