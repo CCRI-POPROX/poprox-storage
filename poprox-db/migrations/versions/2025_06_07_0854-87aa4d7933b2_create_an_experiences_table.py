@@ -38,7 +38,7 @@ def upgrade() -> None:
         ["recommender_id"],
     )
     op.create_foreign_key(
-        "fk_top_stories_team_id",
+        "fk_experiences_team_id",
         "experiences",
         "teams",
         ["team_id"],
