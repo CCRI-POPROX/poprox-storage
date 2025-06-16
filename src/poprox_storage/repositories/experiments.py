@@ -279,7 +279,7 @@ class DbExperimentRepository(DatabaseRepository):
         )
 
         result = self.conn.execute(treatment_endpoint_query).fetchall()
-        endpoints_by_treatment = {row[0]: row[1] for row in result}
+        templates_by_treatment = {row[0]: row[1] for row in result}
 
         return endpoints_by_treatment
 
