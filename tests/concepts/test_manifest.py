@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from poprox_storage.concepts.experiment import Experiment, Team
+from poprox_storage.concepts.experiment import Experiment, Team, Treatment
 from poprox_storage.concepts.manifest import manifest_to_experiment, parse_manifest_toml
 from poprox_storage.paths import project_root
 
@@ -23,3 +23,12 @@ def test_load_manifest():
 
     assert len(experiment.phases) == 3
     assert isinstance(experiment.phases[0].phase_id, UUID)
+
+    # get phase 1 assignment a treatment
+    assert len(experiment.phases[0].treatments) == 3
+    targets = [treatment for treatment in experiment.phases[0].treatments if treatment.recommender.name == "x"]
+    assert len(targets) == 1
+
+    # assert the tempalte gets loaded
+    assert isinstance(targets[0], Treatment)
+    assert targets[0].template == "funkyTemplate.html"

@@ -146,6 +146,7 @@ class DbExperimentRepository(DatabaseRepository):
                     treatment_id=row.treatment_id,
                     group=groups.get(row.group_id),
                     recommender=recommenders.get(row.recommender_id),
+                    template=row.template,
                 )
             )
 
@@ -421,6 +422,7 @@ class DbExperimentRepository(DatabaseRepository):
                 "phase_id": phase_id,
                 "group_id": treatment.group.group_id,
                 "recommender_id": treatment.recommender.recommender_id,
+                "template": treatment.template,
             },
             exclude={"group", "recommender"},
             commit=False,
