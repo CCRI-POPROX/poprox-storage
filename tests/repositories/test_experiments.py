@@ -91,3 +91,65 @@ def test_store_and_load_experiment():
 
         # with those adjustments -- assert the stored data matches the loaded
         assert loaded_experiment == experiment
+
+
+def test_fetch_treatment_templates(db_engine):
+    with open(project_root() / "tests" / "data" / "sample_manifest.toml") as f:
+        sample_manifest = f.read()
+    manifest = parse_manifest_toml(sample_manifest)
+    experiment = manifest_to_experiment(manifest)
+
+    with DB_ENGINE.connect() as conn:
+        clear_tables(
+            conn,
+            "account_consent_log",
+            "account_interest_log",
+            "demographics",
+            "account_aliases",
+            "team_memberships",
+            "expt_assignments",
+            "expt_treatments",
+            "expt_groups",
+            "expt_phases",
+            "recommenders",
+            "experiments",
+            "datasets",
+            "teams",
+            "clicks",
+            "web_logins",
+            "newsletters",
+            "accounts",
+        )
+
+        account_repo = DbAccountRepository(conn)
+        dataset_repo = DbDatasetRepository(conn)
+        experiment_repo = DbExperimentRepository(conn)
+        team_repo = DbTeamRepository(conn)
+
+        account = Account(
+            account_id=experiment.owner.members[0],
+            email="example@example.com",
+            source="test",
+            status="test",
+        )
+
+        account_repo.store_account(account)
+        experiment.owner.team_id = team_repo.store_team(experiment.owner)
+        experiment.dataset_id = dataset_repo.store_new_dataset([account], experiment.owner.team_id)
+        experiment_id = experiment_repo.store_experiment(experiment, [], experiment.dataset_id)
+
+        conn.commit()
+
+        experiment = experiment_repo.fetch_experiment_by_id(experiment_id)
+
+        treatment_ids = [treatment.treatment_id for phase in experiment.phases for treatment in phase.treatments]
+        treatment_templates = experiment_repo.fetch_treatment_templates(treatment_ids)
+        assert len(treatment_templates) == 9
+
+        for phase in experiment.phases:
+            for treatment in phase.treatments:
+                if treatment.recommender.name == "x":
+                    assert treatment_templates[treatment.treatment_id] == "funkyTemplate.html"
+
+                else:
+                    assert treatment_templates[treatment.treatment_id] is None
