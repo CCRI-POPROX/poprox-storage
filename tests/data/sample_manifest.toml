@@ -36,16 +36,13 @@ duration = "2 days"
 
 [phases.1.assignments.a]
 recommender = "x"
-entry_survey = "survey.qsf"
 template = "funkyTemplate.html"
 
 [phases.1.assignments.b]
 recommender = "y"
-entry_survey = "survey.qsf"
 
 [phases.1.assignments.c]
 recommender = "z"
-entry_survey = "survey.qsf"
 
 [phases.2]
 duration = "2 days"
@@ -65,13 +62,10 @@ duration = "2 days"
 
 [phases.3.assignments.a]
 recommender = "y"
-exit_survey = "survey2.qsf"
 
 [phases.3.assignments.b]
 recommender = "z"
-exit_survey = "survey2.qsf"
 
 [phases.3.assignments.c]
 recommender = "x"
-exit_survey = "survey2.qsf"
 template = "funkyTemplate.html"
