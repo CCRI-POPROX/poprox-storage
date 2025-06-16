@@ -278,10 +278,10 @@ class DbExperimentRepository(DatabaseRepository):
             treatments_tbl.c.treatment_id.in_(treatment_ids)
         )
 
-        result = self.conn.execute(treatment_endpoint_query).fetchall()
+        result = self.conn.execute(treatment_template_query).fetchall()
         templates_by_treatment = {row[0]: row[1] for row in result}
 
-        return endpoints_by_treatment
+        return templates_by_treatment
 
     def fetch_active_expt_recommender_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
         groups_tbl = self.tables["expt_groups"]
