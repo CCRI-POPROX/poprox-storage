@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from uuid import UUID, uuid4
 
 import tomli
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel, Field, PositiveInt
 
 from poprox_storage.concepts.experiment import (
     Experiment,
@@ -55,6 +55,7 @@ class ManifestPhase(BaseModel):
 
 class ManifestPhaseAssignment(BaseModel):
     recommender: str
+    template: str | None = Field(default=None)
 
 
 class ManifestRecommender(BaseModel):
@@ -135,8 +136,7 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
             recommender_name = assignment.recommender
             phase.treatments.append(
                 Treatment(
-                    group=groups[group_name],
-                    recommender=recommenders[recommender_name],
+                    group=groups[group_name], recommender=recommenders[recommender_name], template=assignment.template
                 )
             )
         experiment.phases.append(phase)

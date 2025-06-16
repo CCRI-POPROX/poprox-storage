@@ -66,6 +66,7 @@ class Treatment(BaseModel):
     treatment_id: UUID = Field(default_factory=uuid4)
     group: Group
     recommender: Recommender
+    template: str | None = Field(default=None)
 
 
 class Group(BaseModel):

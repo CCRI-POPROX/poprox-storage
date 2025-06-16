@@ -36,6 +36,7 @@ duration = "2 days"
 
 [phases.1.assignments.a]
 recommender = "x"
+template = "funkyTemplate.html"
 
 [phases.1.assignments.b]
 recommender = "y"
@@ -51,6 +52,7 @@ recommender = "z"
 
 [phases.2.assignments.b]
 recommender = "x"
+template = "funkyTemplate.html"
 
 [phases.2.assignments.c]
 recommender = "y"
@@ -66,3 +68,4 @@ recommender = "z"
 
 [phases.3.assignments.c]
 recommender = "x"
+template = "funkyTemplate.html"

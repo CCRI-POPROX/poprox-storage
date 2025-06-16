@@ -146,6 +146,7 @@ class DbExperimentRepository(DatabaseRepository):
                     treatment_id=row.treatment_id,
                     group=groups.get(row.group_id),
                     recommender=recommenders.get(row.recommender_id),
+                    template=row.template,
                 )
             )
 
@@ -252,6 +253,19 @@ class DbExperimentRepository(DatabaseRepository):
 
         return treatment_lookup_by_group
 
+    def fetch_datasets_by_group(self, group_ids: list[UUID]) -> dict[UUID, UUID]:
+        group_tbl = self.tables["expt_groups"]
+        experiment_tbl = self.tables["experiments"]
+
+        dataset_query = (
+            select(group_tbl.c.group_id, experiment_tbl.c.dataset_id)
+            .where(group_tbl.c.group_id.in_(group_ids))
+            .join(experiment_tbl, experiment_tbl.c.experiment_id == group_tbl.c.experiment_id)
+        )
+
+        result = self.conn.execute(dataset_query).fetchall()
+        return {row[0]: row[1] for row in result}
+
     def fetch_treatment_recommender_urls(self, treatment_ids: list[UUID]) -> dict[UUID, str]:
         recommenders_tbl = self.tables["recommenders"]
         treatments_tbl = self.tables["expt_treatments"]
@@ -269,6 +283,18 @@ class DbExperimentRepository(DatabaseRepository):
         endpoints_by_treatment = {row[0]: row[1] for row in result}
 
         return endpoints_by_treatment
+
+    def fetch_treatment_templates(self, treatment_ids: list[UUID]) -> dict[UUID, str]:
+        treatments_tbl = self.tables["expt_treatments"]
+
+        treatment_template_query = select(treatments_tbl.c.treatment_id, treatments_tbl.c.template).where(
+            treatments_tbl.c.treatment_id.in_(treatment_ids)
+        )
+
+        result = self.conn.execute(treatment_template_query).fetchall()
+        templates_by_treatment = {row[0]: row[1] for row in result}
+
+        return templates_by_treatment
 
     def fetch_active_expt_recommender_urls(self, date: datetime.date | None = None) -> dict[UUID, str]:
         groups_tbl = self.tables["expt_groups"]
@@ -421,6 +447,7 @@ class DbExperimentRepository(DatabaseRepository):
                 "phase_id": phase_id,
                 "group_id": treatment.group.group_id,
                 "recommender_id": treatment.recommender.recommender_id,
+                "template": treatment.template,
             },
             exclude={"group", "recommender"},
             commit=False,
