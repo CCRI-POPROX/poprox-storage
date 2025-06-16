@@ -274,7 +274,7 @@ class DbExperimentRepository(DatabaseRepository):
     def fetch_treatment_templates(self, treatment_ids: list[UUID]) -> dict[UUID, str]:
         treatments_tbl = self.tables["expt_treatments"]
 
-        treatment_endpoint_query = select(treatments_tbl.c.treatment_id, treatments_tbl.c.templates).where(
+        treatment_template_query = select(treatments_tbl.c.treatment_id, treatments_tbl.c.templates).where(
             treatments_tbl.c.treatment_id.in_(treatment_ids)
         )
 
