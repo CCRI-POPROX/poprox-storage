@@ -253,6 +253,19 @@ class DbExperimentRepository(DatabaseRepository):
 
         return treatment_lookup_by_group
 
+    def fetch_datasets_by_group(self, group_ids: list[UUID]) -> dict[UUID, UUID]:
+        group_tbl = self.tables["expt_groups"]
+        experiment_tbl = self.tables["experiments"]
+
+        dataset_query = (
+            select(group_tbl.c.group_id, experiment_tbl.c.dataset_id)
+            .where(group_tbl.c.group_id.in_(group_ids))
+            .join(experiment_tbl, experiment_tbl.c.experiment_id == group_tbl.c.experiment_id)
+        )
+
+        result = self.conn.execute(dataset_query).fetchall()
+        return {row[0]: row[1] for row in result}
+
     def fetch_treatment_recommender_urls(self, treatment_ids: list[UUID]) -> dict[UUID, str]:
         recommenders_tbl = self.tables["recommenders"]
         treatments_tbl = self.tables["expt_treatments"]
