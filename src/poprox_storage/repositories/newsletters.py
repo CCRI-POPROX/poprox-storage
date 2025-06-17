@@ -181,6 +181,61 @@ class DbNewsletterRepository(DatabaseRepository):
             for row in rows
         ]
 
+    def fetch_feedback_impressions_by_account_id(self, account_id: UUID) -> list[Impression]:
+        impressions_table = self.tables["impressions"]
+        articles_table = self.tables["articles"]
+        newsletters_table = self.tables["newsletters"]
+
+        query = (
+            select(
+                impressions_table.c.impression_id,
+                impressions_table.c.newsletter_id,
+                impressions_table.c.article_id,
+                impressions_table.c.position,
+                impressions_table.c.extra,
+                impressions_table.c.headline,
+                impressions_table.c.subhead,
+                impressions_table.c.feedback,
+                impressions_table.c.preview_image_id,
+                articles_table.c.url,
+            )
+            .join(
+                articles_table,
+                articles_table.c.article_id == impressions_table.c.article_id,
+            )
+            .join(
+                newsletters_table,
+                newsletters_table.c.newsletter_id == impressions_table.c.newsletter_id,
+            )
+            .where(
+                and_(
+                    newsletters_table.c.account_id == account_id,
+                    impressions_table.c.feedback.isnot(None),
+                )
+            )
+            .order_by(impressions_table.c.created_at.asc())
+        )
+        rows = self.conn.execute(query).fetchall()
+        return [
+            Impression(
+                impression_id=row.impression_id,
+                newsletter_id=row.newsletter_id,
+                article=Article(
+                    article_id=row.article_id,
+                    headline=row.headline,
+                    url=row.url,
+                    subhead=row.subhead,
+                    preview_image_id=row.preview_image_id,
+                ),
+                position=row.position,
+                extra=row.extra,
+                headline=row.headline,
+                subhead=row.subhead,
+                feedback=row.feedback,
+            )
+            for row in rows
+        ]
+
     def fetch_most_recent_newsletter(self, account_id, since: datetime) -> Newsletter | None:
         # XXX - this does not currently fetch impressions due to this feature not being needed.
         newsletters_table = self.tables["newsletters"]
