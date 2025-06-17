@@ -196,8 +196,8 @@ class DbNewsletterRepository(DatabaseRepository):
                 impressions_table.c.headline,
                 impressions_table.c.subhead,
                 impressions_table.c.feedback,
+                impressions_table.c.preview_image_id,
                 articles_table.c.url,
-                articles_table.c.preview_image_id,
             )
             .join(
                 articles_table,
