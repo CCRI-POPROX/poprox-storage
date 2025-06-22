@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import Connection, Table, and_, select, update
 
 from poprox_concepts import Account
+from poprox_concepts.domain import Experience
 from poprox_storage.concepts.experiment import (
     Assignment,
     Experiment,
@@ -32,6 +33,7 @@ class DbExperimentRepository(DatabaseRepository):
             "recommenders",
             "teams",
             "team_memberships",
+            "experiences",
         )
 
     def store_experiment(
@@ -151,6 +153,31 @@ class DbExperimentRepository(DatabaseRepository):
             )
 
         return list(phases.values())
+
+    def fetch_experience_by_id(self, experience_id: str) -> Experience | None:
+        # Fetch an Experience by its ID from the experiences table.
+        experiences_table = self.tables.get("experiences")
+        if not experiences_table:
+            return None
+
+        experience_query = select(experiences_table).where(experiences_table.c.experience_id == experience_id)
+        result = self.conn.execute(experience_query).first()
+
+        if not result:
+            return None
+
+        # Create Experience object
+        experience = Experience(
+            experience_id=result.experience_id,
+            recommender_id=result.recommender_id,
+            team_id=result.team_id,
+            name=result.name,
+            start_date=result.start_date,
+            end_date=result.end_date,
+            created_at=result.created_at,
+        )
+
+        return experience
 
     def fetch_team(self, team_id: UUID) -> Team:
         team_table = self.tables["teams"]
