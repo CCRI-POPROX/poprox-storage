@@ -94,7 +94,7 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     # XXX: we probably should actually fix this later.
     start_date = manifest.experiment.start_date or (date.today() + timedelta(days=1))  # noqa: DTZ011
     # Include start date in the total duration
-    end_date = start_date - timedelta(days=1) + convert_duration(manifest.experiment.duration) 
+    end_date = start_date - timedelta(days=1) + convert_duration(manifest.experiment.duration)
 
     owner = Team(
         team_id=manifest.owner.team_id,
