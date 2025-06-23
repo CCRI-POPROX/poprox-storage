@@ -35,6 +35,7 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.status,
             account_tbl.c.source,
             account_tbl.c.subsource,
+            account_tbl.c.compensation,
             account_tbl.c.created_at,
         )
         if account_ids is not None:
@@ -150,15 +151,15 @@ class DbAccountRepository(DatabaseRepository):
         where_clause = or_(
             # Phase's start date is in the supplied range
             and_(
-                phase_tbl.c.start_date > start_date,
-                phase_tbl.c.start_date < end_date,
+                phase_tbl.c.start_date >= start_date,
+                phase_tbl.c.start_date <= end_date,
             ),
             # Phase's end date is in the supplied range
-            and_(phase_tbl.c.end_date > start_date, phase_tbl.c.end_date < end_date),
+            and_(phase_tbl.c.end_date >= start_date, phase_tbl.c.end_date <= end_date),
             # Phase's dates cover the whole supplied range
-            and_(phase_tbl.c.start_date < start_date, phase_tbl.c.end_date > end_date),
+            and_(phase_tbl.c.start_date <= start_date, phase_tbl.c.end_date >= end_date),
             # The supplied range covers the whole phase
-            and_(phase_tbl.c.start_date > start_date, phase_tbl.c.end_date < end_date),
+            and_(phase_tbl.c.start_date >= start_date, phase_tbl.c.end_date <= end_date),
         )
         phase_query = select(phase_tbl.c.phase_id).where(where_clause)
         phase_ids = self._id_query(phase_query)
@@ -333,6 +334,7 @@ class DbAccountRepository(DatabaseRepository):
                 email=row.email,
                 status=row.status,
                 source=row.source,
+                compensation=row.compensation,
                 created_at=row.created_at,
             )
             for row in result
