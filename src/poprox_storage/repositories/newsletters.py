@@ -366,8 +366,8 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
             record["headline"] = impression.headline
             record["subhead"] = impression.subhead
             record["recommender_name"] = newsletter.recommender_info.name if newsletter.recommender_info else ""
-            record["recommender_version"] = newsletter.recommender_info.version  if newsletter.recommender_info else ""
-            record["recommender_hash"] = newsletter.recommender_info.hash  if newsletter.recommender_info else ""
+            record["recommender_version"] = newsletter.recommender_info.version if newsletter.recommender_info else ""
+            record["recommender_hash"] = newsletter.recommender_info.hash if newsletter.recommender_info else ""
             if include_treatment:
                 record["treatment_id"] = str(newsletter.treatment_id)
             if impression.extra:
