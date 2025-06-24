@@ -14,7 +14,12 @@ class S3CompensationRepository(S3Repository):
         start_time: datetime = None,
     ):
         records = [
-            {"account_id": str(acct.account_id), "email": acct.email, "compensation": acct.compensation, "active_days": active_days[acct.account_id], }
+            {
+                "account_id": str(acct.account_id),
+                "email": acct.email,
+                "compensation": acct.compensation,
+                "active_days": active_days[acct.account_id],
+            }
             for acct in accounts
         ]
         return self._write_records_as_parquet(records, self.bucket_name, file_prefix, start_time)
