@@ -24,6 +24,7 @@ class DbAccountRepository(DatabaseRepository):
             "subscriptions",
             "account_consent_log",
             "web_logins",
+            "team_memberships",
         )
 
     def fetch_accounts(self, account_ids: list[UUID] | None = None) -> list[Account]:
@@ -323,6 +324,29 @@ class DbAccountRepository(DatabaseRepository):
             .values(placebo_id=uuid4())
         )
         self.conn.execute(update_query)
+
+    def fetch_internal_accounts_by_team(self, team_id: UUID) -> list[Account]:
+        team_memberships_tbl = self.tables.get("team_memberships")
+        accounts_tbl = self.tables.get("accounts")
+
+        # Getting account_ids from team_memberships for the given team_id
+        membership_query = select(team_memberships_tbl.c.account_id).where(team_memberships_tbl.c.team_id == team_id)
+        membership_results = self.conn.execute(membership_query).fetchall()
+
+        if not membership_results:
+            return []
+
+        account_ids = [row[0] for row in membership_results]
+
+        account_query = select(
+            accounts_tbl.c.account_id,
+            accounts_tbl.c.email,
+            accounts_tbl.c.status,
+            accounts_tbl.c.source,
+            accounts_tbl.c.subsource,
+            accounts_tbl.c.created_at,
+        ).where(accounts_tbl.c.account_id.in_(account_ids))
+        return self._fetch_acounts(account_query)
 
     def _fetch_acounts(self, account_query) -> list[Account]:
         result = self.conn.execute(account_query).fetchall()
