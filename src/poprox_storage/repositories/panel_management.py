@@ -27,6 +27,16 @@ class S3PanelManagementRepository(S3Repository):
         records = convert_newsletters_to_records(newsletters)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
+    def store_web_logins_as_parquet(
+        self,
+        logins: List[dict],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = convert_logins_to_records(logins)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
 
 def convert_accounts_to_records(accounts: List[Account]) -> List[dict]:
     records = []
@@ -51,6 +61,21 @@ def convert_newsletters_to_records(newsletters: List[Newsletter]) -> List[dict]:
                 "newsletter_id": str(nl.newsletter_id),
                 "account_id": str(nl.account_id),
                 "created_at": nl.created_at,
+            }
+        )
+    return records
+
+
+def convert_logins_to_records(logins: List[dict]) -> List[dict]:
+    records = []
+    for login in logins:
+        records.append(
+            {
+                "account_id": str(login["account_id"]),
+                "newsletter_id": str(login["newsletter_id"]),
+                "endpoint": login["endpoint"],
+                "data": login["data"],
+                "created_at": login["created_at"],
             }
         )
     return records
