@@ -211,7 +211,7 @@ class DbExperimentRepository(DatabaseRepository):
         ).where(
             and_(
                 phases_tbl.c.start_date <= date,
-                date < phases_tbl.c.end_date,
+                date <= phases_tbl.c.end_date,
             )
         )
 
@@ -244,7 +244,7 @@ class DbExperimentRepository(DatabaseRepository):
         ).where(
             and_(
                 phases_tbl.c.start_date <= date,
-                date < phases_tbl.c.end_date,
+                date <= phases_tbl.c.end_date,
             )
         )
 
@@ -316,7 +316,7 @@ class DbExperimentRepository(DatabaseRepository):
         ).where(
             and_(
                 phases_tbl.c.start_date <= date,
-                date < phases_tbl.c.end_date,
+                date <= phases_tbl.c.end_date,
             )
         )
 
