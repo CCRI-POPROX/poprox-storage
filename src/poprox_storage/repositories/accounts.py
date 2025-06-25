@@ -35,6 +35,7 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.status,
             account_tbl.c.source,
             account_tbl.c.subsource,
+            account_tbl.c.compensation,
             account_tbl.c.created_at,
         )
         if account_ids is not None:
@@ -333,6 +334,7 @@ class DbAccountRepository(DatabaseRepository):
                 email=row.email,
                 status=row.status,
                 source=row.source,
+                compensation=row.compensation,
                 created_at=row.created_at,
             )
             for row in result
