@@ -239,6 +239,12 @@ class DbAccountRepository(DatabaseRepository):
             result = result.subscription_id
         return result
 
+    def fetch_logins(self) -> list[dict]:
+        web_login_tbl = self.tables["web_logins"]
+        query = sqlalchemy.select(web_login_tbl)
+        result = self.conn.execute(query).mappings().all()
+        return result
+
     def store_subscription_for_account(self, account_id: UUID):
         subscription_tbl = self.tables["subscriptions"]
 
