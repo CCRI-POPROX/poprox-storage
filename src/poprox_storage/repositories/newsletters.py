@@ -188,24 +188,16 @@ class DbNewsletterRepository(DatabaseRepository):
 
         query = (
             select(
-                impressions_table.c.impression_id,
-                impressions_table.c.newsletter_id,
-                impressions_table.c.article_id,
-                impressions_table.c.position,
-                impressions_table.c.extra,
-                impressions_table.c.headline,
-                impressions_table.c.subhead,
-                impressions_table.c.feedback,
-                impressions_table.c.preview_image_id,
+                impressions_table,
                 articles_table.c.url,
-            )
-            .join(
-                articles_table,
-                articles_table.c.article_id == impressions_table.c.article_id,
             )
             .join(
                 newsletters_table,
                 newsletters_table.c.newsletter_id == impressions_table.c.newsletter_id,
+            )
+            .join(
+                articles_table,
+                articles_table.c.article_id == impressions_table.c.article_id,
             )
             .where(
                 and_(
@@ -213,10 +205,9 @@ class DbNewsletterRepository(DatabaseRepository):
                     impressions_table.c.feedback.isnot(None),
                 )
             )
-            .order_by(impressions_table.c.created_at.asc())
         )
         rows = self.conn.execute(query).fetchall()
-        return [
+        impressions = [
             Impression(
                 impression_id=row.impression_id,
                 newsletter_id=row.newsletter_id,
@@ -232,9 +223,11 @@ class DbNewsletterRepository(DatabaseRepository):
                 headline=row.headline,
                 subhead=row.subhead,
                 feedback=row.feedback,
+                created_at=row.created_at,
             )
             for row in rows
         ]
+        return sorted(impressions, key=lambda i: i.created_at)
 
     def fetch_most_recent_newsletter(self, account_id, since: datetime) -> Newsletter | None:
         # XXX - this does not currently fetch impressions due to this feature not being needed.
