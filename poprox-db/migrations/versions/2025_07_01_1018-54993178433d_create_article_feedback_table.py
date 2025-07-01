@@ -21,7 +21,7 @@ def upgrade() -> None:
     op.create_table(
         "article_feedback",
         sa.Column("account_id", sa.UUID, nullable=False),
-        sa.Column("article_id", sa.UUID, nullable=False),
+        sa.Column("impression_id", sa.UUID, nullable=False),
         sa.Column("feedback", sa.String(15), nullable=True),
         sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
@@ -36,11 +36,11 @@ def upgrade() -> None:
     )
 
     op.create_foreign_key(
-        "fk_article_feedback_article_id",
+        "fk_article_feedback_impression_id",
         "article_feedback",
-        "articles",
-        ["article_id"],
-        ["article_id"],
+        "impressions",
+        ["impression_id"],
+        ["impression_id"],
     )
 
     # TODO: Migrate feedback from impressions table
@@ -57,7 +57,7 @@ def downgrade() -> None:
 
     # Drop the foreign keys
     op.drop_constraint("fk_article_feedback_account_id", "article_feedback", type_="foreignkey")
-    op.drop_constraint("fk_article_feedback_article_id", "article_feedback", type_="foreignkey")
+    op.drop_constraint("fk_article_feedback_impression_id", "article_feedback", type_="foreignkey")
 
     # Drop the table
     op.drop_table("article_feedback")
