@@ -72,9 +72,8 @@ def convert_logins_to_records(logins: List[dict]) -> List[dict]:
         records.append(
             {
                 "account_id": str(login["account_id"]),
-                "newsletter_id": str(login["newsletter_id"]),
+                "newsletter_id": str(login["newsletter_id"]) if login["newsletter_id"] else "",
                 "endpoint": login["endpoint"],
-                "data": login["data"],
                 "created_at": login["created_at"],
             }
         )
