@@ -141,10 +141,7 @@ class DbNewsletterRepository(DatabaseRepository):
         articles_table = self.tables["articles"]
 
         query = (
-            select(
-                impressions_table,
-                articles_table
-            )
+            select(impressions_table, articles_table)
             .join(
                 articles_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
@@ -163,10 +160,7 @@ class DbNewsletterRepository(DatabaseRepository):
         newsletters_table = self.tables["newsletters"]
 
         query = (
-            select(
-                impressions_table,
-                articles_table
-            )
+            select(impressions_table, articles_table)
             .join(
                 articles_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
