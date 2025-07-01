@@ -1,6 +1,7 @@
+from datetime import date
 from uuid import UUID
 
-from sqlalchemy import Connection, Table, select
+from sqlalchemy import Connection, Table, and_, select
 
 from poprox_concepts.domain.experience import Experience
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -34,6 +35,17 @@ class DbExperiencesRepository(DatabaseRepository):
         )
 
         return experience
+
+    def fetch_active_experiences(self, current_date: date) -> list[Experience]:
+        experiences_table = self.tables.get("experiences")
+        query = select(experiences_table).where(
+            and_(
+                experiences_table.c.start_date <= current_date,
+                experiences_table.c.end_date >= current_date,
+            )
+        )
+        results = self.conn.execute(query).fetchall()
+        return [Experience(**row._asdict()) for row in results]
 
     def fetch_recommender_url_by_id(self, recommender_id: UUID) -> str | None:
         # Fetch the endpoint_url for a given recommender_id.
