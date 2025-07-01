@@ -28,8 +28,13 @@ def upgrade() -> None:
         sa.Column("position_in_section", sa.Integer, nullable=True),
     )
 
+    # Positions must be positive
+    op.create_check_constraint(
+        "ch_impressions_position_in_section_positive", "impressions", sa.sql.column("position_in_section") > 0
+    )
 
 
 def downgrade() -> None:
+    op.drop_constraint("ch_impressions_position_in_section_positive", "impressions")
     op.drop_column("impressions", "section_name")
     op.drop_column("impressions", "position_in_section")
