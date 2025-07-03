@@ -14,6 +14,25 @@ class DbTeamRepository(DatabaseRepository):
             "team_memberships",
         )
 
+    def fetch_teams(self) -> dict[UUID, Team]:
+        """Note -- this does not return members of teams"""
+        team_table = self.tables["teams"]
+        team_query = select(team_table)
+        results = self.conn.execute(team_query).all()
+        return {row.team_id: Team(team_id=row.team_id, team_name=row.team_name, members=[]) for row in results}
+
+    def fetch_team_by_id(self, team_id: UUID) -> Team:
+        team_table = self.tables["teams"]
+        team_member_table = self.tables["team_memberships"]
+
+        member_query = select(team_member_table).where(team_member_table.c.team_id == team_id)
+        member_query_result = self.conn.execute(member_query).all()
+        members = [row.account_id for row in member_query_result]
+
+        team_query = select(team_table).where(team_table.c.team_id == team_id)
+        result = self.conn.execute(team_query).one()
+        return Team(team_id=result.team_id, team_name=result.team_name, members=members)
+
     def fetch_teams_for_account(self, account_id: UUID) -> dict[UUID, Team]:
         """Note -- this does not return other members of teams the current account is in."""
         team_table = self.tables["teams"]
