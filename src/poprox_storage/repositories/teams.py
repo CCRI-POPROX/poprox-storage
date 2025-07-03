@@ -53,10 +53,10 @@ class DbTeamRepository(DatabaseRepository):
     ):
         team_id = self._insert_model("teams", team, exclude={"members"}, constraint="teams_pkey", commit=False)
         for account_id in team.members:
-            self._insert_team_membership(team_id, account_id)
+            self.insert_team_membership(team_id, account_id)
         return team_id
 
-    def _insert_team_membership(self, team_id: UUID, account_id: UUID) -> UUID | None:
+    def insert_team_membership(self, team_id: UUID, account_id: UUID) -> UUID | None:
         return self._upsert_and_return_id(
             self.conn,
             self.tables["team_memberships"],
