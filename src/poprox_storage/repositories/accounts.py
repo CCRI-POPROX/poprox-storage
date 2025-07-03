@@ -7,6 +7,7 @@ from sqlalchemy import Connection, and_, null, or_, select
 
 from poprox_concepts import Account
 from poprox_concepts.api.tracking import LoginLinkData
+from poprox_concepts.domain import WebLogin
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 logger = logging.getLogger(__name__)
@@ -239,11 +240,24 @@ class DbAccountRepository(DatabaseRepository):
             result = result.subscription_id
         return result
 
-    def fetch_logins(self) -> list[dict]:
+    def fetch_logins(self) -> list[WebLogin]:
         web_login_tbl = self.tables["web_logins"]
-        query = sqlalchemy.select(web_login_tbl)
-        result = self.conn.execute(query).mappings().all()
-        return result
+        query = sqlalchemy.select(
+            web_login_tbl.c.account_id,
+            web_login_tbl.c.newsletter_id,
+            web_login_tbl.c.endpoint,
+            web_login_tbl.c.created_at,
+        )
+        rows = self.conn.execute(query).fetchall()
+        return [
+            WebLogin(
+                account_id=row.account_id,
+                newsletter_id=row.newsletter_id,
+                endpoint=row.endpoint,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]
 
     def store_subscription_for_account(self, account_id: UUID):
         subscription_tbl = self.tables["subscriptions"]

@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import List
 
-from poprox_concepts.domain.account import Account
-from poprox_concepts.domain.newsletter import Newsletter
+from poprox_concepts.domain import Account, Newsletter, WebLogin
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 
@@ -29,7 +28,7 @@ class S3PanelManagementRepository(S3Repository):
 
     def store_web_logins_as_parquet(
         self,
-        logins: List[dict],
+        logins: List[WebLogin],
         bucket_name: str,
         file_prefix: str,
         start_time: datetime = None,
@@ -66,15 +65,15 @@ def convert_newsletters_to_records(newsletters: List[Newsletter]) -> List[dict]:
     return records
 
 
-def convert_logins_to_records(logins: List[dict]) -> List[dict]:
+def convert_logins_to_records(logins: List[WebLogin]) -> List[dict]:
     records = []
     for login in logins:
         records.append(
             {
-                "account_id": str(login["account_id"]),
-                "newsletter_id": str(login["newsletter_id"]) if login["newsletter_id"] else "",
-                "endpoint": login["endpoint"],
-                "created_at": login["created_at"],
+                "account_id": str(login.account_id),
+                "newsletter_id": str(login.newsletter_id) if login.newsletter_id else "",
+                "endpoint": login.endpoint,
+                "created_at": login.created_at,
             }
         )
     return records
