@@ -162,12 +162,12 @@ class DbNewsletterRepository(DatabaseRepository):
         query = (
             self.select_impressions_with_articles(impressions_table, articles_table)
             .join(
-                articles_table,
-                articles_table.c.article_id == impressions_table.c.article_id,
-            )
-            .join(
                 newsletters_table,
                 newsletters_table.c.newsletter_id == impressions_table.c.newsletter_id,
+            )
+            .join(
+                articles_table,
+                articles_table.c.article_id == impressions_table.c.article_id,
             )
             .where(
                 and_(
@@ -175,10 +175,11 @@ class DbNewsletterRepository(DatabaseRepository):
                     impressions_table.c.feedback.isnot(None),
                 )
             )
-            .order_by(impressions_table.c.created_at.asc())
         )
         rows = self.conn.execute(query).fetchall()
-        return [self._convert_to_impression_obj(row) for row in rows]
+
+        impressions = [self._convert_to_impression_obj(row) for row in rows]
+        return sorted(impressions, key=lambda i: i.created_at)
 
     def fetch_most_recent_newsletter(self, account_id, since: datetime) -> Newsletter | None:
         # XXX - this does not currently fetch impressions due to this feature not being needed.
