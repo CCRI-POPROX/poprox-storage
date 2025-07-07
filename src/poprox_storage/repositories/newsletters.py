@@ -60,6 +60,8 @@ class DbNewsletterRepository(DatabaseRepository):
                     extra=impression.extra,
                     headline=impression.headline,
                     subhead=impression.subhead,
+                    section_name=impression.section_name,
+                    position_in_section=impression.position_in_section,
                 )
                 self.conn.execute(stmt)
 
@@ -139,18 +141,7 @@ class DbNewsletterRepository(DatabaseRepository):
         articles_table = self.tables["articles"]
 
         query = (
-            select(
-                impressions_table.c.impression_id,
-                impressions_table.c.newsletter_id,
-                impressions_table.c.article_id,
-                impressions_table.c.position,
-                impressions_table.c.extra,
-                impressions_table.c.headline,
-                impressions_table.c.subhead,
-                impressions_table.c.feedback,
-                articles_table.c.url,
-                articles_table.c.preview_image_id,
-            )
+            self.select_impressions_with_articles(impressions_table, articles_table)
             .join(
                 articles_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
@@ -161,25 +152,7 @@ class DbNewsletterRepository(DatabaseRepository):
             .order_by(impressions_table.c.position.asc())
         )
         rows = self.conn.execute(query).fetchall()
-        return [
-            Impression(
-                impression_id=row.impression_id,
-                newsletter_id=row.newsletter_id,
-                article=Article(
-                    article_id=row.article_id,
-                    headline=row.headline,
-                    url=row.url,
-                    subhead=row.subhead,
-                    preview_image_id=row.preview_image_id,
-                ),
-                position=row.position,
-                extra=row.extra,
-                headline=row.headline,
-                subhead=row.subhead,
-                feedback=row.feedback,
-            )
-            for row in rows
-        ]
+        return [self._convert_to_impression_obj(row) for row in rows]
 
     def fetch_feedback_impressions_by_account_id(self, account_id: UUID) -> list[Impression]:
         impressions_table = self.tables["impressions"]
@@ -187,10 +160,7 @@ class DbNewsletterRepository(DatabaseRepository):
         newsletters_table = self.tables["newsletters"]
 
         query = (
-            select(
-                impressions_table,
-                articles_table.c.url,
-            )
+            self.select_impressions_with_articles(impressions_table, articles_table)
             .join(
                 newsletters_table,
                 newsletters_table.c.newsletter_id == impressions_table.c.newsletter_id,
@@ -207,26 +177,8 @@ class DbNewsletterRepository(DatabaseRepository):
             )
         )
         rows = self.conn.execute(query).fetchall()
-        impressions = [
-            Impression(
-                impression_id=row.impression_id,
-                newsletter_id=row.newsletter_id,
-                article=Article(
-                    article_id=row.article_id,
-                    headline=row.headline,
-                    url=row.url,
-                    subhead=row.subhead,
-                    preview_image_id=row.preview_image_id,
-                ),
-                position=row.position,
-                extra=row.extra,
-                headline=row.headline,
-                subhead=row.subhead,
-                feedback=row.feedback,
-                created_at=row.created_at,
-            )
-            for row in rows
-        ]
+
+        impressions = [self._convert_to_impression_obj(row) for row in rows]
         return sorted(impressions, key=lambda i: i.created_at)
 
     def fetch_most_recent_newsletter(self, account_id, since: datetime) -> Newsletter | None:
@@ -268,15 +220,7 @@ class DbNewsletterRepository(DatabaseRepository):
         newsletter_result = self.conn.execute(newsletter_query).fetchall()
 
         impressions_query = (
-            select(
-                impressions_table.c.impression_id,
-                impressions_table.c.newsletter_id,
-                impressions_table.c.preview_image_id,
-                impressions_table.c.position,
-                impressions_table.c.extra,
-                impressions_table.c.feedback,
-                articles_table,
-            )
+            self.select_impressions_with_articles(impressions_table, articles_table)
             .join(
                 impressions_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
@@ -286,6 +230,20 @@ class DbNewsletterRepository(DatabaseRepository):
 
         impressions_result = self.conn.execute(impressions_query).fetchall()
         return self._convert_to_newsletter_objs(newsletter_result, impressions_result)
+
+    def select_impressions_with_articles(self, impressions_table, articles_table):
+        return select(
+            impressions_table,
+            articles_table.c.article_id,
+            articles_table.c.external_id,
+            articles_table.c.headline,
+            articles_table.c.subhead,
+            articles_table.c.body,
+            articles_table.c.url,
+            articles_table.c.source,
+            articles_table.c.published_at,
+            articles_table.c.preview_image_id,
+        )
 
     def _convert_to_newsletter_objs(self, newsletter_result, impressions_result):
         impressions_by_newsletter_id = defaultdict(list)
@@ -314,21 +272,22 @@ class DbNewsletterRepository(DatabaseRepository):
         return Impression(
             impression_id=row.impression_id,
             newsletter_id=row.newsletter_id,
-            preview_image_id=row.preview_image_id,
             position=row.position,
             extra=row.extra,
             feedback=row.feedback,
             article=Article(
-                article_id=row.article_id,
-                headline=row.headline,
-                subhead=row.subhead,
-                url=row.url,
-                preview_image_id=row.preview_image_id,
-                published_at=row.published_at,
-                source=row.source,
-                external_id=row.external_id,
-                raw_data=row.raw_data,
+                article_id=row.articles_article_id,
+                headline=row.articles_headline,
+                subhead=row.articles_subhead,
+                url=row.articles_url,
+                preview_image_id=row.articles_preview_image_id,
+                published_at=row.articles_published_at,
+                source=row.articles_source,
+                external_id=row.articles_external_id,
             ),
+            created_at=row.created_at,
+            section_name=row.section_name,
+            position_in_section=row.position_in_section,
         )
 
 
