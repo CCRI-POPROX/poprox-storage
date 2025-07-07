@@ -52,7 +52,7 @@ class QualtricsCleanResponse(BaseModel):
             "status",
             "distributionChannel",
             "survey_instance_id",
-            "newsletter_html"
+            "newsletter_html",
         ]
 
         for denied_key in deny_list:
