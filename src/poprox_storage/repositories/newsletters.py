@@ -141,7 +141,7 @@ class DbNewsletterRepository(DatabaseRepository):
         articles_table = self.tables["articles"]
 
         query = (
-            select(impressions_table, articles_table)
+            self.select_impressions_with_articles(impressions_table, articles_table)
             .join(
                 articles_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
@@ -160,7 +160,7 @@ class DbNewsletterRepository(DatabaseRepository):
         newsletters_table = self.tables["newsletters"]
 
         query = (
-            select(impressions_table, articles_table)
+            self.select_impressions_with_articles(impressions_table, articles_table)
             .join(
                 articles_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
@@ -219,18 +219,7 @@ class DbNewsletterRepository(DatabaseRepository):
         newsletter_result = self.conn.execute(newsletter_query).fetchall()
 
         impressions_query = (
-            select(
-                impressions_table,
-                articles_table.c.article_id,
-                articles_table.c.external_id,
-                articles_table.c.headline,
-                articles_table.c.subhead,
-                articles_table.c.body,
-                articles_table.c.url,
-                articles_table.c.source,
-                articles_table.c.published_at,
-                articles_table.c.preview_image_id,
-            )
+            self.select_impressions_with_articles(impressions_table, articles_table)
             .join(
                 impressions_table,
                 articles_table.c.article_id == impressions_table.c.article_id,
@@ -240,6 +229,20 @@ class DbNewsletterRepository(DatabaseRepository):
 
         impressions_result = self.conn.execute(impressions_query).fetchall()
         return self._convert_to_newsletter_objs(newsletter_result, impressions_result)
+
+    def select_impressions_with_articles(self, impressions_table, articles_table):
+        return select(
+            impressions_table,
+            articles_table.c.article_id,
+            articles_table.c.external_id,
+            articles_table.c.headline,
+            articles_table.c.subhead,
+            articles_table.c.body,
+            articles_table.c.url,
+            articles_table.c.source,
+            articles_table.c.published_at,
+            articles_table.c.preview_image_id,
+        )
 
     def _convert_to_newsletter_objs(self, newsletter_result, impressions_result):
         impressions_by_newsletter_id = defaultdict(list)
