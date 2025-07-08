@@ -387,6 +387,24 @@ class S3QualtricsSurveyRepository(S3Repository):
         records = extract_and_flatten(responses)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
+    def store_instances_as_parquet(
+        self,
+        instances: list[QualtricsSurveyInstance],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = [
+            {
+                "survey_instance_id": str(i.survey_instance_id),
+                "survey_id": str(i.survey_id),
+                "account_id": str(i.account_id),
+                "created_at": i.created_at.isoformat() if i.created_at else None,
+            }
+            for i in instances
+        ]
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
 
 def extract_and_flatten(responses: list[QualtricsCleanResponse]):
     non_question_fields = [
