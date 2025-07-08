@@ -105,10 +105,14 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             {"survey_id": survey.survey_id, "account_id": account_id},
         )
 
-    def fetch_sent_survey_instances(self) -> list[QualtricsSurveyInstance]:
+    def fetch_sent_survey_instances(self, accounts: list[Account] | None = None) -> list[QualtricsSurveyInstance]:
         survey_instance_table = self.tables["qualtrics_survey_instances"]
 
         query = select(survey_instance_table)
+        if accounts:
+            account_ids = [acct.account_id for acct in accounts]
+            query = query.where(survey_instance_table.c.account_id.in_(account_ids))
+
         results = self.conn.execute(query).fetchall()
 
         return [
@@ -257,6 +261,13 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
 
         return self._fetch_clean_responses(where_clause)
 
+    def fetch_clean_responses_by_instance_ids(self, instance_ids: list[UUID]) -> list[QualtricsCleanResponse]:
+        responses_table = self.tables["qualtrics_clean_responses"]
+
+        where_clause = and_(responses_table.c.survey_instance_id.in_(instance_ids))
+
+        return self._fetch_clean_responses(where_clause)
+
     def _fetch_clean_responses(self, where_clause) -> list[QualtricsCleanResponse]:
         surveys_table = self.tables["qualtrics_surveys"]
         instances_table = self.tables["qualtrics_survey_instances"]
@@ -283,6 +294,30 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
                 survey_response_id=row.survey_response_id,
                 survey_instance_id=row.survey_instance_id,
                 response_values=row.response_values,
+                created_at=row.created_at,
+            )
+            for row in results
+        ]
+
+    def fetch_survey_instances_sent_between(
+        self, start_date, end_date, accounts: list[Account] | None = None
+    ) -> list[QualtricsSurveyInstance]:
+        instance_table = self.tables["qualtrics_survey_instances"]
+
+        query = select(instance_table)
+        where_clause = and_(instance_table.c.created_at >= start_date, instance_table.c.created_at <= end_date)
+        if accounts:
+            account_ids = [acct.account_id for acct in accounts]
+            where_clause = and_(where_clause, instance_table.c.account_id.in_(account_ids))
+        query = query.where(where_clause)
+
+        results = self.conn.execute(query).fetchall()
+
+        return [
+            QualtricsSurveyInstance(
+                survey_instance_id=row.survey_instance_id,
+                survey_id=row.survey_id,
+                account_id=row.account_id,
                 created_at=row.created_at,
             )
             for row in results
