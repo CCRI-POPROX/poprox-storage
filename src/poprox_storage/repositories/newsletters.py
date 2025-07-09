@@ -272,6 +272,8 @@ class DbNewsletterRepository(DatabaseRepository):
         return Impression(
             impression_id=row.impression_id,
             newsletter_id=row.newsletter_id,
+            headline=row.headline,
+            subhead=row.subhead,
             position=row.position,
             extra=row.extra,
             feedback=row.feedback,
