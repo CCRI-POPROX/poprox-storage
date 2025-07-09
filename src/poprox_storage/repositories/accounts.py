@@ -50,13 +50,9 @@ class DbAccountRepository(DatabaseRepository):
         """fetch all accounts whose created at is between start_date and end_date (inclusive)"""
         account_tbl = self.tables["accounts"]
 
-        query = select(
-            account_tbl.c.account_id,
-            account_tbl.c.email,
-            account_tbl.c.status,
-            account_tbl.c.source,
-            account_tbl.c.created_at,
-        ).where(and_(account_tbl.c.created_at >= start_date, account_tbl.c.created_at <= end_date))
+        query = select(account_tbl).where(
+            and_(account_tbl.c.created_at >= start_date, account_tbl.c.created_at <= end_date)
+        )
 
         return self._fetch_acounts(query)
 
