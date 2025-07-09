@@ -359,14 +359,7 @@ class DbAccountRepository(DatabaseRepository):
 
         account_ids = [row[0] for row in membership_results]
 
-        account_query = select(
-            accounts_tbl.c.account_id,
-            accounts_tbl.c.email,
-            accounts_tbl.c.status,
-            accounts_tbl.c.source,
-            accounts_tbl.c.subsource,
-            accounts_tbl.c.created_at,
-        ).where(accounts_tbl.c.account_id.in_(account_ids))
+        account_query = select(accounts_tbl).where(accounts_tbl.c.account_id.in_(account_ids))
         return self._fetch_acounts(account_query)
 
     def _fetch_acounts(self, account_query) -> list[Account]:
