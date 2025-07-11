@@ -37,6 +37,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 newsletter_id=newsletter.newsletter_id,
                 account_id=str(newsletter.account_id),
                 treatment_id=str(newsletter.treatment_id) if newsletter.treatment_id else None,
+                experience_id=str(newsletter.experience_id) if newsletter.experience_id else None,
                 content=[rec.model_dump_json() for rec in newsletter.articles],
                 email_subject=newsletter.subject,
                 html=newsletter.body_html,
