@@ -28,6 +28,8 @@ def enqueue_newsletter_request(
     group_id: UUID,
     recommender_url: str,
     treatment_id: UUID | None = None,
+    /,
+    experience_id: UUID | None = None,
     endpoint_warm: bool = False,
     api_version: ProtocolVersions = DEFAULT_API_VERSION,
     compensation_banner: bool = False,
@@ -44,6 +46,7 @@ def enqueue_newsletter_request(
             "api_version": api_version.value,
             "compensation_banner": compensation_banner,
             "template": template,
+            experience_id: experience_id,
         }
     )
 
