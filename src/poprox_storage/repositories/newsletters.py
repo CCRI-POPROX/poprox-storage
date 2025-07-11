@@ -275,7 +275,7 @@ class DbNewsletterRepository(DatabaseRepository):
             headline=row.headline,
             subhead=row.subhead,
             position=row.position,
-            extra=row.extra,
+            extra=getattr(row, "extra", None),
             feedback=row.feedback,
             article=Article(
                 article_id=row.articles_article_id,
