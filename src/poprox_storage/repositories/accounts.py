@@ -72,20 +72,22 @@ class DbAccountRepository(DatabaseRepository):
             return accounts[0]
         return None
 
-    def store_account(self, account: Account) -> UUID | None:
+    def store_account(self, account: Account, commit=False) -> UUID | None:
         account_tbl = self.tables["accounts"]
-        query = (
-            sqlalchemy.insert(account_tbl)
-            .values(
-                account_id=account.account_id,
-                email=account.email,
-                source=account.source,
-                status="new_account",
-            )
-            .returning(account_tbl.c.account_id)
+        return self._upsert_and_return_id(
+            self.conn,
+            account_tbl,
+            {
+                "account_id": account.account_id,
+                "email": account.email,
+                "source": account.source,
+                "subsource": account.subsource,
+                "status": account.status,
+            },
+            # NOTE -- this is not explicitly named in out migrations and therefore is _fragile_
+            constraint="account_pkey",
+            commit=commit,
         )
-        row = self.conn.execute(query).one_or_none()
-        return row.account_id
 
     def store_new_account(self, email: str, source: str, subsource: str = None) -> Account:
         account_tbl = self.tables["accounts"]
