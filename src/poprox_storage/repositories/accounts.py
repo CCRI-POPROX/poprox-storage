@@ -56,26 +56,18 @@ class DbAccountRepository(DatabaseRepository):
 
         return self._fetch_acounts(query)
 
-    def fetch_account_by_email(self, email: str) -> Account | None:
+    def fetch_account_by_email_query(self, email_query: str) -> list[Account]:
         account_tbl = self.tables["accounts"]
         query = sqlalchemy.select(
-            account_tbl.c.account_id,
-            account_tbl.c.email,
-            account_tbl.c.status,
-            account_tbl.c.source,
-            account_tbl.c.created_at,
-        ).where(account_tbl.c.email == email)
-        result = self.conn.execute(query).fetchall()
-        accounts = [
-            Account(
-                account_id=row.account_id,
-                email=row.email,
-                status=row.status,
-                source=row.source,
-                created_at=row.created_at,
-            )
-            for row in result
-        ]
+            account_tbl,
+        ).where(account_tbl.c.email.like(email_query))
+        return self._fetch_acounts(query)
+
+    def fetch_account_by_email(self, email: str) -> Account | None:
+        account_tbl = self.tables["accounts"]
+        query = sqlalchemy.select(account_tbl).where(account_tbl.c.email == email)
+        accounts = self._fetch_acounts(query)
+
         if len(accounts) > 0:
             return accounts[0]
         return None
