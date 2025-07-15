@@ -72,7 +72,7 @@ class DbAccountRepository(DatabaseRepository):
             return accounts[0]
         return None
 
-    def store_account(self, account: Account, commit=True) -> UUID | None:
+    def store_account(self, account: Account, commit=False) -> UUID | None:
         account_tbl = self.tables["accounts"]
         return self._upsert_and_return_id(
             self.conn,
@@ -86,7 +86,7 @@ class DbAccountRepository(DatabaseRepository):
             },
             # NOTE -- this is not explicitly named in out migrations and therefore is _fragile_
             constraint="account_pkey",
-            commit=commit,  # do not commit so we throw errors.
+            commit=commit,
         )
 
     def store_new_account(self, email: str, source: str, subsource: str = None) -> Account:
