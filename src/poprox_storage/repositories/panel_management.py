@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import List
+from uuid import UUID
 
-from poprox_concepts.domain import Account, Newsletter, WebLogin
+from poprox_concepts.domain import Account, Click, Newsletter, WebLogin
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 
@@ -34,6 +35,16 @@ class S3PanelManagementRepository(S3Repository):
         start_time: datetime = None,
     ):
         records = convert_logins_to_records(logins)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
+    def store_clicks_as_parquet(
+        self,
+        clicks_by_account: dict[UUID, list[Click]],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = convert_clicks_to_records(clicks_by_account)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
@@ -76,4 +87,18 @@ def convert_logins_to_records(logins: List[WebLogin]) -> List[dict]:
                 "created_at": login.created_at,
             }
         )
+    return records
+
+
+def convert_clicks_to_records(clicks_by_accounts: dict[UUID, list[Click]]) -> List[dict]:
+    records = []
+    for account_id, clicks in clicks_by_accounts.items():
+        for click in clicks:
+            records.append(
+                {
+                    "account_id": str(account_id),
+                    "newsletter_id": str(click.newsletter_id) if click.newsletter_id else "",
+                    "created_at": click.timestamp.isoformat(),
+                }
+            )
     return records
