@@ -232,7 +232,7 @@ class DbAccountRepository(DatabaseRepository):
             result = result.subscription_id
         return result
 
-    def fetch_logins(self) -> list[WebLogin]:
+    def fetch_logins_for_accounts(self, accounts: list[Account] | None = None) -> list[WebLogin]:
         web_login_tbl = self.tables["web_logins"]
         query = sqlalchemy.select(
             web_login_tbl.c.account_id,
@@ -240,7 +240,18 @@ class DbAccountRepository(DatabaseRepository):
             web_login_tbl.c.endpoint,
             web_login_tbl.c.created_at,
         )
-        rows = self.conn.execute(query).fetchall()
+
+        if accounts is not None:
+            account_ids = [account.id for account in accounts]
+            query = query.where(web_login_tbl.c.account_id._in(account_ids))
+        elif len(accounts) == 0:
+            return []
+
+        return self._fetch_logins(query)
+
+    def _fetch_logins(self, account_query) -> list[WebLogin]:
+        rows = self.conn.execute(account_query).fetchall()
+
         return [
             WebLogin(
                 account_id=row.account_id,

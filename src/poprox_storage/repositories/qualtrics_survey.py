@@ -268,6 +268,17 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
 
         return self._fetch_clean_responses(where_clause)
 
+    def fetch_clean_responses_for_accounts(
+        self,
+        accounts: list[Account],
+    ) -> list[QualtricsCleanResponse]:
+        instances_table = self.tables["qualtrics_survey_instances"]
+
+        account_ids = [acct.account_id for acct in accounts]
+        where_clause = instances_table.c.account_id.in_(account_ids)
+
+        return self._fetch_survey_responsees(where_clause)
+
     def _fetch_clean_responses(self, where_clause) -> list[QualtricsCleanResponse]:
         surveys_table = self.tables["qualtrics_surveys"]
         instances_table = self.tables["qualtrics_survey_instances"]
