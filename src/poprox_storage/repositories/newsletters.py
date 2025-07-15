@@ -182,16 +182,15 @@ class DbNewsletterRepository(DatabaseRepository):
         impressions = [self._convert_to_impression_obj(row) for row in rows]
         return sorted(impressions, key=lambda i: i.created_at)
 
-    def fetch_most_recent_newsletter(self, account_id, since: datetime) -> Newsletter | None:
+    def fetch_most_recent_newsletter(self, account_id, since: datetime, exclude_experiences=True) -> Newsletter | None:
         # XXX - this does not currently fetch impressions due to this feature not being needed.
         newsletters_table = self.tables["newsletters"]
 
-        query = (
-            select(newsletters_table)
-            .where(and_(newsletters_table.c.account_id == account_id, newsletters_table.c.created_at >= since))
-            .order_by(newsletters_table.c.created_at.desc())
-            .limit(1)
-        )
+        clauses = [newsletters_table.c.account_id == account_id, newsletters_table.c.created_at >= since]
+        if exclude_experiences:
+            clauses.append(newsletters_table.c.experience_id.is_(None))
+
+        query = select(newsletters_table).where(and_(*clauses)).order_by(newsletters_table.c.created_at.desc()).limit(1)
 
         row = self.conn.execute(query).fetchone()
 
