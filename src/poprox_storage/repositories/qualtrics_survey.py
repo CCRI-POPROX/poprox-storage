@@ -423,12 +423,17 @@ class S3QualtricsSurveyRepository(S3Repository):
     def fetch_survey(self, survey_file_key):
         return self.fetch_file_contents(survey_file_key)
 
-    def store_as_parquet(
+    def store_metadata_as_parquet(
+        self, metadata: list[dict[str, str]], bucket_name: str, file_prefix: str, start_time: datetime | None = None
+    ):
+        return self._write_records_as_parquet(metadata, bucket_name, file_prefix, start_time)
+
+    def store_responses_as_parquet(
         self,
         responses: list[QualtricsCleanResponse],
         bucket_name: str,
         file_prefix: str,
-        start_time: datetime = None,
+        start_time: datetime | None = None,
     ):
         records = extract_and_flatten(responses)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
@@ -438,7 +443,7 @@ class S3QualtricsSurveyRepository(S3Repository):
         instances: list[QualtricsSurveyInstance],
         bucket_name: str,
         file_prefix: str,
-        start_time: datetime = None,
+        start_time: datetime | None = None,
     ):
         records = [
             {
