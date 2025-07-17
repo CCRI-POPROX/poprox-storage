@@ -20,6 +20,7 @@ def test_non_ending_experience_is_active(db_engine):
             "team_memberships",
             "clicks",
             "account_aliases",
+            "newsletters",
             "accounts",
             "expt_phases",
             "expt_groups",
