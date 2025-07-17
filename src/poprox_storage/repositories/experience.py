@@ -1,7 +1,7 @@
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import Connection, Table, and_, select
+from sqlalchemy import Connection, Table, and_, or_, select
 
 from poprox_concepts.domain.experience import Experience
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -41,7 +41,7 @@ class DbExperiencesRepository(DatabaseRepository):
         query = select(experiences_table).where(
             and_(
                 experiences_table.c.start_date <= current_date,
-                experiences_table.c.end_date >= current_date,
+                or_(experiences_table.c.end_date >= current_date, experiences_table.c.end_date.is_(None)),
             )
         )
         results = self.conn.execute(query).fetchall()
