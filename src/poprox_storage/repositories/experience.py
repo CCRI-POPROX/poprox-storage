@@ -15,6 +15,24 @@ class DbExperiencesRepository(DatabaseRepository):
             "experiences",
         )
 
+    def store_experience(self, experience: Experience) -> UUID | None:
+        experiences_table = self.tables["experiences"]
+        return self._upsert_and_return_id(
+            self.conn,
+            experiences_table,
+            {
+                "experience_id": experience.experience_id,
+                "recommender_id": experience.recommender_id,
+                "team_id": experience.team_id,
+                "name": experience.name,
+                "start_date": experience.start_date,
+                "end_date": experience.end_date,
+                "template": experience.template,
+            },
+            constraint="experiences_pkey",
+            commit=False,
+        )
+
     def fetch_experience_by_id(self, experience_id: str) -> Experience | None:
         experiences_table = self.tables.get("experiences")
 
