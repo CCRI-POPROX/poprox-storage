@@ -46,7 +46,7 @@ def enqueue_newsletter_request(
             "api_version": api_version.value,
             "compensation_banner": compensation_banner,
             "template": template,
-            "experience_id": str(experience_id),
+            "experience_id": str(experience_id) if experience_id else None,
         }
     )
 
