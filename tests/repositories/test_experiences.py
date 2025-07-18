@@ -61,7 +61,7 @@ def test_non_ending_experience_is_active(db_engine):
         assert 1 == len(results)
 
 
-def test_store_repo(db_engine):
+def test_store_experience(db_engine):
     with db_engine.connect() as conn:
         clear_tables(
             conn,
@@ -85,7 +85,9 @@ def test_store_repo(db_engine):
         # rec_repo = DbRecommenderRepository(conn)
         exp_repo = DbExperimentRepository(conn)
 
+        # Should be 0 before first insert
         today = datetime.date.today()
+        tomorrow = today + datetime.timedelta(days=1)
         results = experience_repo.fetch_active_experiences(today)
         assert 0 == len(results)
 
@@ -110,6 +112,18 @@ def test_store_repo(db_engine):
         result_uuid = experience_repo.store_experience(experience)
         assert result_uuid is not None
         assert experience.experience_id == result_uuid
+
+        results = experience_repo.fetch_active_experiences(today + datetime.timedelta(days=2))
+        assert 1 == len(results)
+        assert experience.experience_id == results[0].experience_id
+        assert results[0].end_date is None
+
+        tomorrow = today + datetime.timedelta(days=1)
+        experience.end_date = tomorrow
+        result_uuid = experience_repo.store_experience(experience)
+
+        results = experience_repo.fetch_active_experiences(today + datetime.timedelta(days=2))
+        assert 0 == len(results)
 
         results = experience_repo.fetch_active_experiences(today)
         assert 1 == len(results)
