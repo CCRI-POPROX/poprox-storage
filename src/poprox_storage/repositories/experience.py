@@ -15,6 +15,24 @@ class DbExperiencesRepository(DatabaseRepository):
             "experiences",
         )
 
+    def store_experience(self, experience: Experience) -> UUID | None:
+        experiences_table = self.tables["experiences"]
+        return self._upsert_and_return_id(
+            self.conn,
+            experiences_table,
+            {
+                "experience_id": experience.experience_id,
+                "recommender_id": experience.recommender_id,
+                "team_id": experience.team_id,
+                "name": experience.name,
+                "start_date": experience.start_date,
+                "end_date": experience.end_date,
+                "template": experience.template,
+            },
+            constraint="experiences_pkey",
+            commit=False,
+        )
+
     def fetch_experience_by_id(self, experience_id: str) -> Experience | None:
         experiences_table = self.tables.get("experiences")
 
@@ -35,6 +53,27 @@ class DbExperiencesRepository(DatabaseRepository):
         )
 
         return experience
+
+    def fetch_experiences_by_team(self, team_id: str) -> dict[UUID, Experience]:
+        experiences_table = self.tables.get("experiences")
+
+        experience_query = select(experiences_table).where(experiences_table.c.team_id == team_id)
+        result = self.conn.execute(experience_query).all()
+
+        experiences = [
+            Experience(
+                experience_id=row.experience_id,
+                recommender_id=row.recommender_id,
+                team_id=row.team_id,
+                name=row.name,
+                start_date=row.start_date,
+                end_date=row.end_date,
+                created_at=row.created_at,
+            )
+            for row in result
+        ]
+
+        return experiences
 
     def fetch_active_experiences(self, current_date: date) -> list[Experience]:
         experiences_table = self.tables.get("experiences")
