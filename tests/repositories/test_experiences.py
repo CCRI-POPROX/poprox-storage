@@ -146,3 +146,47 @@ def test_store_experience(db_engine):
         results = experience_repo.fetch_active_experiences(today)
         assert 1 == len(results)
         assert experience.experience_id == results[0].experience_id
+
+
+def test_store_template(db_engine):
+    with db_engine.connect() as conn:
+        clear_tables(
+            conn,
+            "experiences",
+            "expt_treatments",
+            "recommenders",
+            "team_memberships",
+            "clicks",
+            "account_aliases",
+            "newsletters",
+            "accounts",
+            "expt_phases",
+            "expt_groups",
+            "experiments",
+            "datasets",
+            "teams",
+        )
+
+        experience_repo = DbExperiencesRepository(conn)
+        team_repo = DbTeamRepository(conn)
+
+        # Should be 0 before first insert
+        today = datetime.date.today()
+        results = experience_repo.fetch_active_experiences(today)
+        assert 0 == len(results)
+
+        team = Team(team_id=uuid4(), team_name="test", members=[])
+        rec = Recommender(recommender_id=uuid4(), name="test_rec", url="http://example.org")
+        experience = Experience(
+            recommender_id=rec.recommender_id,
+            team_id=team.team_id,
+            name="test name",
+            start_date=today,
+            template="test.html",
+        )
+        team_repo.store_team(team)
+        team_repo.store_team_recommender(team.team_id, rec)
+
+        experience_repo.store_experience(experience)
+        results = experience_repo.fetch_active_experiences(today + datetime.timedelta(days=2))
+        assert "test.html" == results[0].template
