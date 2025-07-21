@@ -50,11 +50,12 @@ class DbExperiencesRepository(DatabaseRepository):
             start_date=result.start_date,
             end_date=result.end_date,
             created_at=result.created_at,
+            template=result.template,
         )
 
         return experience
 
-    def fetch_experiences_by_team(self, team_id: str) -> dict[UUID, Experience]:
+    def fetch_experiences_by_team(self, team_id: str) -> list[Experience]:
         experiences_table = self.tables.get("experiences")
 
         experience_query = select(experiences_table).where(experiences_table.c.team_id == team_id)
@@ -69,6 +70,7 @@ class DbExperiencesRepository(DatabaseRepository):
                 start_date=row.start_date,
                 end_date=row.end_date,
                 created_at=row.created_at,
+                template=row.template,
             )
             for row in result
         ]
