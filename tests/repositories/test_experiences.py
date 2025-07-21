@@ -19,6 +19,9 @@ def test_non_ending_experience_is_active(db_engine):
             "clicks",
             "account_aliases",
             "newsletters",
+            "demographics",
+            "account_interest_log",
+            "account_consent_log",
             "accounts",
             "expt_phases",
             "expt_groups",
@@ -57,6 +60,9 @@ def test_end_date_is_active(db_engine):
             "clicks",
             "account_aliases",
             "newsletters",
+            "demographics",
+            "account_interest_log",
+            "account_consent_log",
             "accounts",
             "expt_phases",
             "expt_groups",
@@ -101,6 +107,9 @@ def test_store_experience(db_engine):
             "clicks",
             "account_aliases",
             "newsletters",
+            "demographics",
+            "account_interest_log",
+            "account_consent_log",
             "accounts",
             "expt_phases",
             "expt_groups",
@@ -159,6 +168,9 @@ def test_store_template(db_engine):
             "clicks",
             "account_aliases",
             "newsletters",
+            "demographics",
+            "account_interest_log",
+            "account_consent_log",
             "accounts",
             "expt_phases",
             "expt_groups",
@@ -190,3 +202,9 @@ def test_store_template(db_engine):
         experience_repo.store_experience(experience)
         results = experience_repo.fetch_active_experiences(today + datetime.timedelta(days=2))
         assert "test.html" == results[0].template
+
+        results = experience_repo.fetch_experiences_by_team(team.team_id)
+        assert "test.html" == results[0].template
+
+        result = experience_repo.fetch_experience_by_id(experience.experience_id)
+        assert "test.html" == result.template

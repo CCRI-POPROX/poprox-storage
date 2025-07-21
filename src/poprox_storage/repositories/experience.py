@@ -50,9 +50,32 @@ class DbExperiencesRepository(DatabaseRepository):
             start_date=result.start_date,
             end_date=result.end_date,
             created_at=result.created_at,
+            template=result.template,
         )
 
         return experience
+
+    def fetch_experiences_by_team(self, team_id: str) -> list[Experience]:
+        experiences_table = self.tables.get("experiences")
+
+        experience_query = select(experiences_table).where(experiences_table.c.team_id == team_id)
+        result = self.conn.execute(experience_query).all()
+
+        experiences = [
+            Experience(
+                experience_id=row.experience_id,
+                recommender_id=row.recommender_id,
+                team_id=row.team_id,
+                name=row.name,
+                start_date=row.start_date,
+                end_date=row.end_date,
+                created_at=row.created_at,
+                template=row.template,
+            )
+            for row in result
+        ]
+
+        return experiences
 
     def fetch_active_experiences(self, current_date: date) -> list[Experience]:
         experiences_table = self.tables.get("experiences")
