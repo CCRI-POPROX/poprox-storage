@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import Connection, Table, select
 
-from poprox_storage.concepts.experiment import Team
+from poprox_storage.concepts.experiment import Recommender, Team
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 
@@ -12,6 +12,7 @@ class DbTeamRepository(DatabaseRepository):
         self.tables: dict[str, Table] = self._load_tables(
             "teams",
             "team_memberships",
+            "recommenders",
         )
 
     def fetch_teams(self) -> dict[UUID, Team]:
@@ -61,5 +62,22 @@ class DbTeamRepository(DatabaseRepository):
             self.conn,
             self.tables["team_memberships"],
             {"team_id": team_id, "account_id": account_id},
+            commit=False,
+        )
+
+    def store_team_recommender(
+        self,
+        team_id: UUID,
+        recommender: Recommender,
+    ) -> UUID | None:
+        return self._insert_model(
+            "recommenders",
+            recommender,
+            {
+                "recommender_name": recommender.name,
+                "team_id": team_id,
+                "endpoint_url": recommender.url,
+            },
+            exclude={"name", "url"},
             commit=False,
         )
