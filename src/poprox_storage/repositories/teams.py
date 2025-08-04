@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import Connection, Table, select
 
+from poprox_concepts.domain.account import is_internal_account
 from poprox_storage.concepts.experiment import Recommender, Team
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
@@ -13,6 +14,7 @@ class DbTeamRepository(DatabaseRepository):
             "teams",
             "team_memberships",
             "recommenders",
+            "accounts",
         )
 
     def fetch_teams(self) -> dict[UUID, Team]:
@@ -58,12 +60,19 @@ class DbTeamRepository(DatabaseRepository):
         return team_id
 
     def insert_team_membership(self, team_id: UUID, account_id: UUID) -> UUID | None:
-        return self._upsert_and_return_id(
-            self.conn,
-            self.tables["team_memberships"],
-            {"team_id": team_id, "account_id": account_id},
-            commit=False,
-        )
+        accounts_tbl = self.tables.get("accounts")
+
+        account_query = select(accounts_tbl.c.source).where(accounts_tbl.c.account_id == account_id)
+        account_source = self.conn.execute(account_query).scalar_one()
+        if is_internal_account(account_source):
+            return self._upsert_and_return_id(
+                self.conn,
+                self.tables["team_memberships"],
+                {"team_id": team_id, "account_id": account_id},
+                commit=False,
+            )
+        else:
+            raise ValueError(f"Cannot make {account_id} a team member -- their account is not internal.")
 
     def store_team_recommender(
         self,
