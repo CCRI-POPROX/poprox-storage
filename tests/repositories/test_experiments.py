@@ -1,8 +1,10 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
+import pytest
 import sqlalchemy
 
 from poprox_concepts.domain import Account
+from poprox_storage.concepts.experiment import Team
 from poprox_storage.concepts.manifest import manifest_to_experiment, parse_manifest_toml
 from poprox_storage.paths import project_root
 from poprox_storage.repositories import (
@@ -176,3 +178,44 @@ def test_fetch_datasets_by_group(db_engine):
         assert len(datasets_by_group) == 3
 
         assert all(dataset_id == experiment.dataset_id for dataset_id in datasets_by_group.values())
+
+
+def test_non_internal_accounts_cannot_be_added_to_team():
+    with DB_ENGINE.connect() as conn:
+        clear_tables(
+            conn,
+            "account_consent_log",
+            "account_interest_log",
+            "demographics",
+            "account_aliases",
+            "team_memberships",
+            "expt_assignments",
+            "expt_treatments",
+            "expt_groups",
+            "expt_phases",
+            "experiences",
+            "recommenders",
+            "experiments",
+            "datasets",
+            "teams",
+            "clicks",
+            "web_logins",
+            "newsletters",
+            "accounts",
+        )
+
+        account_repo = DbAccountRepository(conn)
+        team_repo = DbTeamRepository(conn)
+
+        account = Account(
+            account_id=uuid4(),
+            email="example@example.com",
+            source="web",
+            status="test",
+        )
+
+        account_id = account_repo.store_account(account)
+
+        team = Team(team_id=uuid4(), team_name="cool test team", members=[account_id])
+        with pytest.raises(ValueError):
+            team_repo.store_team(team)
