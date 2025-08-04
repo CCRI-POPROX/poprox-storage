@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import Connection, Table, select
 
-from poprox_concepts.domain.account import is_internal_account
+from poprox_concepts.domain.account import INTERNAL_ACCOUNT_SOURCES
 from poprox_storage.concepts.experiment import Recommender, Team
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
@@ -64,7 +64,7 @@ class DbTeamRepository(DatabaseRepository):
 
         account_query = select(accounts_tbl.c.source).where(accounts_tbl.c.account_id == account_id)
         account_source = self.conn.execute(account_query).scalar_one()
-        if is_internal_account(account_source):
+        if account_source in INTERNAL_ACCOUNT_SOURCES:
             return self._upsert_and_return_id(
                 self.conn,
                 self.tables["team_memberships"],
