@@ -40,9 +40,9 @@ class DbAccountRepository(DatabaseRepository):
             account_tbl.c.compensation,
             account_tbl.c.created_at,
         )
-        if account_ids is not None:
+        if account_ids is not None and len(account_ids) > 0:
             query = query.where(account_tbl.c.account_id.in_(account_ids))
-        elif len(account_ids) == 0:
+        elif account_ids is not None and len(account_ids) == 0:
             return []
         return self._fetch_acounts(query)
 
