@@ -372,6 +372,7 @@ class DbAccountRepository(DatabaseRepository):
                 email=row.email,
                 status=row.status,
                 source=row.source,
+                subsource=row.subsource,
                 compensation=row.compensation,
                 created_at=row.created_at,
             )
