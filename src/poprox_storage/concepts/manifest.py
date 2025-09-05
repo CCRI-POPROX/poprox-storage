@@ -1,3 +1,12 @@
+"""
+Experiment Manifest Parser
+
+This module provides functionality for parsing and validating experiment manifest
+files in TOML format anf converting them into domain concept objects. The manifest
+files define experiment configurations including phases, user groups, recommenders,
+and assignments.
+"""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -19,8 +28,15 @@ from poprox_storage.concepts.experiment import (
 
 class ManifestFile(BaseModel):
     """
-    Parses and validates experiment manifest files that have
-    been converted from TOML to Dict[str,Any] (e.g. using tomli)
+    Parses and validates experiment manifest files that have been converted
+    from TOML to Dict[str,Any] (e.g. using tomli).
+
+    Attributes:
+        experiment: Experiment metadata and configuration
+        owner: Experiment team owner
+        users: Specification of user groups participating in the experiment
+        recommenders: Dictionary mapping recommender names to their configurations
+        phases: Sequence of experiment phases
     """
 
     experiment: ManifestExperiment
@@ -31,6 +47,20 @@ class ManifestFile(BaseModel):
 
 
 class ManifestExperiment(BaseModel):
+    """
+    Experiment metadata and configuration.
+
+    Defines the basic properties of an experiment including its id,
+    description, duration, and optional
+    start date.
+
+    Attributes:
+        id: Unique identifier for the experiment
+        description: Human-readable description of the experiment
+        duration: Experiment duration in string format (e.g., "2 weeks", "5 days")
+        start_date: Optional start date. If None, defaults to tomorrow
+    """
+
     id: UUID
     description: str
     duration: str
@@ -38,42 +68,109 @@ class ManifestExperiment(BaseModel):
 
 
 class ManifestTeam(BaseModel):
+    """
+    Information of the team that owns and manages the experiment,
+    including team id and members.
+
+    Attributes:
+        team_id: Unique identifier for the team
+        team_name: Human-readable team name
+        members: List of UUIDs representing team members
+    """
+
     team_id: UUID
     team_name: str
     members: list[UUID]
 
 
 class ManifestPhases(BaseModel):
+    """
+    Container for experiment phase configuration.
+
+    Manages the sequence of phases and their individual configurations.
+
+    Attributes:
+        sequence: List of phase names
+        phases: Dictionary mapping phase names to their configurations
+    """
+
     sequence: list[str]
     phases: dict[str, ManifestPhase]
 
 
 class ManifestPhase(BaseModel):
+    """
+    Configuration for a single experiment phase.
+
+    Defines the duration and group assignments for a specific phase
+    of the experiment.
+
+    Attributes:
+        duration: Phase duration in string format (e.g., "1 week", "3 days")
+        assignments: Dictionary mapping group names to their phase assignments
+    """
+
     duration: str
     assignments: dict[str, ManifestPhaseAssignment]
 
 
 class ManifestPhaseAssignment(BaseModel):
+    """
+    Assignment of a group to a recommender during a phase.
+
+    Specifies which recommender a particular group will use during
+    a phase, along with optional template configuration.
+
+    Attributes:
+        recommender: Name of the recommender to use for this assignment
+        template: Optional template specification for the recommender
+    """
+
     recommender: str
     template: str | None = Field(default=None)
 
 
 class ManifestRecommender(BaseModel):
+    """
+    Configuration for a recommender system.
+
+    Attributes:
+        url: URL endpoint for the recommender
+    """
+
     url: str
 
 
 class ManifestGroupSpec(BaseModel):
+    """
+    Specification of user groups for the experiment.
+
+    Attributes:
+        groups: Dictionary mapping group names to their specifications
+    """
+
     groups: dict[str, ManifestUserGroup]
 
 
 class ManifestUserGroup(BaseModel):
+    """
+    Specification for a single user group.
+
+    Defines the configuration for a user group, including size constraints
+    and the ability to create identical copies of existing groups.
+
+    Attributes:
+        minimum_size: Optional minimum number of users required in the group
+        identical_to: Optional name of another group to copy configuration from
+    """
+
     minimum_size: PositiveInt | None = None
     identical_to: str | None = None
 
 
 def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     """
-    Converts parsed manifest file to domain concept objects
+    Convert parsed manifest file to domain concept objects.
 
     Resolves manifest fields into their corresponding domain
     fields, including duration into dates and identical groups
@@ -81,15 +178,11 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
     require additional information about the state of the system
     beyond what's contained in the manifest.
 
-    Parameters
-    ----------
-    manifest : ManifestFile
-        A parsed experiment manifest as a Pydantic model
+    Args:
+        manifest: A parsed experiment manifest as a Pydantic model
 
-    Returns
-    -------
-    Experiment
-        A transformed version of the manifest file as a domain object
+    Returns:
+        Experiment: A transformed version of the manifest file as a domain object
     """
     # XXX: we probably should actually fix this later.
     start_date = manifest.experiment.start_date or (date.today() + timedelta(days=1))  # noqa: DTZ011
@@ -146,6 +239,19 @@ def manifest_to_experiment(manifest: ManifestFile) -> Experiment:
 
 
 def convert_duration(duration: str) -> timedelta:
+    """
+    Convert duration string to timedelta object.
+
+    Supported formats:
+    - "N week" or "N weeks" (where N is an integer)
+    - "N day" or "N days" (where N is an integer)
+
+    Args:
+        duration: Duration on string format (e.g., "2 weeks", "5 days")
+
+    Returns:
+        timedelta: Equvalent timedelta object
+    """
     quantity, unit = duration.split(" ")
     match unit:
         case unit if "week" in unit:
@@ -159,6 +265,16 @@ def convert_duration(duration: str) -> timedelta:
 
 
 def parse_manifest_toml(manifest_file: str):
+    """
+    Takes raw TOML content as a string, parses it, and restructures the
+    phases section to match the expected ManifestFile schema.
+
+    Args:
+        manifest_file: Raw TOML content as a string
+
+    Returns:
+        ManifestFile: Validated and parsed manifest file object
+    """
     manifest_dict = tomli.loads(manifest_file)
     phases = {"sequence": manifest_dict["phases"]["sequence"], "phases": {}}
     for name, phase in manifest_dict["phases"].items():
