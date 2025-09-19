@@ -233,6 +233,9 @@ class DbAccountRepository(DatabaseRepository):
         return result
 
     def fetch_logins_for_accounts(self, accounts: list[Account] | None = None) -> list[WebLogin]:
+        if accounts is None or len(accounts) == 0:
+            return []
+
         web_login_tbl = self.tables["web_logins"]
         query = sqlalchemy.select(
             web_login_tbl.c.account_id,
@@ -241,11 +244,8 @@ class DbAccountRepository(DatabaseRepository):
             web_login_tbl.c.created_at,
         )
 
-        if accounts is not None:
-            account_ids = [account.id for account in accounts]
-            query = query.where(web_login_tbl.c.account_id._in(account_ids))
-        elif len(accounts) == 0:
-            return []
+        account_ids = [account.account_id for account in accounts]
+        query = query.where(web_login_tbl.c.account_id._in(account_ids))
 
         return self._fetch_logins(query)
 
