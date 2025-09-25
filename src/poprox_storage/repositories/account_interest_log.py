@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import Connection, func, select
 
-from poprox_concepts.domain import AccountInterest
+from poprox_concepts.domain import AccountInterest, Entity
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -68,6 +68,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                 current_interest_tbl.c.preference,
                 current_interest_tbl.c.frequency,
                 entity_tbl.c.name,
+                entity_tbl.c.entity_type,
             )
             .join(entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id)
             .where(current_interest_tbl.c.account_id == account_id)
@@ -84,6 +85,81 @@ class DbAccountInterestRepository(DatabaseRepository):
             for row in results
         ]
         return results
+
+    def fetch_entity_preferences(self, account_id: UUID) -> list[dict]:
+        current_interest_tbl = self.tables["account_current_interest_view"]
+        entity_tbl = self.tables["entities"]
+        
+        # Exclude topic entities that have separate preference forms
+        excluded_topics = [
+            "U.S. news", "World news", "Politics", "Business", "Entertainment", "Sports",
+            "Health", "Science", "Technology", "Lifestyle", "Religion", 
+            "Climate and environment", "Education", "Oddities"
+        ]
+        
+        query = (
+            select(
+                current_interest_tbl.c.entity_id,
+                current_interest_tbl.c.preference,
+                current_interest_tbl.c.frequency,
+                entity_tbl.c.name,
+                entity_tbl.c.entity_type,
+            )
+            .join(entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id)
+            .where(
+                current_interest_tbl.c.account_id == account_id,
+                entity_tbl.c.name.not_in(excluded_topics)
+            )
+        )
+        results = self.conn.execute(query).all()
+        
+        preferences = [
+            {
+                "entity_id": row.entity_id,
+                "entity_name": row.name,
+                "entity_type": row.entity_type,
+                "preference": row.preference,
+                "frequency": row.frequency,
+            }
+            for row in results
+        ]
+        return preferences
+
+    def fetch_entities_by_partial_name(self, name: str, limit: int = 50) -> list[Entity]:
+        entity_tbl = self.tables["entities"]
+
+        # Exclude topic entities that have separate preference forms
+        excluded_topics = [
+            "U.S. news", "World news", "Politics", "Business", "Entertainment", "Sports",
+            "Health", "Science", "Technology", "Lifestyle", "Religion", 
+            "Climate and environment", "Education", "Oddities"
+        ]
+
+        query = select(entity_tbl).where(
+            func.lower(entity_tbl.c.name).like(f"%{name.lower()}%"),
+            entity_tbl.c.name.not_in(excluded_topics)
+        ).limit(limit)
+        results = self.conn.execute(query).all()
+
+        entities = []
+        for row in results:
+            entities.append(Entity(
+                entity_id=row.entity_id,
+                name=row.name,
+                entity_type=row.entity_type,
+                source=row.source,
+                external_id=row.external_id,
+                raw_data=row.raw_data,
+            ))
+        return entities
+
+    def remove_entity_preference(self, account_id: UUID, entity_id: UUID) -> None:
+        interest_log_tbl = self.tables["account_interest_log"]
+        delete_query = interest_log_tbl.delete().where(
+            interest_log_tbl.c.account_id == account_id,
+            interest_log_tbl.c.entity_id == entity_id,
+        )
+        self.conn.execute(delete_query)
 
 
 class S3AccountInterestRepository(S3Repository):
