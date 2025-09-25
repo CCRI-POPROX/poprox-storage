@@ -89,14 +89,25 @@ class DbAccountInterestRepository(DatabaseRepository):
     def fetch_entity_preferences(self, account_id: UUID) -> list[dict]:
         current_interest_tbl = self.tables["account_current_interest_view"]
         entity_tbl = self.tables["entities"]
-        
+
         # Exclude topic entities that have separate preference forms
         excluded_topics = [
-            "U.S. news", "World news", "Politics", "Business", "Entertainment", "Sports",
-            "Health", "Science", "Technology", "Lifestyle", "Religion", 
-            "Climate and environment", "Education", "Oddities"
+            "U.S. news",
+            "World news",
+            "Politics",
+            "Business",
+            "Entertainment",
+            "Sports",
+            "Health",
+            "Science",
+            "Technology",
+            "Lifestyle",
+            "Religion",
+            "Climate and environment",
+            "Education",
+            "Oddities",
         ]
-        
+
         query = (
             select(
                 current_interest_tbl.c.entity_id,
@@ -106,13 +117,10 @@ class DbAccountInterestRepository(DatabaseRepository):
                 entity_tbl.c.entity_type,
             )
             .join(entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id)
-            .where(
-                current_interest_tbl.c.account_id == account_id,
-                entity_tbl.c.name.not_in(excluded_topics)
-            )
+            .where(current_interest_tbl.c.account_id == account_id, entity_tbl.c.name.not_in(excluded_topics))
         )
         results = self.conn.execute(query).all()
-        
+
         preferences = [
             {
                 "entity_id": row.entity_id,
@@ -130,27 +138,41 @@ class DbAccountInterestRepository(DatabaseRepository):
 
         # Exclude topic entities that have separate preference forms
         excluded_topics = [
-            "U.S. news", "World news", "Politics", "Business", "Entertainment", "Sports",
-            "Health", "Science", "Technology", "Lifestyle", "Religion", 
-            "Climate and environment", "Education", "Oddities"
+            "U.S. news",
+            "World news",
+            "Politics",
+            "Business",
+            "Entertainment",
+            "Sports",
+            "Health",
+            "Science",
+            "Technology",
+            "Lifestyle",
+            "Religion",
+            "Climate and environment",
+            "Education",
+            "Oddities",
         ]
 
-        query = select(entity_tbl).where(
-            func.lower(entity_tbl.c.name).like(f"%{name.lower()}%"),
-            entity_tbl.c.name.not_in(excluded_topics)
-        ).limit(limit)
+        query = (
+            select(entity_tbl)
+            .where(func.lower(entity_tbl.c.name).like(f"%{name.lower()}%"), entity_tbl.c.name.not_in(excluded_topics))
+            .limit(limit)
+        )
         results = self.conn.execute(query).all()
 
         entities = []
         for row in results:
-            entities.append(Entity(
-                entity_id=row.entity_id,
-                name=row.name,
-                entity_type=row.entity_type,
-                source=row.source,
-                external_id=row.external_id,
-                raw_data=row.raw_data,
-            ))
+            entities.append(
+                Entity(
+                    entity_id=row.entity_id,
+                    name=row.name,
+                    entity_type=row.entity_type,
+                    source=row.source,
+                    external_id=row.external_id,
+                    raw_data=row.raw_data,
+                )
+            )
         return entities
 
     def remove_entity_preference(self, account_id: UUID, entity_id: UUID) -> None:
