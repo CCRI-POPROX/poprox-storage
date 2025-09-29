@@ -232,11 +232,15 @@ class DbAccountRepository(DatabaseRepository):
             result = result.subscription_id
         return result
 
-    def fetch_logins_for_accounts(self, accounts: list[Account] | None = None) -> list[WebLogin]:
+    def fetch_logins_by_date_range(
+        self, accounts: list[Account], start_date: datetime, num_days: int
+    ) -> list[WebLogin]:
         if accounts is None or len(accounts) == 0:
             return []
 
+        end_date = start_date + timedelta(days=num_days)
         web_login_tbl = self.tables["web_logins"]
+
         query = sqlalchemy.select(
             web_login_tbl.c.account_id,
             web_login_tbl.c.newsletter_id,
@@ -245,7 +249,14 @@ class DbAccountRepository(DatabaseRepository):
         )
 
         account_ids = [account.account_id for account in accounts]
-        query = query.where(web_login_tbl.c.account_id._in(account_ids))
+
+        query = query.where(
+            and_(
+                web_login_tbl.c.account_id.in_(account_ids),
+                web_login_tbl.c.created_at >= start_date,
+                web_login_tbl.c.created_at < end_date,
+            )
+        )
 
         return self._fetch_logins(query)
 

@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import and_, insert, select
@@ -85,6 +85,28 @@ class DbClicksRepository(DatabaseRepository):
                 clicked_articles[account_id] = []
 
         return clicked_articles
+
+    def fetch_clicks_by_date_range(
+        self, accounts: list[Account], start_date: datetime, num_days: int
+    ) -> dict[UUID, list[Click]]:
+        end_date = start_date + timedelta(days=num_days)
+        click_table = self.tables["clicks"]
+
+        click_query = select(
+            click_table.c.account_id,
+            click_table.c.article_id,
+            click_table.c.newsletter_id,
+            click_table.c.created_at,
+        ).where(
+            and_(
+                click_table.c.account_id.in_([acct.account_id for acct in accounts]),
+                click_table.c.created_at >= start_date,
+                click_table.c.created_at < end_date,
+            )
+        )
+        click_result = self.conn.execute(click_query).fetchall()
+
+        return self._organize_clicks_by_account(click_result, accounts)
 
     def fetch_clicks_between(self, accounts: list[Account], start_time, end_time) -> dict[UUID, list[Click]]:
         click_table = self.tables["clicks"]
