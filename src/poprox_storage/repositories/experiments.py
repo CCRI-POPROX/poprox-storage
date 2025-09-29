@@ -171,6 +171,41 @@ class DbExperimentRepository(DatabaseRepository):
         else:
             return None
 
+    def fetch_all_active_experiments(self, today: datetime.date) -> list[Experiment]:
+        expt_table = self.tables["experiments"]
+        phases_table = self.tables["expt_phases"]
+
+        query = (
+            select(expt_table)
+            .join(phases_table, phases_table.c.experiment_id == expt_table.c.experiment_id)
+            .where(
+                and_(
+                    phases_table.c.start_date <= today,
+                    today <= phases_table.c.end_date,
+                )
+            )
+            .distinct()
+        )
+
+        results = self.conn.execute(query).all()
+
+        experiments = []
+        for row in results:
+            expt = Experiment(
+                experiment_id=row.experiment_id,
+                dataset_id=row.dataset_id,
+                description=row.description,
+                start_date=row.start_date,
+                end_date=row.end_date,
+                team=None,
+                phases=[],
+            )
+            expt.owner = self.fetch_team(row.team_id)
+            expt.phases = self.fetch_experiment_phases(row.experiment_id)
+            experiments.append(expt)
+
+        return experiments
+
     def fetch_experiment_groups(self, experiment_id: UUID) -> dict[UUID, Group]:
         """Fetches all Group objects for an experiment.
         Returned dictionary maps group_id to recommender object."""
