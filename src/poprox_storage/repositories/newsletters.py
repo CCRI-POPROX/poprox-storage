@@ -104,20 +104,21 @@ class DbNewsletterRepository(DatabaseRepository):
             newsletters_table.c.account_id.in_([acct.account_id for acct in accounts]),
         )
 
-    def fetch_newsletters_by_date_range(
-        self, accounts: list[Account], start_date: datetime, num_days: int
+    def fetch_newsletters_between(
+        self, start_date: datetime, end_date: datetime, accounts: list[Account] | None = None
     ) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
 
-        end_date = start_date + timedelta(days=num_days)
-
         where_clause = and_(
             newsletters_table.c.created_at >= start_date,
-            newsletters_table.c.created_at < end_date,
-            newsletters_table.c.account_id.in_([acct.account_id for acct in accounts]),
+            newsletters_table.c.created_at <= end_date,
         )
+
+        if accounts:
+            account_ids = [a.account_id for a in accounts]
+            where_clause = and_(where_clause, newsletters_table.c.account_id.in_(account_ids))
 
         return self._fetch_newsletters(
             newsletters_table,

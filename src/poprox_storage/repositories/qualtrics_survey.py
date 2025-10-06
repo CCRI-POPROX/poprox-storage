@@ -229,25 +229,6 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
             self.conn, clean_table, response.model_dump(), constraint="qualtrics_clean_responses_pkey"
         )
 
-    def fetch_clean_responses_by_date_range(
-        self, accounts: list[Account], start_date: datetime, num_days: int
-    ) -> list[QualtricsCleanResponse]:
-        instances_table = self.tables["qualtrics_survey_instances"]
-        responses_table = self.tables["qualtrics_clean_responses"]
-
-        end_date = start_date + timedelta(days=num_days)
-
-        where_clause = and_(
-            responses_table.c.created_at >= start_date,
-            responses_table.c.created_at < end_date,
-        )
-
-        if accounts:
-            account_ids = [acct.account_id for acct in accounts]
-            where_clause = and_(where_clause, instances_table.c.account_id.in_(account_ids))
-
-        return self._fetch_clean_responses(where_clause)
-
     def fetch_clean_responses_since(
         self, days_ago=1, accounts: list[Account] | None = None
     ) -> list[QualtricsCleanResponse]:
