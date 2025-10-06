@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import and_, insert, select
