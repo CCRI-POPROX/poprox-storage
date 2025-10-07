@@ -86,7 +86,7 @@ class DbClicksRepository(DatabaseRepository):
 
         return clicked_articles
 
-    def fetch_clicks_between(self, accounts: list[Account], start_time, end_time) -> dict[UUID, list[Click]]:
+    def fetch_clicks_between(self, start_time, end_time, accounts: list[Account] | None) -> dict[UUID, list[Click]]:
         click_table = self.tables["clicks"]
 
         click_query = select(

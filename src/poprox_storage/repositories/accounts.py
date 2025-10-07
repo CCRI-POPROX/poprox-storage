@@ -232,25 +232,32 @@ class DbAccountRepository(DatabaseRepository):
             result = result.subscription_id
         return result
 
-    def fetch_logins_for_accounts(self, accounts: list[Account] | None = None) -> list[WebLogin]:
-        if accounts is None or len(accounts) == 0:
-            return []
-
+    def fetch_logins_between(
+        self, start_date: datetime, end_date: datetime, accounts: list[Account] | None = None
+    ) -> list[WebLogin]:
         web_login_tbl = self.tables["web_logins"]
-        query = sqlalchemy.select(
+
+        login_query = sqlalchemy.select(
             web_login_tbl.c.account_id,
             web_login_tbl.c.newsletter_id,
             web_login_tbl.c.endpoint,
             web_login_tbl.c.created_at,
         )
 
-        account_ids = [account.account_id for account in accounts]
-        query = query.where(web_login_tbl.c.account_id._in(account_ids))
+        where_clause = and_(
+            web_login_tbl.c.created_at >= start_date,
+            web_login_tbl.c.created_at <= end_date,
+        )
 
-        return self._fetch_logins(query)
+        if accounts:
+            account_ids = [a.account_id for a in accounts]
+            where_clause = and_(where_clause, web_login_tbl.c.account_id.in_(account_ids))
 
-    def _fetch_logins(self, account_query) -> list[WebLogin]:
-        rows = self.conn.execute(account_query).fetchall()
+        login_query = login_query.where(where_clause)
+        return self._fetch_logins(login_query)
+
+    def _fetch_logins(self, login_query) -> list[WebLogin]:
+        rows = self.conn.execute(login_query).fetchall()
 
         return [
             WebLogin(
