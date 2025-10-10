@@ -41,14 +41,14 @@ class DbSubscriptionRepository(DatabaseRepository):
         )
         self.conn.execute(delete_query)
 
-    def fetch_subscribed_accounts(self) -> list[Account]:
+    def fetch_subscriber_account_ids(self) -> list[UUID]:
         subscription_tbl = self.tables["subscriptions"]
 
         account_query = select(subscription_tbl.c.account_id).where(subscription_tbl.c.ended == null())
         account_ids = self._id_query(account_query)
-        return self.fetch_accounts(account_ids)
+        return account_ids
 
-    def fetch_subscribed_accounts_since(self, days_ago=1) -> list[Account]:
+    def fetch_subscribed_accounts_since(self, days_ago=1) -> list[UUID]:
         subscription_tbl = self.tables["subscriptions"]
 
         cutoff = datetime.now() - timedelta(days=days_ago)
@@ -57,9 +57,9 @@ class DbSubscriptionRepository(DatabaseRepository):
             or_(subscription_tbl.c.ended == null(), subscription_tbl.c.ended >= cutoff)
         )
         account_ids = self._id_query(account_query)
-        return self.fetch_accounts(account_ids)
+        return account_ids
 
-    def fetch_subscribed_accounts_between(self, start_date, end_date) -> list[Account]:
+    def fetch_subscribed_accounts_between(self, start_date, end_date) -> list[UUID]:
         subscription_tbl = self.tables["subscriptions"]
 
         account_query = select(subscription_tbl.c.account_id).where(
@@ -69,7 +69,7 @@ class DbSubscriptionRepository(DatabaseRepository):
             )
         )
         account_ids = self._id_query(account_query)
-        return self.fetch_accounts(account_ids)
+        return account_ids
 
     def fetch_subscription_for_account(self, account_id: UUID) -> UUID | None:
         subscription_tbl = self.tables["subscriptions"]
