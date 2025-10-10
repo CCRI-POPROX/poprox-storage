@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from uuid import UUID, uuid4
 
 import sqlalchemy
