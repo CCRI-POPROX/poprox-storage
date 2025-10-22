@@ -12,8 +12,7 @@ from sqlalchemy import (
     update,
 )
 
-from poprox_concepts.api.recommendations import RecommenderInfo
-from poprox_concepts.domain import Account, Article, Impression, Newsletter
+from poprox_concepts.domain import Account, Article, Impression, Newsletter, RecommenderInfo
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
