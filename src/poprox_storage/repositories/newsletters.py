@@ -47,8 +47,8 @@ class DbNewsletterRepository(DatabaseRepository):
             self.conn.execute(stmt)
 
             for impression in newsletter.impressions:
-                if impression.article.preview_image_id:
-                    preview_image_id = str(impression.article.preview_image_id)
+                if impression.preview_image_id:
+                    preview_image_id = str(impression.preview_image_id)
                 else:
                     preview_image_id = null()
 
