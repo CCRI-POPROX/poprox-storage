@@ -245,12 +245,28 @@ class DbArticleRepository(DatabaseRepository):
                 if article.images:
                     for image in article.images:
                         self.store_image_association(article.article_id, image.image_id)
+                if article.linked_articles:
+                    for article_uuid, link_text in article.linked_articles.items():
+                        self.store_article_link(article.article_id, article_uuid, link_text)
 
             except RuntimeError as exc:
                 logger.error(exc)
                 failed += 1
 
         return failed
+
+    def store_article_link(self, source_article_id: UUID, target_article_id: UUID, link_text: str):
+        links_table = self.tables["article_links"]
+        insert_stmt = (
+            insert(links_table)
+            .values({
+                "source_article_id": source_article_id,
+                "target_article_id": target_article_id,
+                "link_text": link_text
+            })
+            .on_conflict_do_nothing(constraint="uq_article_links")
+        )
+        self.conn.execute(insert_stmt)
 
     def store_headline_packages(self, headline_packages: list[HeadlinePackage]):
         for headline_package in headline_packages:
