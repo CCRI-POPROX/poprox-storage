@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from poprox_concepts.domain import Account, Click, Newsletter, WebLogin
+from poprox_concepts.domain import Account, Click, Newsletter, Subscription, WebLogin
 from poprox_storage.concepts.experiment import Assignment
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -56,6 +56,16 @@ class S3PanelManagementRepository(S3Repository):
         start_time: datetime = None,
     ):
         records = convert_assignments_to_records(assignments)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
+    def store_subscriptions_as_parquet(
+        self,
+        subscriptions: list[Subscription],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = convert_subscriptions_to_records(subscriptions)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
@@ -126,6 +136,20 @@ def convert_assignments_to_records(assignments: list[Assignment]) -> list[dict]:
                 "account_id": str(assignment.account_id),
                 "group_id": str(assignment.group_id),
                 "opted_out": assignment.opted_out,
+            }
+        )
+    return records
+
+
+def convert_subscriptions_to_records(subscriptions: list[Subscription]) -> list[dict]:
+    records = []
+    for subscription in subscriptions:
+        records.append(
+            {
+                "subscription_id": str(subscription.subscription_id),
+                "account_id": str(subscription.account_id),
+                "started": subscription.started,
+                "ended": subscription.ended,
             }
         )
     return records
