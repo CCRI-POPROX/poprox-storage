@@ -65,6 +65,8 @@ def convert_accounts_to_records(accounts: List[Account]) -> List[dict]:
         records.append(
             {
                 "account_id": str(acct.account_id),
+                "internal": acct.internal,
+                "external": acct.external,
                 "status": acct.status,
                 "source": acct.source,
                 "subsource": acct.subsource,
