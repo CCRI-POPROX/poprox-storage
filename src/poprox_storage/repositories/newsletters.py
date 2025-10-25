@@ -334,7 +334,7 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
         records = []
         for impression in newsletter.impressions:
             record = {}
-            record["profile_id"] = str(newsletter.account_id)
+            record["account_id"] = str(newsletter.account_id)
             record["newsletter_id"] = str(newsletter.newsletter_id)
             record["article_id"] = str(impression.article.article_id)
             record["position"] = impression.position
