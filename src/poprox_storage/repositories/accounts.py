@@ -6,7 +6,7 @@ import sqlalchemy
 from sqlalchemy import Connection, and_, null, or_, select
 
 from poprox_concepts.api.tracking import LoginLinkData
-from poprox_concepts.domain import Account, Subscription, WebLogin
+from poprox_concepts.domain import Account, ConsentLog, Subscription, WebLogin
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 logger = logging.getLogger(__name__)
@@ -238,6 +238,21 @@ class DbAccountRepository(DatabaseRepository):
         return [
             Subscription(
                 subscription_id=row.subscription_id, account_id=row.account_id, started=row.started, ended=row.ended
+            )
+            for row in results
+        ]
+
+    def fetch_consent_logs_by_account_ids(self, account_ids: list[UUID]) -> list[ConsentLog]:
+        consent_log_tbl = self.tables["account_consent_logs"]
+        query = consent_log_tbl.select().where(consent_log_tbl.c.account_id.in_(account_ids))
+        results = self.conn.execute(query).fetchall()
+        return [
+            ConsentLog(
+                consent_log_id=row.account_consent_log_id,
+                account_id=row.account_id,
+                document_name=row.document_name,
+                created_at=row.created_at,
+                ended_at=row.ended_at,
             )
             for row in results
         ]
