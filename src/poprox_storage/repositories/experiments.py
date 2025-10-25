@@ -365,13 +365,6 @@ class DbExperimentRepository(DatabaseRepository):
     ) -> list[Assignment]:
         assign_table = self.tables["expt_assignments"]
 
-        assignments_query = select(
-            assign_table.c.account_id,
-            assign_table.c.article_id,
-            assign_table.c.newsletter_id,
-            assign_table.c.created_at,
-        )
-
         where_clause = and_(
             assign_table.c.created_at >= start_date,
             assign_table.c.created_at <= end_date,
@@ -380,6 +373,8 @@ class DbExperimentRepository(DatabaseRepository):
         if accounts:
             account_ids = [a.account_id for a in accounts]
             where_clause = and_(where_clause, assign_table.c.account_id.in_(account_ids))
+
+        assignments_query = select(assign_table).where(where_clause)
 
         result = self.conn.execute(assignments_query).fetchall()
 
