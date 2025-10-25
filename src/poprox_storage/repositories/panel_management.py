@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from poprox_concepts.domain import Account, Click, Newsletter, Subscription, WebLogin
+from poprox_concepts.domain import Account, Click, ConsentLog, Newsletter, Subscription, WebLogin
 from poprox_storage.concepts.experiment import Assignment
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -66,6 +66,16 @@ class S3PanelManagementRepository(S3Repository):
         start_time: datetime = None,
     ):
         records = convert_subscriptions_to_records(subscriptions)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
+    def store_consent_logs_as_parquet(
+        self,
+        consent_logs: list[ConsentLog],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = convert_consent_logs_to_records(consent_logs)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
@@ -150,6 +160,21 @@ def convert_subscriptions_to_records(subscriptions: list[Subscription]) -> list[
                 "account_id": str(subscription.account_id),
                 "started": subscription.started,
                 "ended": subscription.ended,
+            }
+        )
+    return records
+
+
+def convert_consent_logs_to_records(consent_logs: list[ConsentLog]) -> list[dict]:
+    records = []
+    for consent_log in consent_logs:
+        records.append(
+            {
+                "consent_log_id": str(consent_log.consent_log_id),
+                "account_id": str(consent_log.account_id),
+                "document_name": consent_log.document_name,
+                "created_at": consent_log.created_at,
+                "ended": consent_log.ended_at,
             }
         )
     return records
