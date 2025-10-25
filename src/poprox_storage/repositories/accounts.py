@@ -243,7 +243,7 @@ class DbAccountRepository(DatabaseRepository):
         ]
 
     def fetch_consent_logs_by_account_ids(self, account_ids: list[UUID]) -> list[ConsentLog]:
-        consent_log_tbl = self.tables["account_consent_logs"]
+        consent_log_tbl = self.tables["account_consent_log"]
         query = consent_log_tbl.select().where(consent_log_tbl.c.account_id.in_(account_ids))
         results = self.conn.execute(query).fetchall()
         return [
