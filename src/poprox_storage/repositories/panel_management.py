@@ -3,6 +3,7 @@ from typing import List
 from uuid import UUID
 
 from poprox_concepts.domain import Account, Click, Newsletter, WebLogin
+from poprox_storage.concepts.experiment import Assignment
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 
@@ -45,6 +46,16 @@ class S3PanelManagementRepository(S3Repository):
         start_time: datetime = None,
     ):
         records = convert_clicks_to_records(clicks_by_account)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
+    def store_expt_assignments_as_parquet(
+        self,
+        assignments: list[Assignment],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = convert_assignments_to_records(assignments)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
@@ -101,4 +112,18 @@ def convert_clicks_to_records(clicks_by_accounts: dict[UUID, list[Click]]) -> Li
                     "created_at": click.timestamp.isoformat(),
                 }
             )
+    return records
+
+
+def convert_assignments_to_records(assignments: list[Assignment]) -> list[dict]:
+    records = []
+    for assignment in assignments:
+        records.append(
+            {
+                "assignment_id": str(assignment.assignment_id),
+                "account_id": str(assignment.account_id),
+                "group_id": str(assignment.group_id),
+                "opted_out": assignment.opted_out,
+            }
+        )
     return records
