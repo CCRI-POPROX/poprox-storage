@@ -145,7 +145,7 @@ def convert_assignments_to_records(assignments: list[Assignment]) -> list[dict]:
                 "assignment_id": str(assignment.assignment_id),
                 "account_id": str(assignment.account_id),
                 "group_id": str(assignment.group_id),
-                "opted_out": assignment.opted_out,
+                "opted_out": int(assignment.opted_out),
             }
         )
     return records
