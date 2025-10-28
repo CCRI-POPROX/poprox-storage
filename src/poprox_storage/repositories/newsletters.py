@@ -281,7 +281,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 treatment_id=row.treatment_id,
                 impressions=impressions_by_newsletter_id[row.newsletter_id],
                 subject=row.email_subject,
-                body_html=row.html,
+                body_html=row.html if hasattr(row, "html") else "",
                 created_at=row.created_at,
                 recommender_info=RecommenderInfo(
                     name=row.recommender_name,
