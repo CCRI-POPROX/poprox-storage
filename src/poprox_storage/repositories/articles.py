@@ -40,6 +40,7 @@ class DbArticleRepository(DatabaseRepository):
             "impressions",
             "mentions",
             "top_stories",
+            "article_links",
         )
 
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
@@ -259,11 +260,9 @@ class DbArticleRepository(DatabaseRepository):
         links_table = self.tables["article_links"]
         insert_stmt = (
             insert(links_table)
-            .values({
-                "source_article_id": source_article_id,
-                "target_article_id": target_article_id,
-                "link_text": link_text
-            })
+            .values(
+                {"source_article_id": source_article_id, "target_article_id": target_article_id, "link_text": link_text}
+            )
             .on_conflict_do_nothing(constraint="uq_article_links")
         )
         self.conn.execute(insert_stmt)
@@ -359,10 +358,9 @@ class DbArticleRepository(DatabaseRepository):
         return _fetch_articles(self.conn, query)
 
 
-def _fetch_articles(conn, article_query) -> list[Article]:
+def _fetch_articles(conn, article_query, links_table: Table | None = None) -> list[Article]:
     result = conn.execute(article_query).fetchall()
-
-    return [
+    articles = [
         Article(
             article_id=row.article_id,
             headline=row.headline,
@@ -378,6 +376,22 @@ def _fetch_articles(conn, article_query) -> list[Article]:
         )
         for row in result
     ]
+
+    if not links_table:
+        return articles
+
+    article_ids = [a.article_id for a in articles]
+    linked_articles_query = select(links_table).where(links_table.c.source_article_id.in_(article_ids))
+    linked_articles = conn.execute(linked_articles_query).fetchall()
+
+    lookup_table = defaultdict(dict)
+    for row in linked_articles:
+        lookup_table[row.source_article_id][row.target_article_id] = row.link_text
+
+    for article in articles:
+        article.linked_articles = lookup_table[article.article_id]
+
+    return articles
 
 
 class S3ArticleRepository(S3Repository):
