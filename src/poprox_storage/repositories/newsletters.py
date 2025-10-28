@@ -101,6 +101,7 @@ class DbNewsletterRepository(DatabaseRepository):
             impressions_table,
             articles_table,
             newsletters_table.c.account_id.in_([acct.account_id for acct in accounts]),
+            excluded_columns=["content", "html"],
         )
 
     def fetch_newsletters_between(
@@ -120,10 +121,7 @@ class DbNewsletterRepository(DatabaseRepository):
             where_clause = and_(where_clause, newsletters_table.c.account_id.in_(account_ids))
 
         return self._fetch_newsletters(
-            newsletters_table,
-            impressions_table,
-            articles_table,
-            where_clause,
+            newsletters_table, impressions_table, articles_table, where_clause, excluded_columns=["content", "html"]
         )
 
     def fetch_newsletters_since(self, days_ago=90, accounts: list[Account] | None = None) -> list[Newsletter]:
@@ -141,10 +139,7 @@ class DbNewsletterRepository(DatabaseRepository):
             )
 
         return self._fetch_newsletters(
-            newsletters_table,
-            impressions_table,
-            articles_table,
-            where_clause,
+            newsletters_table, impressions_table, articles_table, where_clause, excluded_columns=["content", "html"]
         )
 
     def fetch_newsletters_by_treatment_id(self, expt_treatment_ids: list[UUID]) -> list[Newsletter]:
@@ -157,6 +152,7 @@ class DbNewsletterRepository(DatabaseRepository):
             impressions_table,
             articles_table,
             newsletters_table.c.treatment_id.in_(expt_treatment_ids),
+            excluded_columns=["content", "html"],
         )
 
     def fetch_impressions_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> list[Impression]:
@@ -233,8 +229,14 @@ class DbNewsletterRepository(DatabaseRepository):
             ),
         )
 
-    def _fetch_newsletters(self, newsletters_table, impressions_table, articles_table, where_clause=None):
-        newsletter_query = select(newsletters_table)
+    def _fetch_newsletters(
+        self, newsletters_table, impressions_table, articles_table, where_clause=None, excluded_columns=None
+    ):
+        excluded_columns = excluded_columns or []
+
+        columns_to_select = [col for col in newsletters_table.columns if col.name not in excluded_columns]
+
+        newsletter_query = select(*columns_to_select).select_from(newsletters_table)
 
         if where_clause is not None:
             newsletter_query = newsletter_query.where(where_clause)
@@ -279,7 +281,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 treatment_id=row.treatment_id,
                 impressions=impressions_by_newsletter_id[row.newsletter_id],
                 subject=row.email_subject,
-                body_html=row.html,
+                body_html=row.html if hasattr(row, "html") else "",
                 created_at=row.created_at,
                 recommender_info=RecommenderInfo(
                     name=row.recommender_name,
@@ -334,7 +336,7 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
         records = []
         for impression in newsletter.impressions:
             record = {}
-            record["profile_id"] = str(newsletter.account_id)
+            record["account_id"] = str(newsletter.account_id)
             record["newsletter_id"] = str(newsletter.newsletter_id)
             record["article_id"] = str(impression.article.article_id)
             record["position"] = impression.position
