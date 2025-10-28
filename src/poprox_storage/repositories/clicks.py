@@ -6,7 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import and_, insert, select
 
-from poprox_concepts import Account, Click
+from poprox_concepts.domain import Account, Click
 from poprox_storage.aws import s3
 from poprox_storage.aws.exceptions import PoproxAwsUtilitiesException
 from poprox_storage.repositories.data_stores.db import DatabaseRepository

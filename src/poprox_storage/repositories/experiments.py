@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import Connection, Table, and_, select, update
 
-from poprox_concepts import Account
+from poprox_concepts.domain import Account
 from poprox_storage.concepts.experiment import (
     Assignment,
     Experiment,
