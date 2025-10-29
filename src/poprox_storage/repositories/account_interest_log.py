@@ -52,7 +52,7 @@ class DbAccountInterestRepository(DatabaseRepository):
     def fetch_entity_by_name(self, entity_name: str) -> UUID | None:
         entity_tbl = self.tables["entities"]
 
-        query = entity_tbl.select().filter(func.lower(entity_tbl.c.name) == func.lower(entity_name))
+        query = select(entity_tbl.c.entity_id).filter(func.lower(entity_tbl.c.name) == func.lower(entity_name))
         result = self.conn.execute(query).one_or_none()
 
         if result is not None:
@@ -68,7 +68,11 @@ class DbAccountInterestRepository(DatabaseRepository):
         # Query with ordering by relevance: exact match first, then starts with, then contains
         # Excluding topics since they're handled separately
         query = (
-            entity_tbl.select()
+            select(
+                entity_tbl.c.name,
+                entity_tbl.c.entity_type,
+                entity_tbl.c.description,
+            )
             .where(func.lower(entity_tbl.c.name).like(f"%{partial_name.lower()}%"), entity_tbl.c.entity_type != "topic")
             .order_by(
                 # Exact match gets highest priority (1)
@@ -86,7 +90,7 @@ class DbAccountInterestRepository(DatabaseRepository):
 
         # Get total count for pagination
         count_subquery = (
-            entity_tbl.select()
+            select(entity_tbl.c.entity_id)
             .where(func.lower(entity_tbl.c.name).like(f"%{partial_name.lower()}%"), entity_tbl.c.entity_type != "topic")
             .subquery()
         )
