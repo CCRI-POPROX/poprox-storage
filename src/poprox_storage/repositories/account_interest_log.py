@@ -1,5 +1,4 @@
 import logging
-
 from datetime import datetime
 from uuid import UUID
 
@@ -62,47 +61,53 @@ class DbAccountInterestRepository(DatabaseRepository):
 
     def fetch_entities_by_partial_name(self, partial_name: str, limit: int = 20, page: int = 1) -> dict:
         entity_tbl = self.tables["entities"]
-        
+
         # Calculate offset
         offset = (page - 1) * limit
-        
+
         # Query with ordering by relevance: exact match first, then starts with, then contains
         # Excluding topics since they're handled separately
-        query = entity_tbl.select().where(
-            func.lower(entity_tbl.c.name).like(f"%{partial_name.lower()}%"),
-            entity_tbl.c.entity_type != "topic"
-        ).order_by(
-            # Exact match gets highest priority (1)
-            case((func.lower(entity_tbl.c.name) == partial_name.lower(), 1), else_=2).asc(),
-            # Then starts with (2), else contains (3)
-            case((func.lower(entity_tbl.c.name).like(f"{partial_name.lower()}%"), 2), else_=3).asc(),
-            # Finally alphabetical
-            entity_tbl.c.name.asc()
-        ).limit(limit).offset(offset)
-        
+        query = (
+            entity_tbl.select()
+            .where(func.lower(entity_tbl.c.name).like(f"%{partial_name.lower()}%"), entity_tbl.c.entity_type != "topic")
+            .order_by(
+                # Exact match gets highest priority (1)
+                case((func.lower(entity_tbl.c.name) == partial_name.lower(), 1), else_=2).asc(),
+                # Then starts with (2), else contains (3)
+                case((func.lower(entity_tbl.c.name).like(f"{partial_name.lower()}%"), 2), else_=3).asc(),
+                # Finally alphabetical
+                entity_tbl.c.name.asc(),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+
         results = self.conn.execute(query).all()
-        
+
         # Get total count for pagination
-        count_subquery = entity_tbl.select().where(
-            func.lower(entity_tbl.c.name).like(f"%{partial_name.lower()}%"),
-            entity_tbl.c.entity_type != "topic"
-        ).subquery()
+        count_subquery = (
+            entity_tbl.select()
+            .where(func.lower(entity_tbl.c.name).like(f"%{partial_name.lower()}%"), entity_tbl.c.entity_type != "topic")
+            .subquery()
+        )
         total_count = self.conn.execute(select(func.count()).select_from(count_subquery)).scalar()
-        
+
         entities = []
         for row in results:
-            entities.append({
-                "name": row.name,
-                "entity_type": getattr(row, 'entity_type', 'entity'),
-                "description": getattr(row, 'description', None),
-            })
-        
+            entities.append(
+                {
+                    "name": row.name,
+                    "entity_type": getattr(row, "entity_type", "entity"),
+                    "description": getattr(row, "description", None),
+                }
+            )
+
         return {
             "entities": entities,
             "total_count": total_count,
             "page": page,
             "per_page": limit,
-            "total_pages": (total_count + limit - 1) // limit
+            "total_pages": (total_count + limit - 1) // limit,
         }
 
     def fetch_topic_preferences(self, account_id: UUID) -> list[AccountInterest]:
@@ -114,13 +119,10 @@ class DbAccountInterestRepository(DatabaseRepository):
                 current_interest_tbl.c.preference,
                 current_interest_tbl.c.frequency,
                 entity_tbl.c.name,
-                entity_tbl.c.entity_type,  
+                entity_tbl.c.entity_type,
             )
             .join(entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id)
-            .where(
-                current_interest_tbl.c.account_id == account_id,
-                entity_tbl.c.entity_type == "topic"
-            )
+            .where(current_interest_tbl.c.account_id == account_id, entity_tbl.c.entity_type == "topic")
         )
         results = self.conn.execute(query).all()
         results = [
@@ -151,17 +153,17 @@ class DbAccountInterestRepository(DatabaseRepository):
             .join(entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id)
             .where(
                 current_interest_tbl.c.account_id == account_id,
-                entity_tbl.c.entity_type != "topic"  # Exclude topics
+                entity_tbl.c.entity_type != "topic",  # Exclude topics
             )
         )
         results = self.conn.execute(query).all()
         preferences = [
             {
-                "entity_id": row.entity_id,  
+                "entity_id": row.entity_id,
                 "entity_name": row.name,
                 "entity_type": row.entity_type,
                 "preference": row.preference,
-                "frequency": row.frequency,  
+                "frequency": row.frequency,
             }
             for row in results
         ]
@@ -188,7 +190,7 @@ def convert_to_records(interests: list[AccountInterest]) -> list[dict]:
                 "account_id": str(interest.account_id),
                 "entity_id": str(interest.entity_id),
                 "entity_name": interest.entity_name,
-                "entity_type": interest.entity_type,  
+                "entity_type": interest.entity_type,
                 "preference": interest.preference,
                 "frequency": interest.frequency,
             }
