@@ -72,8 +72,7 @@ class DbSubscriptionRepository(DatabaseRepository):
         account_ids = self._id_query(account_query)
         return account_ids
 
-    # TODO: Update this to return a Subscription
-    def fetch_subscription_for_account(self, account_id: UUID) -> UUID | None:
+    def fetch_subscription_for_account(self, account_id: UUID) -> Subscription | None:
         subscription_tbl = self.tables["subscriptions"]
         query = subscription_tbl.select().where(
             subscription_tbl.c.account_id == account_id,
@@ -81,7 +80,12 @@ class DbSubscriptionRepository(DatabaseRepository):
         )
         result = self.conn.execute(query).one_or_none()
         if result:
-            result = result.subscription_id
+            result = Subscription(
+                subscription_id=result.subscription_id,
+                account_id=result.account_id,
+                started=result.started,
+                ended=result.ended,
+            )
         return result
 
     def fetch_subscriptions_by_account_ids(self, account_ids: list[UUID]) -> list[Subscription]:
