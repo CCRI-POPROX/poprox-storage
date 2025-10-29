@@ -5,9 +5,8 @@ from uuid import UUID, uuid4
 import sqlalchemy
 from sqlalchemy import Connection, and_, null, or_, select
 
-from poprox_concepts import Account
 from poprox_concepts.api.tracking import LoginLinkData
-from poprox_concepts.domain import WebLogin
+from poprox_concepts.domain import Account, ConsentLog, WebLogin
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 logger = logging.getLogger(__name__)
@@ -46,7 +45,7 @@ class DbAccountRepository(DatabaseRepository):
             return []
         return self._fetch_acounts(query)
 
-    def fetch_accounts_between(self, start_date, end_date) -> list[Account]:
+    def fetch_accounts_created_between(self, start_date, end_date) -> list[Account]:
         """fetch all accounts whose created at is between start_date and end_date (inclusive)"""
         account_tbl = self.tables["accounts"]
 
@@ -190,6 +189,21 @@ class DbAccountRepository(DatabaseRepository):
         eligible_acct_ids = self._id_query(account_query)
 
         return self.fetch_accounts(eligible_acct_ids)
+
+    def fetch_consent_logs_by_account_ids(self, account_ids: list[UUID]) -> list[ConsentLog]:
+        consent_log_tbl = self.tables["account_consent_log"]
+        query = consent_log_tbl.select().where(consent_log_tbl.c.account_id.in_(account_ids))
+        results = self.conn.execute(query).fetchall()
+        return [
+            ConsentLog(
+                consent_log_id=row.account_consent_log_id,
+                account_id=row.account_id,
+                document_name=row.document_name,
+                created_at=row.created_at,
+                ended_at=row.ended_at,
+            )
+            for row in results
+        ]
 
     def fetch_logins_between(
         self, start_date: datetime, end_date: datetime, accounts: list[Account] | None = None

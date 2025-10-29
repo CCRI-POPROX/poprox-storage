@@ -11,6 +11,7 @@ from sqlalchemy import (
     select,
 )
 
+from poprox_concepts.domain import Subscription
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,13 @@ class DbSubscriptionRepository(DatabaseRepository):
             .values(ended=sqlalchemy.text("NOW()"))
         )
         self.conn.execute(delete_query)
+
+    # TODO: check other repos for use of fetch_subscription_for_account,
+    #                        fetch_subscribed_accounts,
+    #                        fetch_subscribed_accounts_since,
+    #                        fetch_subscribed_accounts_between
+    #                        fetch_subscription_for_account
+    #                        fetch_subscriptions_by_account_ids
 
     def fetch_subscriber_account_ids(self) -> list[UUID]:
         subscription_tbl = self.tables["subscriptions"]
@@ -71,6 +79,7 @@ class DbSubscriptionRepository(DatabaseRepository):
         account_ids = self._id_query(account_query)
         return account_ids
 
+    # TODO: Update this to return a Subscription
     def fetch_subscription_for_account(self, account_id: UUID) -> UUID | None:
         subscription_tbl = self.tables["subscriptions"]
         query = subscription_tbl.select().where(
@@ -81,3 +90,14 @@ class DbSubscriptionRepository(DatabaseRepository):
         if result:
             result = result.subscription_id
         return result
+
+    def fetch_subscriptions_by_account_ids(self, account_ids: list[UUID]) -> list[Subscription]:
+        subscription_tbl = self.tables["subscriptions"]
+        query = subscription_tbl.select().where(subscription_tbl.c.account_id.in_(account_ids))
+        results = self.conn.execute(query).fetchall()
+        return [
+            Subscription(
+                subscription_id=row.subscription_id, account_id=row.account_id, started=row.started, ended=row.ended
+            )
+            for row in results
+        ]

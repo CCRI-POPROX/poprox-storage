@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from poprox_concepts.domain import Account, Click, Newsletter, WebLogin
+from poprox_concepts.domain import Account, Click, ConsentLog, Newsletter, Subscription, WebLogin
+from poprox_storage.concepts.experiment import Assignment
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
 
@@ -47,6 +48,36 @@ class S3PanelManagementRepository(S3Repository):
         records = convert_clicks_to_records(clicks_by_account)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
+    def store_expt_assignments_as_parquet(
+        self,
+        assignments: list[Assignment],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = convert_assignments_to_records(assignments)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
+    def store_subscriptions_as_parquet(
+        self,
+        subscriptions: list[Subscription],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = convert_subscriptions_to_records(subscriptions)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
+    def store_consent_logs_as_parquet(
+        self,
+        consent_logs: list[ConsentLog],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = convert_consent_logs_to_records(consent_logs)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
 
 def convert_accounts_to_records(accounts: List[Account]) -> List[dict]:
     records = []
@@ -54,6 +85,8 @@ def convert_accounts_to_records(accounts: List[Account]) -> List[dict]:
         records.append(
             {
                 "account_id": str(acct.account_id),
+                "internal": int(acct.internal),
+                "external": int(acct.external),
                 "status": acct.status,
                 "source": acct.source,
                 "subsource": acct.subsource,
@@ -101,4 +134,47 @@ def convert_clicks_to_records(clicks_by_accounts: dict[UUID, list[Click]]) -> Li
                     "created_at": click.timestamp.isoformat(),
                 }
             )
+    return records
+
+
+def convert_assignments_to_records(assignments: list[Assignment]) -> list[dict]:
+    records = []
+    for assignment in assignments:
+        records.append(
+            {
+                "assignment_id": str(assignment.assignment_id),
+                "account_id": str(assignment.account_id),
+                "group_id": str(assignment.group_id),
+                "opted_out": int(assignment.opted_out),
+            }
+        )
+    return records
+
+
+def convert_subscriptions_to_records(subscriptions: list[Subscription]) -> list[dict]:
+    records = []
+    for subscription in subscriptions:
+        records.append(
+            {
+                "subscription_id": str(subscription.subscription_id),
+                "account_id": str(subscription.account_id),
+                "started": subscription.started,
+                "ended": subscription.ended,
+            }
+        )
+    return records
+
+
+def convert_consent_logs_to_records(consent_logs: list[ConsentLog]) -> list[dict]:
+    records = []
+    for consent_log in consent_logs:
+        records.append(
+            {
+                "consent_log_id": str(consent_log.consent_log_id),
+                "account_id": str(consent_log.account_id),
+                "document_name": consent_log.document_name,
+                "created_at": consent_log.created_at,
+                "ended": consent_log.ended_at,
+            }
+        )
     return records

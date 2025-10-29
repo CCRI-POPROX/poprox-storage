@@ -6,7 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import and_, insert, select
 
-from poprox_concepts import Account, Click
+from poprox_concepts.domain import Account, Click
 from poprox_storage.aws import s3
 from poprox_storage.aws.exceptions import PoproxAwsUtilitiesException
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
@@ -135,17 +135,17 @@ class DbClicksRepository(DatabaseRepository):
 
 
 def extract_and_flatten(clicks_by_user: dict[UUID, list[Click]]) -> list[dict]:
-    def flatten(profile_id, click: Click):
+    def flatten(account_id, click: Click):
         row = {}
-        row["profile_id"] = str(profile_id)
+        row["account_id"] = str(account_id)
         row["newsletter_id"] = str(click.newsletter_id)
         row["article_id"] = str(click.article_id)
         row["clicked_at"] = click.timestamp
         return row
 
     flattened_rows = []
-    for profile_id, clicks in clicks_by_user.items():
+    for account_id, clicks in clicks_by_user.items():
         for click in clicks:
-            flattened_rows.append(flatten(profile_id, click))
+            flattened_rows.append(flatten(account_id, click))
 
     return flattened_rows
