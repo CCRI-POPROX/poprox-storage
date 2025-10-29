@@ -20,6 +20,7 @@ from poprox_storage.repositories.panel_management import S3PanelManagementReposi
 from poprox_storage.repositories.placements import DbPlacementRepository
 from poprox_storage.repositories.pools import DbCandidatePoolRepository
 from poprox_storage.repositories.qualtrics_survey import DbQualtricsSurveyRepository, S3QualtricsSurveyRepository
+from poprox_storage.repositories.subscriptions import DbSubscriptionRepository
 from poprox_storage.repositories.teams import DbTeamRepository
 from poprox_storage.repositories.tokens import DbTokenRepository
 
@@ -66,6 +67,7 @@ __all__ = [
     "DbNewsletterRepository",
     "DbPlacementRepository",
     "DbQualtricsSurveyRepository",
+    "DbSubscriptionRepository",
     "DbTeamRepository",
     "DbTokenRepository",
     "DbExperiencesRepository",
