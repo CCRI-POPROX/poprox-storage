@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import Connection, Table, and_, select, update
 
-from poprox_concepts import Account
+from poprox_concepts.domain import Account
 from poprox_storage.concepts.experiment import (
     Assignment,
     Experiment,
@@ -360,6 +360,34 @@ class DbExperimentRepository(DatabaseRepository):
 
         return recommender_lookup_by_group
 
+    def fetch_assignments_between(
+        self, start_date: datetime.date, end_date: datetime.date, accounts: list[Account] | None = None
+    ) -> list[Assignment]:
+        assign_table = self.tables["expt_assignments"]
+
+        where_clause = and_(
+            assign_table.c.created_at >= start_date,
+            assign_table.c.created_at <= end_date,
+        )
+
+        if accounts:
+            account_ids = [a.account_id for a in accounts]
+            where_clause = and_(where_clause, assign_table.c.account_id.in_(account_ids))
+
+        assignments_query = select(assign_table).where(where_clause)
+
+        result = self.conn.execute(assignments_query).fetchall()
+
+        return [
+            Assignment(
+                assignment_id=row.assignment_id,
+                account_id=row.account_id,
+                group_id=row.group_id,
+                opted_out=row.opted_out,
+            )
+            for row in result
+        ]
+
     def fetch_active_expt_assignments(self, date: datetime.date | None = None) -> dict[UUID, Assignment]:
         group_ids = self.fetch_active_expt_group_ids(date)
         group_lookup_by_account = self._fetch_assignments_by_group_ids(group_ids)
@@ -558,7 +586,7 @@ class S3AssignmentsRepository(S3Repository):
         records = []
         for assignment in assignments:
             record = {}
-            record["profile_id"] = str(assignment.account_id)
+            record["account_id"] = str(assignment.account_id)
             record["group_id"] = str(assignment.group_id)
             record["opted_out"] = int(assignment.opted_out or False)
             records.append(record)
