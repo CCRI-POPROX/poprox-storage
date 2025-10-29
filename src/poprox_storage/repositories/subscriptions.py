@@ -42,13 +42,6 @@ class DbSubscriptionRepository(DatabaseRepository):
         )
         self.conn.execute(delete_query)
 
-    # TODO: check other repos for use of fetch_subscription_for_account,
-    #                        fetch_subscribed_accounts,
-    #                        fetch_subscribed_accounts_since,
-    #                        fetch_subscribed_accounts_between
-    #                        fetch_subscription_for_account
-    #                        fetch_subscriptions_by_account_ids
-
     def fetch_subscriber_account_ids(self) -> list[UUID]:
         subscription_tbl = self.tables["subscriptions"]
 
