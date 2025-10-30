@@ -298,7 +298,7 @@ class DbArticleRepository(DatabaseRepository):
         return self._insert_model(
             "articles",
             article,
-            exclude={"article_id", "mentions", "images"},
+            exclude={"article_id", "mentions", "images", "linked_articles"},
             constraint="uq_articles",
         )
 
