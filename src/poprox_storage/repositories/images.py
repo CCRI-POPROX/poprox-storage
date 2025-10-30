@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from uuid import UUID
 
 import boto3
@@ -81,6 +82,15 @@ class DbImageRepository(DatabaseRepository):
             )
 
 
+def extract_and_flatten_images(images):
+    def flatten(image):
+        result = image.__dict__
+        result["image_id"] = str(result["image_id"])
+        return result
+
+    return [flatten(image) for image in images]
+
+
 class S3ImageRepository(S3Repository):
     def __init__(self, bucket_name):
         super().__init__(bucket_name)
@@ -124,6 +134,16 @@ class S3ImageRepository(S3Repository):
             images.extend(extracted)
 
         return images
+
+    def store_as_parquet(
+        self,
+        images: list[Image],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = extract_and_flatten_images(images)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
 
 def extract_images(img_file_content) -> list[Image]:
