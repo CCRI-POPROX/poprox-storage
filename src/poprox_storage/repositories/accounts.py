@@ -1,13 +1,12 @@
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from uuid import UUID, uuid4
 
 import sqlalchemy
 from sqlalchemy import Connection, and_, null, or_, select
 
-from poprox_concepts import Account
 from poprox_concepts.api.tracking import LoginLinkData
-from poprox_concepts.domain import WebLogin
+from poprox_concepts.domain import Account, ConsentLog, WebLogin
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 logger = logging.getLogger(__name__)
@@ -46,7 +45,7 @@ class DbAccountRepository(DatabaseRepository):
             return []
         return self._fetch_acounts(query)
 
-    def fetch_accounts_between(self, start_date, end_date) -> list[Account]:
+    def fetch_accounts_created_between(self, start_date, end_date) -> list[Account]:
         """fetch all accounts whose created at is between start_date and end_date (inclusive)"""
         account_tbl = self.tables["accounts"]
 
@@ -191,66 +190,47 @@ class DbAccountRepository(DatabaseRepository):
 
         return self.fetch_accounts(eligible_acct_ids)
 
-    def fetch_subscribed_accounts(self) -> list[Account]:
-        subscription_tbl = self.tables["subscriptions"]
-
-        account_query = select(subscription_tbl.c.account_id).where(subscription_tbl.c.ended == null())
-        account_ids = self._id_query(account_query)
-        return self.fetch_accounts(account_ids)
-
-    def fetch_subscribed_accounts_since(self, days_ago=1) -> list[Account]:
-        subscription_tbl = self.tables["subscriptions"]
-
-        cutoff = datetime.now() - timedelta(days=days_ago)
-
-        account_query = select(subscription_tbl.c.account_id).where(
-            or_(subscription_tbl.c.ended == null(), subscription_tbl.c.ended >= cutoff)
-        )
-        account_ids = self._id_query(account_query)
-        return self.fetch_accounts(account_ids)
-
-    def fetch_subscribed_accounts_between(self, start_date, end_date) -> list[Account]:
-        subscription_tbl = self.tables["subscriptions"]
-
-        account_query = select(subscription_tbl.c.account_id).where(
-            and_(
-                subscription_tbl.c.started <= end_date,
-                or_(subscription_tbl.c.ended >= start_date, subscription_tbl.c.ended == null()),
+    def fetch_consent_logs_by_account_ids(self, account_ids: list[UUID]) -> list[ConsentLog]:
+        consent_log_tbl = self.tables["account_consent_log"]
+        query = consent_log_tbl.select().where(consent_log_tbl.c.account_id.in_(account_ids))
+        results = self.conn.execute(query).fetchall()
+        return [
+            ConsentLog(
+                consent_log_id=row.account_consent_log_id,
+                account_id=row.account_id,
+                document_name=row.document_name,
+                created_at=row.created_at,
+                ended_at=row.ended_at,
             )
-        )
-        account_ids = self._id_query(account_query)
-        return self.fetch_accounts(account_ids)
+            for row in results
+        ]
 
-    def fetch_subscription_for_account(self, account_id: UUID) -> UUID | None:
-        subscription_tbl = self.tables["subscriptions"]
-        query = subscription_tbl.select().where(
-            subscription_tbl.c.account_id == account_id,
-            subscription_tbl.c.ended == null(),
-        )
-        result = self.conn.execute(query).one_or_none()
-        if result:
-            result = result.subscription_id
-        return result
-
-    def fetch_logins_for_accounts(self, accounts: list[Account] | None = None) -> list[WebLogin]:
-        if accounts is None or len(accounts) == 0:
-            return []
-
+    def fetch_logins_between(
+        self, start_date: datetime, end_date: datetime, accounts: list[Account] | None = None
+    ) -> list[WebLogin]:
         web_login_tbl = self.tables["web_logins"]
-        query = sqlalchemy.select(
+
+        login_query = sqlalchemy.select(
             web_login_tbl.c.account_id,
             web_login_tbl.c.newsletter_id,
             web_login_tbl.c.endpoint,
             web_login_tbl.c.created_at,
         )
 
-        account_ids = [account.account_id for account in accounts]
-        query = query.where(web_login_tbl.c.account_id._in(account_ids))
+        where_clause = and_(
+            web_login_tbl.c.created_at >= start_date,
+            web_login_tbl.c.created_at <= end_date,
+        )
 
-        return self._fetch_logins(query)
+        if accounts:
+            account_ids = [a.account_id for a in accounts]
+            where_clause = and_(where_clause, web_login_tbl.c.account_id.in_(account_ids))
 
-    def _fetch_logins(self, account_query) -> list[WebLogin]:
-        rows = self.conn.execute(account_query).fetchall()
+        login_query = login_query.where(where_clause)
+        return self._fetch_logins(login_query)
+
+    def _fetch_logins(self, login_query) -> list[WebLogin]:
+        rows = self.conn.execute(login_query).fetchall()
 
         return [
             WebLogin(
@@ -261,25 +241,6 @@ class DbAccountRepository(DatabaseRepository):
             )
             for row in rows
         ]
-
-    def store_subscription_for_account(self, account_id: UUID):
-        subscription_tbl = self.tables["subscriptions"]
-
-        create_query = subscription_tbl.insert().values(account_id=account_id)
-        if self.fetch_subscription_for_account(account_id) is None:
-            self.conn.execute(create_query)
-
-    def remove_subscription_for_account(self, account_id: UUID):
-        subscription_tbl = self.tables["subscriptions"]
-        delete_query = (
-            subscription_tbl.update()
-            .where(
-                subscription_tbl.c.account_id == account_id,
-                subscription_tbl.c.ended == null(),
-            )
-            .values(ended=sqlalchemy.text("NOW()"))
-        )
-        self.conn.execute(delete_query)
 
     def store_consent(self, account_id: UUID, document_name: str):
         consent_tbl = self.tables["account_consent_log"]

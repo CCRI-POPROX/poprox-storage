@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import Connection, Table, and_, select, update
 
-from poprox_concepts import Account
+from poprox_concepts.domain import Account
 from poprox_storage.concepts.experiment import (
     Assignment,
     Experiment,
@@ -171,6 +171,41 @@ class DbExperimentRepository(DatabaseRepository):
         else:
             return None
 
+    def fetch_all_active_experiments(self, today: datetime.date) -> list[Experiment]:
+        expt_table = self.tables["experiments"]
+        phases_table = self.tables["expt_phases"]
+
+        query = (
+            select(expt_table)
+            .join(phases_table, phases_table.c.experiment_id == expt_table.c.experiment_id)
+            .where(
+                and_(
+                    phases_table.c.start_date <= today,
+                    today <= phases_table.c.end_date,
+                )
+            )
+            .distinct()
+        )
+
+        results = self.conn.execute(query).all()
+
+        experiments = []
+        for row in results:
+            expt = Experiment(
+                experiment_id=row.experiment_id,
+                dataset_id=row.dataset_id,
+                description=row.description,
+                start_date=row.start_date,
+                end_date=row.end_date,
+                team=None,
+                phases=[],
+            )
+            expt.owner = self.fetch_team(row.team_id)
+            expt.phases = self.fetch_experiment_phases(row.experiment_id)
+            experiments.append(expt)
+
+        return experiments
+
     def fetch_experiment_groups(self, experiment_id: UUID) -> dict[UUID, Group]:
         """Fetches all Group objects for an experiment.
         Returned dictionary maps group_id to recommender object."""
@@ -324,6 +359,34 @@ class DbExperimentRepository(DatabaseRepository):
         recommender_lookup_by_group = {row[0]: row[1] for row in result}
 
         return recommender_lookup_by_group
+
+    def fetch_assignments_between(
+        self, start_date: datetime.date, end_date: datetime.date, accounts: list[Account] | None = None
+    ) -> list[Assignment]:
+        assign_table = self.tables["expt_assignments"]
+
+        where_clause = and_(
+            assign_table.c.created_at >= start_date,
+            assign_table.c.created_at <= end_date,
+        )
+
+        if accounts:
+            account_ids = [a.account_id for a in accounts]
+            where_clause = and_(where_clause, assign_table.c.account_id.in_(account_ids))
+
+        assignments_query = select(assign_table).where(where_clause)
+
+        result = self.conn.execute(assignments_query).fetchall()
+
+        return [
+            Assignment(
+                assignment_id=row.assignment_id,
+                account_id=row.account_id,
+                group_id=row.group_id,
+                opted_out=row.opted_out,
+            )
+            for row in result
+        ]
 
     def fetch_active_expt_assignments(self, date: datetime.date | None = None) -> dict[UUID, Assignment]:
         group_ids = self.fetch_active_expt_group_ids(date)
@@ -523,7 +586,7 @@ class S3AssignmentsRepository(S3Repository):
         records = []
         for assignment in assignments:
             record = {}
-            record["profile_id"] = str(assignment.account_id)
+            record["account_id"] = str(assignment.account_id)
             record["group_id"] = str(assignment.group_id)
             record["opted_out"] = int(assignment.opted_out or False)
             records.append(record)

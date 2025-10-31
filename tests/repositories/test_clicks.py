@@ -52,7 +52,7 @@ def test_get_click_between(db_engine):
 
         start_time = "2024-06-13 09:55:22"
         end_time = "2024-07-15 09:55:22"
-        results = dbClicksRepository.fetch_clicks_between(accounts, start_time, end_time)
+        results = dbClicksRepository.fetch_clicks_between(start_time, end_time, accounts)
 
         assert 2 == len(results)
 

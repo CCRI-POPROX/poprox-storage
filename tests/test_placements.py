@@ -1,6 +1,6 @@
 from sqlalchemy import text
 
-from poprox_concepts import Article, ArticlePlacement
+from poprox_concepts.domain import Article, ArticlePlacement
 from poprox_storage.repositories.articles import DbArticleRepository
 from poprox_storage.repositories.placements import DbPlacementRepository
 
