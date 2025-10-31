@@ -17,7 +17,14 @@ class DbAccountInterestRepository(DatabaseRepository):
         super().__init__(connection)
         self.tables = self._load_tables("account_interest_log", "entities", "account_current_interest_view")
 
-    def store_topic_preference(self, account_id: UUID, entity_id: UUID, preference: int, frequency: int) -> UUID | None:
+    def store_topic_preference(
+        self,
+        account_id: UUID,
+        entity_id: UUID,
+        preference: int,
+        frequency: int,
+        entity_type: str | None = None,
+    ) -> UUID | None:
         interest_log_tbl = self.tables["account_interest_log"]
         return self._upsert_and_return_id(
             self.conn,
@@ -27,6 +34,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                 "entity_id": entity_id,
                 "preference": preference,
                 "frequency": frequency,
+                "entity_type": entity_type,
             },
         )
 
@@ -40,6 +48,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                     interest.entity_id,
                     interest.preference,
                     interest.frequency,
+                    interest.entity_type,
                 )
                 if log_id is None:
                     msg = f"Account Interest insert failed for account interest {interest}"
@@ -172,6 +181,36 @@ class DbAccountInterestRepository(DatabaseRepository):
             for row in results
         ]
         return preferences
+
+
+    def fetch_account_interests(self, account_id: UUID) -> list[AccountInterest]:
+        """Fetch all account interests"""
+        current_interest_tbl = self.tables["account_current_interest_view"]
+        entity_tbl = self.tables["entities"]
+        query = (
+            select(
+                current_interest_tbl.c.entity_id,
+                current_interest_tbl.c.preference,
+                current_interest_tbl.c.frequency,
+                entity_tbl.c.name,
+                entity_tbl.c.entity_type,
+            )
+            .join(entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id)
+            .where(current_interest_tbl.c.account_id == account_id)
+        )
+        results = self.conn.execute(query).all()
+        interests = [
+            AccountInterest(
+                account_id=account_id,
+                entity_id=row.entity_id,
+                entity_name=row.name,
+                entity_type=row.entity_type,
+                preference=row.preference,
+                frequency=row.frequency,
+            )
+            for row in results
+        ]
+        return interests
 
 
 class S3AccountInterestRepository(S3Repository):
