@@ -49,7 +49,7 @@ class DbSubscriptionRepository(DatabaseRepository):
         account_ids = self._id_query(account_query)
         return account_ids
 
-    def fetch_subscribed_accounts_since(self, days_ago=1) -> list[UUID]:
+    def fetch_subscriber_account_ids_since(self, days_ago=1) -> list[UUID]:
         subscription_tbl = self.tables["subscriptions"]
 
         cutoff = datetime.now() - timedelta(days=days_ago)
@@ -60,7 +60,7 @@ class DbSubscriptionRepository(DatabaseRepository):
         account_ids = self._id_query(account_query)
         return account_ids
 
-    def fetch_subscribed_accounts_between(self, start_date, end_date) -> list[UUID]:
+    def fetch_subscriber_account_ids_between(self, start_date, end_date) -> list[UUID]:
         subscription_tbl = self.tables["subscriptions"]
 
         account_query = select(subscription_tbl.c.account_id).where(
