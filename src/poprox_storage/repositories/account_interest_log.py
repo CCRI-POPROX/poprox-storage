@@ -182,7 +182,6 @@ class DbAccountInterestRepository(DatabaseRepository):
         ]
         return preferences
 
-
     def fetch_account_interests(self, account_id: UUID) -> list[AccountInterest]:
         """Fetch all account interests"""
         current_interest_tbl = self.tables["account_current_interest_view"]
