@@ -107,6 +107,8 @@ ban-relative-imports = "all"
 [tool.ruff.lint.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
+# Migration files are auto-generated and should not be linted or formatted
+"poprox-db/migrations/versions/**/*" = ["ALL"]
 
 [tool.coverage.run]
 source_pkgs = ["poprox_storage", "tests"]
