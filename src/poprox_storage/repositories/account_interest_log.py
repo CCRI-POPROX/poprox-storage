@@ -65,21 +65,27 @@ class DbAccountInterestRepository(DatabaseRepository):
             result = result.entity_id
         return result
 
-    def fetch_entities_by_partial_name(self, partial_name: str, limit: int = 20, page: int = 1) -> dict:
+    def fetch_entities_by_partial_name(
+        self, partial_name: str, limit: int = 20, page: int = 1, exclude_types: list[str] | None = None
+    ) -> dict:
         entity_tbl = self.tables["entities"]
 
         # Calculate offset
         offset = (page - 1) * limit
 
+        # Build where conditions
+        where_conditions = [func.lower(entity_tbl.c.name).like(f"%{partial_name.lower()}%")]
+        if exclude_types:
+            where_conditions.append(entity_tbl.c.entity_type.notin_(exclude_types))
+
         # Query with ordering by relevance: exact match first, then starts with, then contains
-        # Excluding topics since they're handled separately
         query = (
             select(
                 entity_tbl.c.name,
                 entity_tbl.c.entity_type,
                 entity_tbl.c.description,
             )
-            .where(func.lower(entity_tbl.c.name).like(f"%{partial_name.lower()}%"), entity_tbl.c.entity_type != "topic")
+            .where(*where_conditions)
             .order_by(
                 # Exact match gets highest priority (1)
                 case((func.lower(entity_tbl.c.name) == partial_name.lower(), 1), else_=2).asc(),
@@ -95,11 +101,7 @@ class DbAccountInterestRepository(DatabaseRepository):
         results = self.conn.execute(query).all()
 
         # Get total count for pagination
-        count_subquery = (
-            select(entity_tbl.c.entity_id)
-            .where(func.lower(entity_tbl.c.name).like(f"%{partial_name.lower()}%"), entity_tbl.c.entity_type != "topic")
-            .subquery()
-        )
+        count_subquery = select(entity_tbl.c.entity_id).where(*where_conditions).subquery()
         total_count = self.conn.execute(select(func.count()).select_from(count_subquery)).scalar()
 
         entities = []
@@ -148,10 +150,21 @@ class DbAccountInterestRepository(DatabaseRepository):
         ]
         return results
 
-    def fetch_entity_preferences(self, account_id: UUID) -> list[dict]:
-        """Fetch entity preferences for an account as list of dicts with entity_name, preference, entity_type."""
+    def fetch_entity_preferences(self, account_id: UUID, exclude_types: list[str] | None = None) -> list[dict]:
+        """Fetch entity preferences for an account as list of dicts with entity_name, preference, entity_type.
+
+        Args:
+            account_id: UUID of the account
+            exclude_types: Optional list of entity types to exclude (e.g., ["topic"])
+        """
         current_interest_tbl = self.tables["account_current_interest_view"]
         entity_tbl = self.tables["entities"]
+
+        # Build where conditions
+        where_conditions = [current_interest_tbl.c.account_id == account_id]
+        if exclude_types:
+            where_conditions.append(entity_tbl.c.entity_type.notin_(exclude_types))
+
         query = (
             select(
                 current_interest_tbl.c.entity_id,
@@ -161,10 +174,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                 entity_tbl.c.entity_type,
             )
             .join(entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id)
-            .where(
-                current_interest_tbl.c.account_id == account_id,
-                entity_tbl.c.entity_type != "topic",  # Exclude topics
-            )
+            .where(*where_conditions)
         )
         results = self.conn.execute(query).all()
         preferences = [
