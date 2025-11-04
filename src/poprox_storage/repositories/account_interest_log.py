@@ -23,7 +23,6 @@ class DbAccountInterestRepository(DatabaseRepository):
         entity_id: UUID,
         preference: int,
         frequency: int,
-        entity_type: str | None = None,
     ) -> UUID | None:
         interest_log_tbl = self.tables["account_interest_log"]
         return self._upsert_and_return_id(
@@ -34,7 +33,6 @@ class DbAccountInterestRepository(DatabaseRepository):
                 "entity_id": entity_id,
                 "preference": preference,
                 "frequency": frequency,
-                "entity_type": entity_type,
             },
         )
 
@@ -48,7 +46,6 @@ class DbAccountInterestRepository(DatabaseRepository):
                     interest.entity_id,
                     interest.preference,
                     interest.frequency,
-                    interest.entity_type,
                 )
                 if log_id is None:
                     msg = f"Account Interest insert failed for account interest {interest}"
