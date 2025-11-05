@@ -250,14 +250,14 @@ class DbArticleRepository(DatabaseRepository):
         return failed
 
     def store_article_package(self, package: ArticlePackage) -> UUID | None:
-        contents_table = self.tables["article_package_contents"]
+        contents_table = self.tables["package_contents"]
 
         package_id = self._insert_model(
             "packages",
             package,
             addl_fields={"entity_id": package.seed.entity_id if package.seed else None},
             exclude={"article_ids", "seed"},
-            constraint="uq_article_packages",
+            constraint="uq_packages",
         )
 
         insert_stmt = insert(contents_table).values(
