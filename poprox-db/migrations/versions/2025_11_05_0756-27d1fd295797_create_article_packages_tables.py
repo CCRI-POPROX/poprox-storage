@@ -28,6 +28,13 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
     )
 
+    # There can only be one package per source and entity that's current at a given time
+    op.create_unique_constraint(
+        "uq_packages",
+        "packages",
+        ("source", "entity_id", "current_as_of")
+    )
+
     # Link to entities table
     op.create_foreign_key(
         "fk_packages_entity_id",
@@ -37,6 +44,7 @@ def upgrade() -> None:
         ["entity_id"],
     )
 
+    # Create table to track the articles in each package
     op.create_table(
         "package_contents",
         sa.Column("package_id", sa.UUID, nullable=False),
