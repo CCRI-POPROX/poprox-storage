@@ -2,7 +2,6 @@ import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import TypeAlias
 from uuid import UUID
 
 import boto3
@@ -16,7 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert
 from tqdm import tqdm
 
-from poprox_concepts.domain import Article, Entity, Mention, TopNewsHeadline
+from poprox_concepts.domain import Article, Entity, Mention
 from poprox_storage.aws import DEV_BUCKET_NAME, s3
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -25,8 +24,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 NEWS_FILE_KEY = "mockObjects/ap_scraped_data.json"
-
-HeadlinePackage: TypeAlias = dict[str, dict[str, TopNewsHeadline]]
 
 
 class DbArticleRepository(DatabaseRepository):
@@ -39,7 +36,6 @@ class DbArticleRepository(DatabaseRepository):
             "entities",
             "impressions",
             "mentions",
-            "top_stories",
         )
 
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
@@ -251,39 +247,6 @@ class DbArticleRepository(DatabaseRepository):
                 failed += 1
 
         return failed
-
-    def store_headline_packages(self, headline_packages: list[HeadlinePackage]):
-        for headline_package in headline_packages:
-            self.store_top_headlines(headline_package)
-
-    def store_top_headlines(self, headline_package: HeadlinePackage):
-        for topic, headlines in headline_package.items():
-            for external_id, headline in headlines.items():
-                self.store_top_headline(external_id, headline)
-
-    def store_top_headline(self, external_id: str, top_headline: TopNewsHeadline):
-        top_stories_table = self.tables["top_stories"]
-
-        if not top_headline.article_id:
-            article = self.fetch_article_by_external_id(external_id)
-            if article:
-                top_headline.article_id = article.article_id
-
-        if not top_headline.entity_id:
-            topic = self.fetch_entity_by_name(top_headline.topic)
-            if topic:
-                top_headline.entity_id = topic.entity_id
-
-        insert_stmt = insert(top_stories_table).values(
-            {
-                "article_id": top_headline.article_id,
-                "entity_id": top_headline.entity_id,
-                "headline": top_headline.headline,
-                "position": top_headline.position,
-                "as_of": top_headline.as_of,
-            }
-        )
-        self.conn.execute(insert_stmt)
 
     def store_image_association(self, article_id: str, image_id: str):
         associations_table = self.tables["article_image_associations"]
