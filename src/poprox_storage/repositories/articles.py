@@ -32,11 +32,11 @@ class DbArticleRepository(DatabaseRepository):
         self.tables = self._load_tables(
             "articles",
             "article_image_associations",
-            "article_packages",
             "candidate_articles",
             "entities",
             "impressions",
             "mentions",
+            "packages",
         )
 
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
@@ -253,7 +253,7 @@ class DbArticleRepository(DatabaseRepository):
         contents_table = self.tables["article_package_contents"]
 
         package_id = self._insert_model(
-            "article_packages",
+            "packages",
             package,
             addl_fields={"entity_id": package.seed.entity_id if package.seed else None},
             exclude={"article_ids", "seed"},
