@@ -6,16 +6,16 @@ from uuid import UUID
 
 import boto3
 from sqlalchemy import (
-    Connection,
     Table,
     and_,
     func,
     select,
 )
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.engine import Connection
 from tqdm import tqdm
 
-from poprox_concepts.domain import Article, Entity, Mention
+from poprox_concepts.domain import Article, ArticlePackage, Entity, Mention
 from poprox_storage.aws import DEV_BUCKET_NAME, s3
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -29,9 +29,10 @@ NEWS_FILE_KEY = "mockObjects/ap_scraped_data.json"
 class DbArticleRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
-        self.tables: dict[str, Table] = self._load_tables(
+        self.tables = self._load_tables(
             "articles",
             "article_image_associations",
+            "article_packages",
             "candidate_articles",
             "entities",
             "impressions",
@@ -247,6 +248,25 @@ class DbArticleRepository(DatabaseRepository):
                 failed += 1
 
         return failed
+
+    def store_article_package(self, package: ArticlePackage) -> UUID | None:
+        contents_table = self.tables["article_package_contents"]
+
+        package_id = self._insert_model(
+            "article_packages",
+            package,
+            addl_fields={"entity_id": package.seed.entity_id if package.seed else None},
+            exclude={"article_ids", "seed"},
+            constraint="uq_article_packages",
+        )
+
+        insert_stmt = insert(contents_table).values(
+            [{"package_id": package_id, "article_id": article_id} for article_id in package.article_ids]
+        )
+
+        self.conn.execute(insert_stmt)
+
+        return package_id
 
     def store_image_association(self, article_id: str, image_id: str):
         associations_table = self.tables["article_image_associations"]
