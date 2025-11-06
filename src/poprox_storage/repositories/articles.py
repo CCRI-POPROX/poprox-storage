@@ -32,6 +32,7 @@ class DbArticleRepository(DatabaseRepository):
         self.tables = self._load_tables(
             "articles",
             "article_image_associations",
+            "article_links",  
             "candidate_articles",
             "entities",
             "impressions",
@@ -41,30 +42,35 @@ class DbArticleRepository(DatabaseRepository):
 
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
+        links_table = self.tables["article_links"]
         cutoff = datetime.now() - timedelta(days=days_ago)
         query = select(article_table).where(article_table.c.published_at > cutoff)
-        return _fetch_articles(self.conn, query)
+        return _fetch_articles(self.conn, query, links_table)
 
     def fetch_articles_before(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
+        links_table = self.tables["article_links"]
         cutoff = datetime.now() - timedelta(days=days_ago)
         query = select(article_table).where(article_table.c.published_at < cutoff)
-        return _fetch_articles(self.conn, query)
+        return _fetch_articles(self.conn, query, links_table)
 
     def fetch_articles_ingested_since(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
+        links_table = self.tables["article_links"]
         cutoff = datetime.now() - timedelta(days=days_ago)
         query = select(article_table).where(article_table.c.created_at > cutoff)
-        return _fetch_articles(self.conn, query)
+        return _fetch_articles(self.conn, query, links_table)
 
     def fetch_articles_ingested_before(self, days_ago=1) -> list[Article]:
         article_table = self.tables["articles"]
+        links_table = self.tables["article_links"]
         cutoff = datetime.now() - timedelta(days=days_ago)
         query = select(article_table).where(article_table.c.created_at < cutoff)
-        return _fetch_articles(self.conn, query)
+        return _fetch_articles(self.conn, query, links_table)
 
     def fetch_articles_ingested_between(self, start_date, end_date) -> list[Article]:
         article_table = self.tables["articles"]
+        links_table = self.tables["article_links"]
 
         query = select(article_table).where(
             and_(
@@ -72,12 +78,13 @@ class DbArticleRepository(DatabaseRepository):
                 article_table.c.created_at >= start_date,
             )
         )
-        return _fetch_articles(self.conn, query)
+        return _fetch_articles(self.conn, query, links_table)
 
     def fetch_articles_by_id(self, ids: list[UUID]) -> list[Article]:
         article_table = self.tables["articles"]
+        links_table = self.tables["article_links"]
         query = select(article_table).where(article_table.c.article_id.in_(ids))
-        return _fetch_articles(self.conn, query)
+        return _fetch_articles(self.conn, query, links_table)
 
     def fetch_article_by_external_id(self, id_: str) -> Article | None:
         article_table = self.tables["articles"]
@@ -242,6 +249,9 @@ class DbArticleRepository(DatabaseRepository):
                 if article.images:
                     for image in article.images:
                         self.store_image_association(article.article_id, image.image_id)
+                if article.linked_articles:
+                    for article_uuid, link_text in article.linked_articles.items():
+                        self.store_article_link(article.article_id, article_uuid, link_text)
 
             except RuntimeError as exc:
                 logger.error(exc)
@@ -267,6 +277,17 @@ class DbArticleRepository(DatabaseRepository):
         self.conn.execute(insert_stmt)
 
         return package_id
+      
+    def store_article_link(self, source_article_id: UUID, target_article_id: UUID, link_text: str):
+        links_table = self.tables["article_links"]
+        insert_stmt = (
+            insert(links_table)
+            .values(
+                {"source_article_id": source_article_id, "target_article_id": target_article_id, "link_text": link_text}
+            )
+            .on_conflict_do_nothing(constraint="uq_article_links")
+        )
+        self.conn.execute(insert_stmt)
 
     def store_image_association(self, article_id: str, image_id: str):
         associations_table = self.tables["article_image_associations"]
@@ -298,6 +319,7 @@ class DbArticleRepository(DatabaseRepository):
         )
 
     def _get_deduped_articles(self, article_table: Table, where_clause=None) -> list[Article]:
+        links_table = self.tables["article_links"]
         # Select only the most recent article row for each source/external id pair
         inner_query = (
             select(
@@ -323,13 +345,12 @@ class DbArticleRepository(DatabaseRepository):
         if where_clause is not None:
             query = query.where(where_clause)
 
-        return _fetch_articles(self.conn, query)
+        return _fetch_articles(self.conn, query, links_table)
 
 
-def _fetch_articles(conn, article_query) -> list[Article]:
+def _fetch_articles(conn, article_query, links_table: Table) -> list[Article]:
     result = conn.execute(article_query).fetchall()
-
-    return [
+    articles = [
         Article(
             article_id=row.article_id,
             headline=row.headline,
@@ -345,6 +366,19 @@ def _fetch_articles(conn, article_query) -> list[Article]:
         )
         for row in result
     ]
+
+    article_ids = [a.article_id for a in articles]
+    linked_articles_query = select(links_table).where(links_table.c.source_article_id.in_(article_ids))
+    linked_articles = conn.execute(linked_articles_query).fetchall()
+
+    lookup_table = defaultdict(dict)
+    for row in linked_articles:
+        lookup_table[row.source_article_id][row.target_article_id] = row.link_text
+
+    for article in articles:
+        article.linked_articles = lookup_table[article.article_id]
+
+    return articles
 
 
 class S3ArticleRepository(S3Repository):
@@ -447,7 +481,6 @@ def extract_and_flatten(articles):
         result = article.__dict__
         result["article_id"] = str(result["article_id"])
         del result["mentions"]
-        del result["preview_image_id"]
         del result["source"]
         del result["external_id"]
         return result
