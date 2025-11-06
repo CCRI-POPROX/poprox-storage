@@ -315,9 +315,7 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
             record["profile_id"] = str(newsletter.account_id)
             record["newsletter_id"] = str(newsletter.newsletter_id)
             record["article_id"] = str(impression.article.article_id)
-            record["article_preview_image_id"] = (
-                str(impression.preview_image_id) if impression.preview_image_id else ""
-            )
+            record["article_preview_image_id"] = str(impression.preview_image_id) if impression.preview_image_id else ""
             record["position"] = impression.position
             record["created_at"] = newsletter.created_at
             record["headline"] = impression.headline
