@@ -134,7 +134,10 @@ class DbAccountInterestRepository(DatabaseRepository):
                 entity_tbl.c.entity_type,
             )
             .join(entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id)
-            .where(current_interest_tbl.c.account_id == account_id, entity_tbl.c.entity_type == "topic")
+            .where(
+                current_interest_tbl.c.account_id == account_id,
+                entity_tbl.c.entity_type.in_(["topic", "subject"]),
+            )
         )
         results = self.conn.execute(query).all()
         results = [
