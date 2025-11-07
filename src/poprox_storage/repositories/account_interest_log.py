@@ -134,7 +134,9 @@ class DbAccountInterestRepository(DatabaseRepository):
                 entity_tbl.c.entity_type,
             )
             .join(entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id)
-            .where(current_interest_tbl.c.account_id == account_id, entity_tbl.c.entity_type == "topic")
+            # Accept both "subject" and "topic" during migration transition
+            .where(current_interest_tbl.c.account_id == account_id, 
+                   entity_tbl.c.entity_type.in_(["topic", "subject"]))
         )
         results = self.conn.execute(query).all()
         results = [
@@ -142,7 +144,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                 account_id=account_id,
                 entity_name=row.name,
                 entity_id=row.entity_id,
-                entity_type="topic",
+                entity_type="topic",  # Normalize to "topic" for consistency
                 preference=row.preference,
                 frequency=row.frequency,
             )
