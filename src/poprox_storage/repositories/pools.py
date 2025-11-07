@@ -21,7 +21,9 @@ logger.setLevel(logging.DEBUG)
 class DbCandidatePoolRepository(DatabaseRepository):
     def __init__(self, connection: Connection):
         super().__init__(connection)
-        self.tables: dict[str, Table] = self._load_tables("articles", "candidate_pools", "candidate_articles")
+        self.tables: dict[str, Table] = self._load_tables(
+            "articles", "article_links", "candidate_pools", "candidate_articles"
+        )
 
     def store_candidate_pool(self, pool_type: str, articles: list[Article]):
         candidate_pools_table = self.tables["candidate_pools"]
@@ -48,6 +50,7 @@ class DbCandidatePoolRepository(DatabaseRepository):
     def fetch_candidate_pool(self, candidate_pool_id: UUID) -> list[Article]:
         candidate_articles_table = self.tables["candidate_articles"]
         articles_table = self.tables["articles"]
+        links_table = self.tables["article_links"]
 
         query = (
             select(articles_table)
@@ -55,7 +58,7 @@ class DbCandidatePoolRepository(DatabaseRepository):
             .where(candidate_articles_table.c.candidate_pool_id == candidate_pool_id)
         )
 
-        return _fetch_articles(self.conn, query)
+        return _fetch_articles(self.conn, query, links_table)
 
     def fetch_latest_pool_of_type(self, candidate_pool_type: str) -> UUID | None:
         candidate_pools_table = self.tables["candidate_pools"]
