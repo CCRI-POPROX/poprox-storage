@@ -83,7 +83,6 @@ class DbAccountInterestRepository(DatabaseRepository):
             select(
                 entity_tbl.c.name,
                 entity_tbl.c.entity_type,
-                entity_tbl.c.description,
             )
             .where(*where_conditions)
             .order_by(
@@ -110,7 +109,6 @@ class DbAccountInterestRepository(DatabaseRepository):
                 {
                     "name": row.name,
                     "entity_type": getattr(row, "entity_type", "entity"),
-                    "description": getattr(row, "description", None),
                 }
             )
 
