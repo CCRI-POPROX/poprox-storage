@@ -55,10 +55,16 @@ class DbAccountInterestRepository(DatabaseRepository):
                 failed += 1
         return failed
 
-    def fetch_entity_by_name(self, entity_name: str) -> UUID | None:
+    def fetch_entity_by_name(self, entity_name: str, exclude_types: list[str] | None = None) -> UUID | None:
         entity_tbl = self.tables["entities"]
 
-        query = select(entity_tbl.c.entity_id).filter(func.lower(entity_tbl.c.name) == func.lower(entity_name))
+        exclude_types = exclude_types or []
+
+        query = (
+            select(entity_tbl.c.entity_id)
+            .where(entity_tbl.c.entity_type.notin_(exclude_types))
+            .filter(func.lower(entity_tbl.c.name) == func.lower(entity_name))
+        )
         result = self.conn.execute(query).one_or_none()
 
         if result is not None:
