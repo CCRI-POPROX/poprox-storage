@@ -27,12 +27,12 @@ def upgrade() -> None:
         DELETE FROM mentions
         WHERE mention_id IN (
             SELECT topic_mention_id FROM (
-                SELECT mentions.mention_id AS topic_mention_id, mentions.article_id, mentions.source, mentions.relevance, entities.external_id, entities.name
+                SELECT mentions.mention_id AS topic_mention_id, mentions.article_id, mentions.source, entities.external_id, entities.name
                 FROM mentions JOIN entities ON mentions.entity_id=entities.entity_id WHERE entity_type='topic'
             ) t JOIN (
-                SELECT mentions.mention_id AS subject_mention_id, mentions.article_id, mentions.source, mentions.relevance, entities.external_id, entities.name
+                SELECT mentions.mention_id AS subject_mention_id, mentions.article_id, mentions.source, entities.external_id, entities.name
                 FROM mentions JOIN entities ON mentions.entity_id=entities.entity_id WHERE entity_type='subject'
-            ) s ON t.article_id=s.article_id AND t.source=s.source AND t.relevance=s.relevance AND t.external_id=s.external_id AND t.name=s.name
+            ) s ON t.article_id=s.article_id AND t.source=s.source AND t.external_id=s.external_id AND t.name=s.name
         );
         """
     )
