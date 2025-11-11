@@ -17,11 +17,39 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Update mentions to point at entities with type `subject`
+    op.execute(
+        """
+        UPDATE mentions
+        SET entity_id = mapping.target_entity_id
+        FROM (
+            SELECT source_entity_id, target_entity_id FROM (
+                SELECT entity_id AS source_entity_id, external_id FROM entities WHERE entity_type='topic'
+            ) s JOIN (
+                SELECT entity_id AS target_entity_id, external_id FROM entities WHERE entity_type='subject'
+            ) t ON s.external_id=t.external_id
+        ) mapping
+        WHERE mentions.entity_id=source_entity_id
+        """
+    )
+
+    # Remove duplicate entities with type `topic`, leaving the non-dupes alone
+    op.execute(
+        """
+        DELETE FROM entities
+        WHERE entity_type='topic'
+        AND external_id NOT IN (
+            SELECT external_id FROM entities WHERE entity_type = 'subject'
+        )
+        """
+    )
+
+    # Update entities from type `subject` to `topic`
     op.execute(
         """
         UPDATE entities
-        SET entity_type = 'topic'
-        WHERE entity_type = 'subject'
+        SET entity_type='topic'
+        WHERE entity_type='subject'
         """
     )
 
