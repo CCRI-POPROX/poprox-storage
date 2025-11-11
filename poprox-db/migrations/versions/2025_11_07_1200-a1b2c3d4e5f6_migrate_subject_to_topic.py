@@ -38,7 +38,7 @@ def upgrade() -> None:
         """
         DELETE FROM entities
         WHERE entity_type='topic'
-        AND external_id NOT IN (
+        AND external_id IN (
             SELECT external_id FROM entities WHERE entity_type = 'subject'
         )
         """
