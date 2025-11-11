@@ -49,7 +49,7 @@ def upgrade() -> None:
                 SELECT entity_id AS subject_entity_id, external_id FROM entities WHERE entity_type='subject'
             ) s ON t.external_id=s.external_id
         ) mapping
-        WHERE mentions.entity_id=source_entity_id
+        WHERE mentions.entity_id=topic_entity_id
         """
     )
 
