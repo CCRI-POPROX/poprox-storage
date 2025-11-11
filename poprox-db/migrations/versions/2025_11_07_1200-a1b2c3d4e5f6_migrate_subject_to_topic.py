@@ -27,7 +27,7 @@ def upgrade() -> None:
                 SELECT entity_id AS source_entity_id, external_id FROM entities WHERE entity_type='topic'
             ) s JOIN (
                 SELECT entity_id AS target_entity_id, external_id FROM entities WHERE entity_type='subject'
-            ) t ON s.external_id=t.external_id;
+            ) t ON s.external_id=t.external_id
         ) mapping
         WHERE mentions.entity_id=source_entity_id
         """
