@@ -33,11 +33,14 @@ def upgrade() -> None:
         """
     )
 
-    # Remove entities with type `topic`
+    # Remove duplicate entities with type `topic`, leaving the non-dupes alone
     op.execute(
         """
         DELETE FROM entities
         WHERE entity_type='topic'
+        AND external_id NOT IN (
+            SELECT external_id FROM entities WHERE entity_type = 'subject'
+        )
         """
     )
 
