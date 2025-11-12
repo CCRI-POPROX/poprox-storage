@@ -33,11 +33,12 @@ class DbArticleRepository(DatabaseRepository):
             "articles",
             "article_image_associations",
             "article_links",
+            "article_packages",
+            "article_package_contents",
             "candidate_articles",
             "entities",
             "impressions",
             "mentions",
-            "packages",
         )
 
     def fetch_articles_since(self, days_ago=1) -> list[Article]:
@@ -260,10 +261,10 @@ class DbArticleRepository(DatabaseRepository):
         return failed
 
     def store_article_package(self, package: ArticlePackage) -> UUID | None:
-        contents_table = self.tables["package_contents"]
+        contents_table = self.tables["article_package_contents"]
 
         package_id = self._insert_model(
-            "packages",
+            "article_packages",
             package,
             addl_fields={"entity_id": package.seed.entity_id if package.seed else None},
             exclude={"article_ids", "seed"},
