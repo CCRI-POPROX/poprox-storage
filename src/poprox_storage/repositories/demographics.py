@@ -54,6 +54,7 @@ class DbDemographicsRepository(DatabaseRepository):
                 zip3=row.zip3,
                 education=row.education,
                 race=row.race,
+                created_at=row.created_at,
             )
             for row in result
         ]
