@@ -32,7 +32,7 @@ class DbArticleRepository(DatabaseRepository):
         self.tables = self._load_tables(
             "articles",
             "article_image_associations",
-            "article_links",  
+            "article_links",
             "candidate_articles",
             "entities",
             "impressions",
@@ -271,13 +271,16 @@ class DbArticleRepository(DatabaseRepository):
         )
 
         insert_stmt = insert(contents_table).values(
-            [{"package_id": package_id, "article_id": article_id, "position":position} for position,article_id in enumerate(package.article_ids)]
+            [
+                {"package_id": package_id, "article_id": article_id, "position": position}
+                for position, article_id in enumerate(package.article_ids)
+            ]
         )
 
         self.conn.execute(insert_stmt)
 
         return package_id
-      
+
     def store_article_link(self, source_article_id: UUID, target_article_id: UUID, link_text: str):
         links_table = self.tables["article_links"]
         insert_stmt = (
