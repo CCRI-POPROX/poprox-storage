@@ -274,7 +274,7 @@ class DbArticleRepository(DatabaseRepository):
         insert_stmt = insert(contents_table).values(
             [
                 {"package_id": package_id, "article_id": article_id, "position": position}
-                for position, article_id in enumerate(package.article_ids)
+                for position, article_id in enumerate(package.article_ids, 1)
             ]
         )
 
