@@ -82,6 +82,7 @@ class DbDemographicsRepository(DatabaseRepository):
             education=result.education,
             race=result.race,
             email_client=result.email_client,
+            created_at=result.created_at,
         )
 
 
