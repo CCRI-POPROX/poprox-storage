@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 NEWS_FILE_KEY = "mockObjects/ap_scraped_data.json"
-GENERAL_NEWS_PACKAGE_ENTITY_ID = UUID("72bb7674-7bde-4f3e-a351-ccdeae888502")
 
 
 class DbArticleRepository(DatabaseRepository):
