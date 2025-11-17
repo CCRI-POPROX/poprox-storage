@@ -232,7 +232,7 @@ class DbArticleRepository(DatabaseRepository):
 
     def fetch_latest_package_by_entity(self, entity_id: UUID) -> list[ArticlePackage]:
         packages_table = self.tables["article_packages"]
-        contents_table = self.tables["article_packages_contents"]
+        contents_table = self.tables["article_package_contents"]
         entities_table = self.tables["entities"]
 
         query = (
@@ -267,7 +267,7 @@ class DbArticleRepository(DatabaseRepository):
 
         content_rows = self.conn.execute(
             select(contents_table.c.article_id)
-            .where(contents_table.c.package_id == package_row.package.id)
+            .where(contents_table.c.package_id == package_row.package_id)
             .order_by(contents_table.c.position)
         ).fetchall()
 
