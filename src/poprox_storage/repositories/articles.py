@@ -8,6 +8,7 @@ import boto3
 from sqlalchemy import (
     Table,
     and_,
+    desc,
     func,
     select,
 )
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 NEWS_FILE_KEY = "mockObjects/ap_scraped_data.json"
+GENERAL_NEWS_PACKAGE_ENTITY_ID = UUID("72bb7674-7bde-4f3e-a351-ccdeae888502")
 
 
 class DbArticleRepository(DatabaseRepository):
@@ -229,60 +231,17 @@ class DbArticleRepository(DatabaseRepository):
             raw_data=row.raw_data,
         )
 
-    def fetch_package_by_id(self, package_id: UUID) -> ArticlePackage | None:
-        packages_table = self.tables["article_packages"]
-        contents_table = self.table["article_package_contents"]
-        entities_table = self.tables["entities"]
-
-        # fetch the package row
-        package_row = self.conn.execute(select(packages_table).where(packages_table.c.package_id == package_id)).first()
-
-        if not package_row:
-            return None
-
-        # fetch the seed entity if entity_id is present
-        seed_entity = None
-        if package_row.entity_id:
-            entity_row = self.conn.execute(
-                select(entities_table).where(entities_table.c.entity_id == package_id.entity_id)
-            ).first()
-        if entity_row:
-            seed_entity = Entity(
-                entity_id=entity_row.entity_id,
-                external_id=entity_row.external_id,
-                name=entity_row.name,
-                entity_type=entity_row.entity_type,
-                source=entity_row.source,
-                raw_data=entity_row.raw_data,
-            )
-
-        # fetch article IDs in the package, ordered by position
-        content_rows = self.conn.execute(
-            select(contents_table.c.article_id)
-            .where(contents_table.c.package_id == package_id)
-            .order_by(contents_table.c.position)
-        ).fetchall()
-
-        article_ids = [row.article_id for row in content_rows]
-
-        return ArticlePackage(
-            package_id=package_row.package_id,
-            source=package_row.source,
-            title=package_row.title,
-            seed=seed_entity,
-            article_ids=article_ids,
-            current_as_of=package_row.current_as_of,
-            created_at=package_row.created_at,
-        )
-
-    def fetch_packages_for_entity(self, entity_id: UUID, source: str | None = None) -> list[ArticlePackage]:
+    def fetch_latest_package_by_entity(self, entity_id: UUID) -> list[ArticlePackage]:
         packages_table = self.tables["article_packages"]
         contents_table = self.tables["article_packages_contents"]
         entities_table = self.tables["entities"]
 
-        query = select(packages_table).where(packages_table.c.entity_id == entity_id)
-        if source:
-            query = query.where(packages_table.c.source == source)
+        query = (
+            select(packages_table)
+            .where(packages_table.c.entity_id == entity_id)
+            .order_by(desc(packages_table.c.created_at))
+            .limit(1)
+        )
 
         package_rows = self.conn.execute(query).fetchall()
 
