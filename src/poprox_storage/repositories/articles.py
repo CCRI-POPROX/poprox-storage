@@ -244,8 +244,8 @@ class DbArticleRepository(DatabaseRepository):
 
         package_row = self.conn.execute(query).one_or_none()
 
-        if not package_rows:
-            return []
+        if not package_row:
+            return None
 
         packages: list[ArticlePackage] = []
 
