@@ -1,6 +1,7 @@
 from datetime import datetime
 from functools import wraps
 from typing import get_type_hints
+from uuid import UUID
 
 from smart_open import open as smart_open
 
@@ -61,15 +62,22 @@ class S3Repository:
         start_time = start_time or datetime.now()
         file_name = f"{file_prefix}_{start_time.strftime('%Y%m%d-%H%M%S')}.parquet"
 
-        # Flatten records (convert nested dicts to JSON strings)
+        # Flatten records, converting:
+        # - UUIDs in keys to strings
+        # - nested dicts in values to JSON strings
         flattened_records = []
         for record in records:
             flattened_record = {}
             for key, value in record.items():
-                if isinstance(value, dict):
-                    flattened_record[key] = json.dumps(value)  # Convert dict to JSON string
+                if isinstance(key, UUID):
+                    record_key = str(key)
                 else:
-                    flattened_record[key] = value
+                    record_key = key
+
+                if isinstance(value, dict):
+                    flattened_record[record_key] = json.dumps(value)  # Convert dict to JSON string
+                else:
+                    flattened_record[record_key] = value
             flattened_records.append(flattened_record)
 
         all_fields = {}
