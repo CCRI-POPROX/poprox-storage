@@ -489,7 +489,14 @@ def extract_and_flatten(articles):
         del result["external_id"]
         return result
 
-    return [flatten(article) for article in articles]
+    flattened = []
+    for idx, article in enumerate(articles):
+        flat_record = flatten(article)
+        if idx % 1000 == 0:
+            logger.debug(flat_record)
+        flattened.append(flat_record)
+
+    return flattened
 
 
 def extract_and_flatten_mentions(mentions):
