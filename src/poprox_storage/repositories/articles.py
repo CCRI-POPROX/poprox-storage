@@ -230,7 +230,7 @@ class DbArticleRepository(DatabaseRepository):
             raw_data=row.raw_data,
         )
 
-    def fetch_latest_package_by_entity(self, entity_id: UUID) -> list[ArticlePackage]:
+    def fetch_latest_package_by_entity(self, entity_id: UUID) -> ArticlePackage:
         packages_table = self.tables["article_packages"]
         contents_table = self.tables["article_package_contents"]
         entities_table = self.tables["entities"]
@@ -285,20 +285,6 @@ class DbArticleRepository(DatabaseRepository):
             )
         )
         return packages
-
-    def fetch_articles_in_package(self, package_id: UUID) -> list[Article]:
-        contents_table = self.tables["article_package_contents"]
-        article_table = self.tables["articles"]
-        links_table = self.tables["article_links"]
-
-        query = (
-            select(article_table)
-            .join(contents_table, contents_table.c.article_id == article_table.c.article_id)
-            .where(contents_table.c.package_id == package_id)
-            .order_by(contents_table.c.position)
-        )
-
-        return _fetch_articles(self.conn, query, links_table)
 
     def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
