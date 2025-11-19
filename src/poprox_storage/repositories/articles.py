@@ -95,36 +95,46 @@ class DbArticleRepository(DatabaseRepository):
 
         cutoff = datetime.now() - timedelta(days=days_ago)
 
-        # First, fetch the packages
-        packages_query = select(packages_table).where(packages_table.c.created_at > cutoff)
+        # Fetch packages with entity information using LEFT JOIN to avoid N+1 queries
+        packages_query = (
+            select(
+                packages_table,
+                entities_table.c.entity_id.label("seed_entity_id"),
+                entities_table.c.external_id.label("seed_external_id"),
+                entities_table.c.name.label("seed_name"),
+                entities_table.c.entity_type.label("seed_entity_type"),
+                entities_table.c.source.label("seed_source"),
+                entities_table.c.raw_data.label("seed_raw_data"),
+            )
+            .where(packages_table.c.created_at > cutoff)
+            .outerjoin(entities_table, packages_table.c.entity_id == entities_table.c.entity_id)
+        )
         packages_result = self.conn.execute(packages_query).fetchall()
 
         package_lookup = {}
         for row in packages_result:
+            # Build seed entity if entity_id exists
+            seed_entity = None
+            if row.seed_entity_id:
+                seed_entity = Entity(
+                    entity_id=row.seed_entity_id,
+                    external_id=row.seed_external_id,
+                    name=row.seed_name,
+                    entity_type=row.seed_entity_type,
+                    source=row.seed_source,
+                    raw_data=row.seed_raw_data,
+                )
+
             package = ArticlePackage(
                 package_id=row.package_id,
                 title=row.title,
                 source=row.source,
-                seed=None,
+                seed=seed_entity,
                 article_ids=[],
                 current_as_of=row.current_as_of,
                 created_at=row.created_at,
             )
             package_lookup[row.package_id] = package
-
-            # Fetch entity if exists
-            if row.entity_id:
-                entity_query = select(entities_table).where(entities_table.c.entity_id == row.entity_id)
-                entity_row = self.conn.execute(entity_query).first()
-                if entity_row:
-                    package.seed = Entity(
-                        entity_id=entity_row.entity_id,
-                        external_id=entity_row.external_id,
-                        name=entity_row.name,
-                        entity_type=entity_row.entity_type,
-                        source=entity_row.source,
-                        raw_data=entity_row.raw_data,
-                    )
 
         # Fetch the contents (article IDs) for each package
         if package_lookup:
@@ -571,23 +581,43 @@ def extract_and_flatten_mentions(mentions):
 
 
 def extract_and_flatten_packages(packages):
-    def flatten(package):
-        result = package.__dict__.copy()
-        result["package_id"] = str(result["package_id"])
+    """
+    Flatten packages into a flat structure with one row per article.
+    If a package has 10 articles, it will produce 10 rows, each with the same
+    package information but different article_id.
+    """
+    records = []
+    for package in packages:
+        # Extract common package fields
+        package_id = str(package.package_id)
+        title = package.title
+        source = package.source
+        current_as_of = package.current_as_of
+        created_at = package.created_at
 
-        # Convert article_ids list to JSON string for Parquet
-        result["article_ids"] = json.dumps([str(aid) for aid in result["article_ids"]])
+        # Extract entity fields
+        entity_id = None
+        entity_name = None
+        entity_type = None
+        if package.seed is not None:
+            entity_id = str(package.seed.entity_id) if package.seed.entity_id else None
+            entity_name = package.seed.name
+            entity_type = package.seed.entity_type
 
-        # Handle the seed entity
-        if result["seed"] is not None:
-            result["entity_id"] = str(result["seed"].entity_id) if result["seed"].entity_id else None
-            result["entity_name"] = result["seed"].name
-            result["entity_type"] = result["seed"].entity_type
-        else:
-            result["entity_id"] = None
-            result["entity_name"] = None
-            result["entity_type"] = None
+        # Create one row per article in the package
+        for article_id in package.article_ids:
+            records.append(
+                {
+                    "package_id": package_id,
+                    "article_id": str(article_id),
+                    "title": title,
+                    "source": source,
+                    "entity_id": entity_id,
+                    "entity_name": entity_name,
+                    "entity_type": entity_type,
+                    "current_as_of": current_as_of,
+                    "created_at": created_at,
+                }
+            )
 
-        return result
-
-    return [flatten(package) for package in packages]
+    return records
