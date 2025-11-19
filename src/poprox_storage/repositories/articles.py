@@ -230,7 +230,7 @@ class DbArticleRepository(DatabaseRepository):
             raw_data=row.raw_data,
         )
 
-    def fetch_latest_package_by_entity(self, entity_id: UUID) -> ArticlePackage:
+    def fetch_latest_package_by_entity(self, entity_id: UUID) -> ArticlePackage | None:
         packages_table = self.tables["article_packages"]
         contents_table = self.tables["article_package_contents"]
         entities_table = self.tables["entities"]
@@ -247,20 +247,20 @@ class DbArticleRepository(DatabaseRepository):
         if not package_row:
             return None
 
-            seed_entity = None
-            if package_row.entity_id:
-                entity_row = self.conn.execute(
-                    select(entities_table).where(entities_table.c.entity_id == package_row.entity_id)
-                ).first()
-                if entity_row:
-                    seed_entity = Entity(
-                        entity_id=entity_row.entity_id,
-                        external_id=entity_row.external_id,
-                        name=entity_row.name,
-                        entity_type=entity_row.entity_type,
-                        source=entity_row.source,
-                        raw_data=entity_row.raw_data,
-                    )
+        seed_entity = None
+        if package_row.entity_id:
+            entity_row = self.conn.execute(
+                select(entities_table).where(entities_table.c.entity_id == package_row.entity_id)
+            ).first()
+            if entity_row:
+                seed_entity = Entity(
+                    entity_id=entity_row.entity_id,
+                    external_id=entity_row.external_id,
+                    name=entity_row.name,
+                    entity_type=entity_row.entity_type,
+                    source=entity_row.source,
+                    raw_data=entity_row.raw_data,
+                )
 
         content_rows = self.conn.execute(
             select(contents_table.c.article_id)
@@ -271,14 +271,14 @@ class DbArticleRepository(DatabaseRepository):
         article_ids = [row.article_id for row in content_rows]
 
         return ArticlePackage(
-                package_id=package_row.package_id,
-                source=package_row.source,
-                title=package_row.title,
-                seed=seed_entity,
-                article_ids=article_ids,
-                current_as_of=package_row.current_as_of,
-                created_at=package_row.created_at,
-            )
+            package_id=package_row.package_id,
+            source=package_row.source,
+            title=package_row.title,
+            seed=seed_entity,
+            article_ids=article_ids,
+            current_as_of=package_row.current_as_of,
+            created_at=package_row.created_at,
+        )
 
     def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
