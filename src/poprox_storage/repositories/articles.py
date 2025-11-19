@@ -242,7 +242,7 @@ class DbArticleRepository(DatabaseRepository):
             .limit(1)
         )
 
-        package_rows = self.conn.execute(query).fetchall()
+        package_row = self.conn.execute(query).one_or_none()
 
         if not package_rows:
             return []
