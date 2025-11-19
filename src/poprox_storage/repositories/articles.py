@@ -270,8 +270,7 @@ class DbArticleRepository(DatabaseRepository):
 
         article_ids = [row.article_id for row in content_rows]
 
-        packages.append(
-            ArticlePackage(
+        return ArticlePackage(
                 package_id=package_row.package_id,
                 source=package_row.source,
                 title=package_row.title,
@@ -280,8 +279,6 @@ class DbArticleRepository(DatabaseRepository):
                 current_as_of=package_row.current_as_of,
                 created_at=package_row.created_at,
             )
-        )
-        return packages
 
     def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
