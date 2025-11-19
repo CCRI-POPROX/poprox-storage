@@ -247,9 +247,6 @@ class DbArticleRepository(DatabaseRepository):
         if not package_row:
             return None
 
-        packages: list[ArticlePackage] = []
-
-        for package_row in package_rows:
             seed_entity = None
             if package_row.entity_id:
                 entity_row = self.conn.execute(
