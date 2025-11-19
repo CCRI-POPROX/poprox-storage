@@ -75,6 +75,10 @@ class S3Repository:
                     record_key = key
 
                 if isinstance(value, dict):
+                    for nested_key, nested_value in value.items():
+                        if isinstance(nested_key, UUID):
+                            value[str(nested_key)] = nested_value
+                            del value[nested_key]
                     flattened_record[record_key] = json.dumps(value)  # Convert dict to JSON string
                 else:
                     flattened_record[record_key] = value
