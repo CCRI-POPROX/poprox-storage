@@ -87,60 +87,6 @@ class DbArticleRepository(DatabaseRepository):
         query = select(article_table).where(article_table.c.article_id.in_(ids))
         return _fetch_articles(self.conn, query, links_table)
 
-    def fetch_article_packages_ingested_since(self, days_ago=1) -> list[ArticlePackage]:
-        """Fetch article packages that were ingested within the specified number of days."""
-        packages_table = self.tables["article_packages"]
-        contents_table = self.tables["article_package_contents"]
-        entities_table = self.tables["entities"]
-        
-        cutoff = datetime.now() - timedelta(days=days_ago)
-        
-        # First, fetch the packages
-        packages_query = select(packages_table).where(packages_table.c.created_at > cutoff)
-        packages_result = self.conn.execute(packages_query).fetchall()
-        
-        package_lookup = {}
-        for row in packages_result:
-            package = ArticlePackage(
-                package_id=row.package_id,
-                title=row.title,
-                source=row.source,
-                seed=None,
-                article_ids=[],
-                current_as_of=row.current_as_of,
-                created_at=row.created_at,
-            )
-            package_lookup[row.package_id] = package
-            
-            # Fetch entity if exists
-            if row.entity_id:
-                entity_query = select(entities_table).where(entities_table.c.entity_id == row.entity_id)
-                entity_row = self.conn.execute(entity_query).first()
-                if entity_row:
-                    package.seed = Entity(
-                        entity_id=entity_row.entity_id,
-                        external_id=entity_row.external_id,
-                        name=entity_row.name,
-                        entity_type=entity_row.entity_type,
-                        source=entity_row.source,
-                        raw_data=entity_row.raw_data,
-                    )
-        
-        # Fetch the contents (article IDs) for each package
-        if package_lookup:
-            package_ids = list(package_lookup.keys())
-            contents_query = (
-                select(contents_table)
-                .where(contents_table.c.package_id.in_(package_ids))
-                .order_by(contents_table.c.package_id, contents_table.c.position)
-            )
-            contents_result = self.conn.execute(contents_query).fetchall()
-            
-            for row in contents_result:
-                package_lookup[row.package_id].article_ids.append(row.article_id)
-        
-        return list(package_lookup.values())
-
     def fetch_article_by_external_id(self, id_: str) -> Article | None:
         article_table = self.tables["articles"]
         deduped = self._get_deduped_articles(article_table, article_table.c.external_id == id_)
@@ -533,16 +479,6 @@ class S3ArticleRepository(S3Repository):
         records = extract_and_flatten_mentions(mentions)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
-    def store_packages_as_parquet(
-        self,
-        packages: list[ArticlePackage],
-        bucket_name: str,
-        file_prefix: str,
-        start_time: datetime = None,
-    ):
-        records = extract_and_flatten_packages(packages)
-        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
-
 
 def extract_and_flatten(articles):
     def flatten(article):
@@ -568,27 +504,3 @@ def extract_and_flatten_mentions(mentions):
         return result
 
     return [flatten(mention) for mention in mentions]
-
-
-def extract_and_flatten_packages(packages):
-    def flatten(package):
-        result = package.__dict__.copy()
-        result["package_id"] = str(result["package_id"])
-        
-        # Convert article_ids list to JSON string for Parquet
-        result["article_ids"] = json.dumps([str(aid) for aid in result["article_ids"]])
-        
-        # Handle the seed entity
-        if result["seed"] is not None:
-            result["entity_id"] = str(result["seed"].entity_id) if result["seed"].entity_id else None
-            result["entity_name"] = result["seed"].name
-            result["entity_type"] = result["seed"].entity_type
-        else:
-            result["entity_id"] = None
-            result["entity_name"] = None
-            result["entity_type"] = None
-        
-        del result["seed"]
-        return result
-
-    return [flatten(package) for package in packages]
