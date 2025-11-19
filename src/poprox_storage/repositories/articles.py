@@ -484,6 +484,7 @@ def extract_and_flatten(articles):
     def flatten(article):
         result = article.__dict__
         result["article_id"] = str(result["article_id"])
+        result["preview_image_id"] = str(result["preview_image_id"])
         del result["mentions"]
         del result["source"]
         del result["external_id"]
