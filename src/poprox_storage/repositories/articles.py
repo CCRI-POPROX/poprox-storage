@@ -8,6 +8,7 @@ import boto3
 from sqlalchemy import (
     Table,
     and_,
+    desc,
     func,
     select,
 )
@@ -227,6 +228,56 @@ class DbArticleRepository(DatabaseRepository):
             entity_type=row.entity_type,
             source=row.source,
             raw_data=row.raw_data,
+        )
+
+    def fetch_latest_package_by_entity(self, entity_id: UUID) -> ArticlePackage | None:
+        packages_table = self.tables["article_packages"]
+        contents_table = self.tables["article_package_contents"]
+        entities_table = self.tables["entities"]
+
+        query = (
+            select(packages_table)
+            .where(packages_table.c.entity_id == entity_id)
+            .order_by(desc(packages_table.c.created_at))
+            .limit(1)
+        )
+
+        package_row = self.conn.execute(query).one_or_none()
+
+        if not package_row:
+            return None
+
+        seed_entity = None
+        if package_row.entity_id:
+            entity_row = self.conn.execute(
+                select(entities_table).where(entities_table.c.entity_id == package_row.entity_id)
+            ).first()
+            if entity_row:
+                seed_entity = Entity(
+                    entity_id=entity_row.entity_id,
+                    external_id=entity_row.external_id,
+                    name=entity_row.name,
+                    entity_type=entity_row.entity_type,
+                    source=entity_row.source,
+                    raw_data=entity_row.raw_data,
+                )
+
+        content_rows = self.conn.execute(
+            select(contents_table.c.article_id)
+            .where(contents_table.c.package_id == package_row.package_id)
+            .order_by(contents_table.c.position)
+        ).fetchall()
+
+        article_ids = [row.article_id for row in content_rows]
+
+        return ArticlePackage(
+            package_id=package_row.package_id,
+            source=package_row.source,
+            title=package_row.title,
+            seed=seed_entity,
+            article_ids=article_ids,
+            current_as_of=package_row.current_as_of,
+            created_at=package_row.created_at,
         )
 
     def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
