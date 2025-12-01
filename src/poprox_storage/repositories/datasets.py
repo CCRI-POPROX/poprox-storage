@@ -69,16 +69,17 @@ class DbDatasetRepository(DatabaseRepository):
         return {row.account_id: row.alias_id for row in rows}
 
     def fetch_newsletter_impressions(self, newsletter_ids: list[UUID]) -> list[Impression]:
+        """
+        Fetch impressions for a list of newsletters.
+        """
         if not newsletter_ids:
             return []
 
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
-        newsletters_table = self.tables["newsletters"]
 
         query = (
             select(
-                newsletters_table.c.account_id,
                 impressions_table.c.impression_id,
                 impressions_table.c.newsletter_id,
                 impressions_table.c.preview_image_id,
@@ -96,18 +97,13 @@ class DbDatasetRepository(DatabaseRepository):
                 articles_table.c.preview_image_id,
                 articles_table.c.body,
             )
-            .join(newsletters_table, newsletters_table.c.newsletter_id == impressions_table.c.newsletter_id)
             .join(articles_table, articles_table.c.article_id == impressions_table.c.article_id)
             .where(impressions_table.c.newsletter_id.in_(newsletter_ids))
         )
 
         result = self.conn.execute(query).fetchall()
 
-        impressions = []
-        for row in result:
-            impression = self._convert_to_impression_obj(row)
-            impression.account_id = row.account_id
-            impressions.append(impression)
+        impressions = [self._convert_to_impression_obj(row) for row in result]
 
         return impressions
 
