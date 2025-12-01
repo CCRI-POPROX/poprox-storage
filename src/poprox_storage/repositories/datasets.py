@@ -68,21 +68,46 @@ class DbDatasetRepository(DatabaseRepository):
         rows = self.conn.execute(query).fetchall()
         return {row.account_id: row.alias_id for row in rows}
 
-    def fetch_newsletter_impressions(self, dataset_id: UUID, start: datetime, end: datetime) -> list[Impression]:
-        impressions_table = self.tables["impressions"]
-        alias_table = self.tables["account_aliases"]
-        articles_table = self.tables["articles"]
+    def fetch_newsletters(self, dataset_id: UUID, start: datetime, end: datetime) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
+        impressions_table = self.tables["impressions"]
+        articles_table = self.tables["articles"]
+        alias_table = self.tables["account_aliases"]
 
-        query = (
+        alias_newsletter_query = (
             select(
                 alias_table.c.account_id,
+                newsletters_table.c.newsletter_id,
+            )
+            .join(newsletters_table, alias_table.c.account_id == newsletters_table.c.account_id)
+            .where(
+                and_(
+                    alias_table.c.dataset_id == dataset_id,
+                    newsletters_table.c.created_at >= start,
+                    newsletters_table.c.created_at <= end,
+                )
+            )
+        ).subquery()
+
+        newsletter_query = select(
+            alias_newsletter_query.c.account_id,
+            newsletters_table.c.newsletter_id,
+            newsletters_table.c.account_id,
+            newsletters_table.c.html,
+            newsletters_table.c.created_at,
+            newsletters_table.c.email_subject,
+            newsletters_table.c.treatment_id,
+        ).join(newsletters_table, newsletters_table.c.newsletter_id == alias_newsletter_query.c.newsletter_id)
+
+        newsletter_result = self.conn.execute(newsletter_query).fetchall()
+
+        impressions_query = (
+            select(
+                alias_newsletter_query.c.newsletter_id,
                 impressions_table.c.impression_id,
-                impressions_table.c.newsletter_id,
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
-                impressions_table.c.created_at,
                 articles_table.c.article_id,
                 articles_table.c.headline,
                 articles_table.c.subhead,
@@ -94,65 +119,16 @@ class DbDatasetRepository(DatabaseRepository):
                 articles_table.c.preview_image_id,
                 articles_table.c.body,
             )
-            .join(newsletters_table, newsletters_table.c.newsletter_id == impressions_table.c.newsletter_id)
-            .join(alias_table, alias_table.c.account_id == newsletters_table.c.account_id)
-            .join(articles_table, articles_table.c.article_id == impressions_table.c.article_id)
-            .where(
-                and_(
-                    alias_table.c.dataset_id == dataset_id,
-                    newsletters_table.c.created_at >= start,
-                    newsletters_table.c.created_at <= end,
-                )
+            .join(impressions_table, alias_newsletter_query.c.newsletter_id == impressions_table.c.newsletter_id)
+            .join(
+                articles_table,
+                articles_table.c.article_id == impressions_table.c.article_id,
             )
         )
 
-        result = self.conn.execute(query).fetchall()
+        impressions_result = self.conn.execute(impressions_query).fetchall()
 
-        impressions = []
-        for row in result:
-            impression = self._convert_to_impression_obj(row)
-            impression.account_id = row.account_id
-            impressions.append(impression)
-
-        return impressions
-
-    def fetch_newsletters(self, dataset_id: UUID, start: datetime, end: datetime) -> list[Newsletter]:
-        newsletters_table = self.tables["newsletters"]
-        alias_table = self.tables["account_aliases"]
-
-        query = (
-            select(
-                alias_table.c.account_id,
-                newsletters_table.c.newsletter_id,
-                newsletters_table.c.treatment_id,
-                newsletters_table.c.html,
-                newsletters_table.c.email_subject,
-                newsletters_table.c.created_at,
-            )
-            .join(newsletters_table, alias_table.c.account_id == newsletters_table.c.account_id)
-            .where(
-                and_(
-                    alias_table.c.dataset_id == dataset_id,
-                    newsletters_table.c.created_at >= start,
-                    newsletters_table.c.created_at <= end,
-                )
-            )
-        )
-
-        result = self.conn.execute(query).fetchall()
-
-        return [
-            Newsletter(
-                newsletter_id=row.newsletter_id,
-                account_id=row.account_id,
-                treatment_id=row.treatment_id,
-                impressions=[],
-                subject=row.email_subject,
-                body_html=row.html,
-                created_at=row.created_at,
-            )
-            for row in result
-        ]
+        return self._convert_to_newsletter_objs(newsletter_result, impressions_result)
 
     def _convert_to_newsletter_objs(self, newsletter_result, impressions_result):
         impressions_by_newsletter_id = defaultdict(list)
