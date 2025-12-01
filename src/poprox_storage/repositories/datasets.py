@@ -81,11 +81,9 @@ class DbDatasetRepository(DatabaseRepository):
         query = (
             select(
                 impressions_table.c.impression_id,
-                impressions_table.c.newsletter_id,
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
                 impressions_table.c.extra,
-                impressions_table.c.created_at,
                 articles_table.c.article_id,
                 articles_table.c.headline,
                 articles_table.c.subhead,
