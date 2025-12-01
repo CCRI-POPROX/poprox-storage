@@ -134,6 +134,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                 current_interest_tbl.c.entity_id,
                 current_interest_tbl.c.preference,
                 current_interest_tbl.c.frequency,
+                current_interest_tbl.c.created_at,
                 entity_tbl.c.name,
                 entity_tbl.c.entity_type,
             )
@@ -152,6 +153,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                 entity_type="topic",
                 preference=row.preference,
                 frequency=row.frequency,
+                created_at=row.created_at,
             )
             for row in results
         ]
@@ -205,6 +207,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                 current_interest_tbl.c.entity_id,
                 current_interest_tbl.c.preference,
                 current_interest_tbl.c.frequency,
+                current_interest_tbl.c.created_at,
                 entity_tbl.c.name,
                 entity_tbl.c.entity_type,
             )
@@ -220,6 +223,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                 entity_type=row.entity_type,
                 preference=row.preference,
                 frequency=row.frequency,
+                created_at=row.created_at,
             )
             for row in results
         ]
@@ -249,6 +253,7 @@ def convert_to_records(interests: list[AccountInterest]) -> list[dict]:
                 "entity_type": interest.entity_type,
                 "preference": interest.preference,
                 "frequency": interest.frequency,
+                "created_at": interest.created_at,
             }
         )
 
