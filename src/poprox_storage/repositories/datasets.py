@@ -68,15 +68,17 @@ class DbDatasetRepository(DatabaseRepository):
         rows = self.conn.execute(query).fetchall()
         return {row.account_id: row.alias_id for row in rows}
 
-    def fetch_newsletter_impressions(self, dataset_id: UUID, start: datetime, end: datetime) -> list[Impression]:
+    def fetch_newsletter_impressions(self, newsletter_ids: list[UUID]) -> list[Impression]:
+        if not newsletter_ids:
+            return []
+
         impressions_table = self.tables["impressions"]
-        alias_table = self.tables["account_aliases"]
         articles_table = self.tables["articles"]
         newsletters_table = self.tables["newsletters"]
 
         query = (
             select(
-                alias_table.c.account_id,
+                newsletters_table.c.account_id,
                 impressions_table.c.impression_id,
                 impressions_table.c.newsletter_id,
                 impressions_table.c.preview_image_id,
@@ -95,15 +97,8 @@ class DbDatasetRepository(DatabaseRepository):
                 articles_table.c.body,
             )
             .join(newsletters_table, newsletters_table.c.newsletter_id == impressions_table.c.newsletter_id)
-            .join(alias_table, alias_table.c.account_id == newsletters_table.c.account_id)
             .join(articles_table, articles_table.c.article_id == impressions_table.c.article_id)
-            .where(
-                and_(
-                    alias_table.c.dataset_id == dataset_id,
-                    newsletters_table.c.created_at >= start,
-                    newsletters_table.c.created_at <= end,
-                )
-            )
+            .where(impressions_table.c.newsletter_id.in_(newsletter_ids))
         )
 
         result = self.conn.execute(query).fetchall()
@@ -117,6 +112,11 @@ class DbDatasetRepository(DatabaseRepository):
         return impressions
 
     def fetch_newsletters(self, dataset_id: UUID, start: datetime, end: datetime) -> list[Newsletter]:
+        """
+        This function does not fetch impressions, see `fetch_newsletter_impressions`
+        for fetching impressions seperately.
+        """
+
         newsletters_table = self.tables["newsletters"]
         alias_table = self.tables["account_aliases"]
 
