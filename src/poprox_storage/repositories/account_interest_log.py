@@ -140,7 +140,7 @@ class DbAccountInterestRepository(DatabaseRepository):
             .join(entity_tbl, current_interest_tbl.c.entity_id == entity_tbl.c.entity_id)
             .where(
                 current_interest_tbl.c.account_id == account_id,
-                entity_tbl.c.entity_type.in_(["topic", "subject"]),
+                entity_tbl.c.entity_type.in_(["topic"]),
             )
         )
         results = self.conn.execute(query).all()
@@ -149,7 +149,7 @@ class DbAccountInterestRepository(DatabaseRepository):
                 account_id=account_id,
                 entity_name=row.name,
                 entity_id=row.entity_id,
-                entity_type="topic",
+                entity_type=row.entity_type,
                 preference=row.preference,
                 frequency=row.frequency,
             )
