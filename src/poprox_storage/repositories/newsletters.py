@@ -53,6 +53,7 @@ class DbNewsletterRepository(DatabaseRepository):
                     preview_image_id = null()
 
                 stmt = insert(impression_table).values(
+                    impression_id=str(impression.impression_id),
                     newsletter_id=str(newsletter.newsletter_id),
                     article_id=str(impression.article.article_id),
                     preview_image_id=preview_image_id,
