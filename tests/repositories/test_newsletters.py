@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import UUID, uuid4, uuid5
 
 from poprox_concepts.domain import Article, Impression, Newsletter
 from poprox_storage.repositories.accounts import DbAccountRepository
@@ -7,7 +7,15 @@ from poprox_storage.repositories.newsletters import DbNewsletterRepository
 from tests import clear_tables
 
 
-def test_fetch_newsletters(db_engine):
+def generate_impression_id(newsletter_id: UUID, position: int, article_id: UUID):
+    """
+    Generates deterministic UUIDs we can use to check that fetched impressions
+    have the same UUIDs as the impressions we tried to store
+    """
+    return uuid5(newsletter_id, f"{position}: {str(article_id)}")
+
+
+def test_store_and_fetch_newsletters(db_engine):
     with db_engine.connect() as conn:
         clear_tables(
             conn,
@@ -66,8 +74,13 @@ def test_fetch_newsletters(db_engine):
             newsletter_id=newsletter_1_id,
             account_id=user_account_1.account_id,
             impressions=[
-                Impression(newsletter_id=newsletter_1_id, position=idx + 1, article=article)
-                for idx, article in enumerate(newsletter_1_articles)
+                Impression(
+                    impression_id=generate_impression_id(newsletter_1_id, idx, article.article_id),
+                    newsletter_id=newsletter_1_id,
+                    position=idx,
+                    article=article,
+                )
+                for idx, article in enumerate(newsletter_1_articles, start=1)
             ],
             subject="fake-subject",
             body_html="fake-html-1",
@@ -78,8 +91,13 @@ def test_fetch_newsletters(db_engine):
             newsletter_id=newsletter_2_id,
             account_id=user_account_2.account_id,
             impressions=[
-                Impression(newsletter_id=newsletter_2_id, position=idx + 1, article=article)
-                for idx, article in enumerate(newsletter_2_articles)
+                Impression(
+                    impression_id=generate_impression_id(newsletter_2_id, idx, article.article_id),
+                    newsletter_id=newsletter_2_id,
+                    position=idx,
+                    article=article,
+                )
+                for idx, article in enumerate(newsletter_2_articles, start=1)
             ],
             subject="fake-subject",
             body_html="fake-html-2",
@@ -94,6 +112,14 @@ def test_fetch_newsletters(db_engine):
         assert len(user_1_newsletter.articles) == 2
         assert "subhead-1" == user_1_newsletter.articles[0].subhead
 
+        for impression in user_1_newsletter.impressions:
+            expected_id = generate_impression_id(newsletter_1_id, impression.position, impression.article.article_id)
+            assert impression.impression_id == expected_id
+
         user_2_newsletter = results[1]
         assert user_2_newsletter.newsletter_id == newsletter_2_id
         assert len(user_2_newsletter.articles) == 1
+
+        for impression in user_2_newsletter.impressions:
+            expected_id = generate_impression_id(newsletter_2_id, impression.position, impression.article.article_id)
+            assert impression.impression_id == expected_id
