@@ -112,13 +112,15 @@ def test_store_and_fetch_newsletters(db_engine):
         assert len(user_1_newsletter.articles) == 2
         assert "subhead-1" == user_1_newsletter.articles[0].subhead
 
-        for impression in user_1_newsletter.impressions:
-            expected_id = generate_impression_id(newsletter_1_id, impression.position, impression.article.article_id)
-            assert impression.impression_id == expected_id
-
         user_2_newsletter = results[1]
         assert user_2_newsletter.newsletter_id == newsletter_2_id
         assert len(user_2_newsletter.articles) == 1
+
+        # Check that impression ids were stored and fetched successfully,
+        # rather than being auto-assigned by the database
+        for impression in user_1_newsletter.impressions:
+            expected_id = generate_impression_id(newsletter_1_id, impression.position, impression.article.article_id)
+            assert impression.impression_id == expected_id
 
         for impression in user_2_newsletter.impressions:
             expected_id = generate_impression_id(newsletter_2_id, impression.position, impression.article.article_id)
