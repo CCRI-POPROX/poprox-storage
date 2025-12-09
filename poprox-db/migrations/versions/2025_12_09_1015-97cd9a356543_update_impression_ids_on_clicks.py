@@ -34,7 +34,7 @@ def upgrade() -> None:
                     SELECT newsletter_id, article_id, COUNT(article_id) AS article_count
                     FROM impressions
                     GROUP BY newsletter_id, article_id
-                    ORDER BY article_count DESC)
+                    ORDER BY article_count DESC) AS duplicates
                 WHERE article_count>1
             );
         """
