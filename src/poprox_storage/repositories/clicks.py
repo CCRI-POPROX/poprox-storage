@@ -64,18 +64,21 @@ class DbClicksRepository(DatabaseRepository):
 
         click_query = select(
             click_table.c.account_id,
-            click_table.c.article_id,
             click_table.c.newsletter_id,
+            click_table.c.article_id,
+            click_table.c.impression_id,
             click_table.c.created_at,
         ).where(click_table.c.account_id.in_([acct.account_id for acct in accounts]))
+
         click_result = self.conn.execute(click_query).fetchall()
 
         clicked_articles = defaultdict(list)
         for row in click_result:
             clicked_articles[row.account_id].append(
                 Click(
-                    article_id=row.article_id,
                     newsletter_id=row.newsletter_id,
+                    impression_id=row.impression_id,
+                    article_id=row.article_id,
                     timestamp=row.created_at,
                 )
             )
@@ -92,8 +95,9 @@ class DbClicksRepository(DatabaseRepository):
 
         click_query = select(
             click_table.c.account_id,
-            click_table.c.article_id,
             click_table.c.newsletter_id,
+            click_table.c.impression_id,
+            click_table.c.article_id,
             click_table.c.created_at,
         ).where(
             and_(
@@ -121,8 +125,9 @@ class DbClicksRepository(DatabaseRepository):
         for row in click_result:
             clicked_articles[row.account_id].append(
                 Click(
-                    article_id=row.article_id,
                     newsletter_id=row.newsletter_id,
+                    impression_id=row.impression_id,
+                    article_id=row.article_id,
                     timestamp=row.created_at,
                 )
             )
