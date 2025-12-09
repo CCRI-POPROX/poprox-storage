@@ -18,9 +18,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # TODO: Either:
-    # - Update this query to check that the newsletter/article combo is unique to one position
-    # - Add a second query that unsets the impression id when that combo isn't unique
     op.execute(
         """
         UPDATE clicks
@@ -30,10 +27,18 @@ def upgrade() -> None:
             clicks.newsletter_id IS NOT NULL AND
             clicks.impression_id IS NULL AND
             clicks.newsletter_id=impressions.newsletter_id AND
-            clicks.article_id=impressions.article_id;
+            clicks.article_id=impressions.article_id AND
+            clicks.newsletter_id NOT IN (
+                SELECT newsletter_id
+                FROM (
+                    SELECT newsletter_id, article_id, COUNT(article_id) AS article_count
+                    FROM impressions
+                    GROUP BY newsletter_id, article_id
+                    ORDER BY article_count DESC)
+                WHERE article_count>1
+            );
         """
     )
-
 
 def downgrade() -> None:
     pass
