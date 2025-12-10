@@ -13,6 +13,7 @@ from sqlalchemy import (
 )
 
 from poprox_concepts.domain import Account, Article, Impression, Newsletter, RecommenderInfo
+from poprox_concepts.domain.newsletter import ImpressedSection
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -219,7 +220,7 @@ class DbNewsletterRepository(DatabaseRepository):
             newsletter_id=row.newsletter_id,
             account_id=row.account_id,
             treatment_id=row.treatment_id,
-            impressions=[],
+            sections=[],
             subject=row.email_subject,
             body_html=row.html,
             created_at=row.created_at,
@@ -280,7 +281,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 newsletter_id=row.newsletter_id,
                 account_id=row.account_id,
                 treatment_id=row.treatment_id,
-                impressions=impressions_by_newsletter_id[row.newsletter_id],
+                sections=[ImpressedSection(impressions=impressions_by_newsletter_id[row.newsletter_id])],
                 subject=row.email_subject,
                 body_html=row.html if hasattr(row, "html") else "",
                 created_at=row.created_at,
