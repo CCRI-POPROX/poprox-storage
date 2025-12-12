@@ -62,7 +62,6 @@ class DbNewsletterRepository(DatabaseRepository):
                     extra=impression.extra,
                     headline=impression.headline,
                     subhead=impression.subhead,
-                    section_name=impression.section_name,
                     position_in_section=impression.position_in_section,
                 )
                 self.conn.execute(stmt)
@@ -314,7 +313,6 @@ class DbNewsletterRepository(DatabaseRepository):
                 external_id=row.articles_external_id,
             ),
             created_at=row.created_at,
-            section_name=row.section_name,
             position_in_section=row.position_in_section,
         )
 
