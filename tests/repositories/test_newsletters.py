@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4, uuid5
 
-from poprox_concepts.domain import Article, Impression, Newsletter
+from poprox_concepts.domain import Article, ImpressedSection, Impression, Newsletter
 from poprox_storage.repositories.accounts import DbAccountRepository
 from poprox_storage.repositories.articles import DbArticleRepository
 from poprox_storage.repositories.newsletters import DbNewsletterRepository
@@ -73,14 +73,18 @@ def test_store_and_fetch_newsletters(db_engine):
         newsletter_1 = Newsletter(
             newsletter_id=newsletter_1_id,
             account_id=user_account_1.account_id,
-            impressions=[
-                Impression(
-                    impression_id=generate_impression_id(newsletter_1_id, idx, article.article_id),
-                    newsletter_id=newsletter_1_id,
-                    position=idx,
-                    article=article,
+            sections=[
+                ImpressedSection(
+                    impressions=[
+                        Impression(
+                            impression_id=generate_impression_id(newsletter_1_id, idx, article.article_id),
+                            newsletter_id=newsletter_1_id,
+                            position=idx,
+                            article=article,
+                        )
+                        for idx, article in enumerate(newsletter_1_articles, start=1)
+                    ]
                 )
-                for idx, article in enumerate(newsletter_1_articles, start=1)
             ],
             subject="fake-subject",
             body_html="fake-html-1",
@@ -90,14 +94,18 @@ def test_store_and_fetch_newsletters(db_engine):
         newsletter_2 = Newsletter(
             newsletter_id=newsletter_2_id,
             account_id=user_account_2.account_id,
-            impressions=[
-                Impression(
-                    impression_id=generate_impression_id(newsletter_2_id, idx, article.article_id),
-                    newsletter_id=newsletter_2_id,
-                    position=idx,
-                    article=article,
+            sections=[
+                ImpressedSection(
+                    impressions=[
+                        Impression(
+                            impression_id=generate_impression_id(newsletter_2_id, idx, article.article_id),
+                            newsletter_id=newsletter_2_id,
+                            position=idx,
+                            article=article,
+                        )
+                        for idx, article in enumerate(newsletter_2_articles, start=1)
+                    ]
                 )
-                for idx, article in enumerate(newsletter_2_articles, start=1)
             ],
             subject="fake-subject",
             body_html="fake-html-2",

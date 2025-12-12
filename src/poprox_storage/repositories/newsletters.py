@@ -13,6 +13,7 @@ from sqlalchemy import (
 )
 
 from poprox_concepts.domain import Account, Article, Impression, Newsletter, RecommenderInfo
+from poprox_concepts.domain.newsletter import ImpressedSection
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -61,7 +62,6 @@ class DbNewsletterRepository(DatabaseRepository):
                     extra=impression.extra,
                     headline=impression.headline,
                     subhead=impression.subhead,
-                    section_name=impression.section_name,
                     position_in_section=impression.position_in_section,
                 )
                 self.conn.execute(stmt)
@@ -219,7 +219,7 @@ class DbNewsletterRepository(DatabaseRepository):
             newsletter_id=row.newsletter_id,
             account_id=row.account_id,
             treatment_id=row.treatment_id,
-            impressions=[],
+            sections=[],
             subject=row.email_subject,
             body_html=row.html,
             created_at=row.created_at,
@@ -280,7 +280,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 newsletter_id=row.newsletter_id,
                 account_id=row.account_id,
                 treatment_id=row.treatment_id,
-                impressions=impressions_by_newsletter_id[row.newsletter_id],
+                sections=[ImpressedSection(impressions=impressions_by_newsletter_id[row.newsletter_id])],
                 subject=row.email_subject,
                 body_html=row.html if hasattr(row, "html") else "",
                 created_at=row.created_at,
@@ -313,7 +313,6 @@ class DbNewsletterRepository(DatabaseRepository):
                 external_id=row.articles_external_id,
             ),
             created_at=row.created_at,
-            section_name=row.section_name,
             position_in_section=row.position_in_section,
         )
 

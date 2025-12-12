@@ -40,7 +40,7 @@ def test_get_click_between(db_engine):
             Account(account_id=uuid4(), email=f"{uuid4()}@gmail.com", status="", source="test"),
         ]
 
-        newsletter = Newsletter(account_id=user_account_1.account_id, impressions=[], subject="", body_html="")
+        newsletter = Newsletter(account_id=user_account_1.account_id, sections=[], subject="", body_html="")
         dbNewsletterRepository.store_newsletter(newsletter)
 
         dbClicksRepository.store_click(
