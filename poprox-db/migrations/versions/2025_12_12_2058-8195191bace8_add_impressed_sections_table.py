@@ -22,7 +22,9 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.create_table(
         "section_types",
-        sa.Column("section_type_id", sa.UUID, primary_key=True, nullable=False),
+        sa.Column(
+            "section_type_id", sa.UUID, primary_key=True, nullable=False, server_default=sa.text("gen_random_uuid()")
+        ),
         sa.Column("flavor", sa.String, nullable=True),
         sa.Column("seed", sa.UUID, nullable=True),
         sa.Column("personalized", sa.Boolean, nullable=False),
@@ -31,7 +33,7 @@ def upgrade() -> None:
 
     op.create_table(
         "impressed_sections",
-        sa.Column("section_id", sa.UUID, primary_key=True, nullable=False),
+        sa.Column("section_id", sa.UUID, primary_key=True, nullable=False, server_default=sa.text("gen_random_uuid()")),
         sa.Column("section_type_id", sa.UUID, nullable=False),
         sa.Column("newsletter_id", sa.UUID, nullable=False),
         sa.Column("position", sa.Integer, nullable=False),
@@ -63,25 +65,8 @@ def upgrade() -> None:
         "ch_impressed_sections_position_positive", "impressed_sections", sa.sql.column("position") > 0
     )
 
-    # Add impressed_section_id associate to impression table
-    op.add_column(
-        "impressions",
-        sa.Column("impressed_section_id", sa.UUID, nullable=True, default=sa.Null),
-    )
-
-    op.create_foreign_key(
-        "fk_impression_impressed_section_id",
-        "impressions",
-        "impressed_sections",
-        ["impressed_section_id"],
-        ["section_id"],
-    )
-
 
 def downgrade() -> None:
-    op.drop_constraint("fk_impression_impressed_section_id", "impressions")
-    op.drop_column("impressions", "impressed_section_id")
-
     op.drop_constraint("ch_impressed_sections_position_positive", "impressed_sections")
     op.drop_constraint("uq_impressed_sections_position", "impressed_sections")
     op.drop_constraint("fk_impressed_section_newsletter_id", "impressed_sections", type_="foreignkey")
