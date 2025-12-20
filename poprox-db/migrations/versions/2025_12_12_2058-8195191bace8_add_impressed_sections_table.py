@@ -31,6 +31,8 @@ def upgrade() -> None:
         sa.Column("title", sa.String, nullable=True),
     )
 
+    op.create_unique_constraint("uq_section_types", "section_types", ("flavor", "seed", "personalized", "title"))
+
     op.create_table(
         "impressed_sections",
         sa.Column("section_id", sa.UUID, primary_key=True, nullable=False, server_default=sa.text("gen_random_uuid()")),

@@ -14,6 +14,8 @@ def test_get_click_between(db_engine):
             conn,
             "impressions",
             "clicks",
+            "impressed_sections",
+            "section_types",
             "newsletters",
             "article_placements",
             "articles",

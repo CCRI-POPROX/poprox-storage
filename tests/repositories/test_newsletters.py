@@ -21,6 +21,8 @@ def test_store_and_fetch_newsletters(db_engine):
             conn,
             "impressions",
             "clicks",
+            "impressed_sections",
+            "section_types",
             "newsletters",
             "article_placements",
             "articles",

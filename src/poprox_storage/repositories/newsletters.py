@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
     Connection,
@@ -25,11 +25,12 @@ class DbNewsletterRepository(DatabaseRepository):
             "newsletters",
             "impressions",
             "articles",
+            "section_types",
+            "impressed_sections",
         )
 
     def store_newsletter(self, newsletter: Newsletter):
         newsletter_table = self.tables["newsletters"]
-        impression_table = self.tables["impressions"]
 
         self.conn.commit()  # End any transaction already in progress
         with self.conn.begin():
@@ -47,24 +48,61 @@ class DbNewsletterRepository(DatabaseRepository):
             )
             self.conn.execute(stmt)
 
-            for impression in newsletter.impressions:
-                if impression.preview_image_id:
-                    preview_image_id = str(impression.preview_image_id)
-                else:
-                    preview_image_id = null()
+            for position, section in enumerate(newsletter.sections):
+                self._store_section(newsletter, section, position + 1)
 
-                stmt = insert(impression_table).values(
-                    impression_id=str(impression.impression_id),
-                    newsletter_id=str(newsletter.newsletter_id),
-                    article_id=str(impression.article.article_id),
-                    preview_image_id=preview_image_id,
-                    position=impression.position,
-                    extra=impression.extra,
-                    headline=impression.headline,
-                    subhead=impression.subhead,
-                    position_in_section=impression.position_in_section,
-                )
-                self.conn.execute(stmt)
+    def _store_section(self, newsletter: Newsletter, section: ImpressedSection, position):
+        impressed_sections_table = self.tables["impressed_sections"]
+        section_id = uuid4()
+        section.section_id = section_id
+
+        section_type_id = self._get_section_type(section)
+        stmt = insert(impressed_sections_table).values(
+            section_id=section_id,
+            section_type_id=section_type_id,
+            newsletter_id=newsletter.newsletter_id,
+            position=position,
+        )
+        self.conn.execute(stmt)
+
+        for impression in section.impressions:
+            self._store_impression(newsletter, section, impression)
+
+    def _store_impression(self, newsletter: Newsletter, section: ImpressedSection, impression: Impression):
+        impression_table = self.tables["impressions"]
+
+        if impression.preview_image_id:
+            preview_image_id = str(impression.preview_image_id)
+        else:
+            preview_image_id = null()
+
+        stmt = insert(impression_table).values(
+            impression_id=str(impression.impression_id),
+            newsletter_id=str(newsletter.newsletter_id),
+            impressed_section_id=str(section.section_id),
+            article_id=str(impression.article.article_id),
+            preview_image_id=preview_image_id,
+            position=impression.position,
+            extra=impression.extra,
+            headline=impression.headline,
+            subhead=impression.subhead,
+            position_in_section=impression.position_in_section,
+        )
+        self.conn.execute(stmt)
+
+    def _get_section_type(self, section: ImpressedSection) -> UUID:
+        return self._upsert_and_return_id(
+            self.conn,
+            self.tables["section_types"],
+            {
+                "flavor": section.flavor,
+                "seed": section.seed_entity_id,
+                "personalized": section.personalized,
+                "title": section.title,
+            },
+            "uq_section_types",
+            commit=False,
+        )
 
     def store_newsletter_feedback(self, account_id: UUID, newsletter_id: UUID, feedback: str | None):
         newsletter_table = self.tables["newsletters"]
@@ -94,11 +132,15 @@ class DbNewsletterRepository(DatabaseRepository):
 
     def fetch_newsletters(self, accounts: list[Account]) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
+        section_types_table = self.tables["section_types"]
+        impressed_sections_table = self.tables["impressed_sections"]
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
 
         return self._fetch_newsletters(
             newsletters_table,
+            section_types_table,
+            impressed_sections_table,
             impressions_table,
             articles_table,
             newsletters_table.c.account_id.in_([acct.account_id for acct in accounts]),
@@ -109,6 +151,8 @@ class DbNewsletterRepository(DatabaseRepository):
         self, start_date: datetime, end_date: datetime, accounts: list[Account] | None = None
     ) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
+        section_types_table = self.tables["section_types"]
+        impressed_sections_table = self.tables["impressed_sections"]
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
 
@@ -122,11 +166,19 @@ class DbNewsletterRepository(DatabaseRepository):
             where_clause = and_(where_clause, newsletters_table.c.account_id.in_(account_ids))
 
         return self._fetch_newsletters(
-            newsletters_table, impressions_table, articles_table, where_clause, excluded_columns=["content", "html"]
+            newsletters_table,
+            section_types_table,
+            impressed_sections_table,
+            impressions_table,
+            articles_table,
+            where_clause,
+            excluded_columns=["content", "html"],
         )
 
     def fetch_newsletters_since(self, days_ago=90, accounts: list[Account] | None = None) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
+        section_types_table = self.tables["section_types"]
+        impressed_sections_table = self.tables["impressed_sections"]
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
 
@@ -140,16 +192,26 @@ class DbNewsletterRepository(DatabaseRepository):
             )
 
         return self._fetch_newsletters(
-            newsletters_table, impressions_table, articles_table, where_clause, excluded_columns=["content", "html"]
+            newsletters_table,
+            section_types_table,
+            impressed_sections_table,
+            impressions_table,
+            articles_table,
+            where_clause,
+            excluded_columns=["content", "html"],
         )
 
     def fetch_newsletters_by_treatment_id(self, expt_treatment_ids: list[UUID]) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
+        section_types_table = self.tables["section_types"]
+        impressed_sections_table = self.tables["impressed_sections"]
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
 
         return self._fetch_newsletters(
             newsletters_table,
+            section_types_table,
+            impressed_sections_table,
             impressions_table,
             articles_table,
             newsletters_table.c.treatment_id.in_(expt_treatment_ids),
@@ -202,7 +264,7 @@ class DbNewsletterRepository(DatabaseRepository):
         return sorted(impressions, key=lambda i: i.created_at)
 
     def fetch_most_recent_newsletter(self, account_id, since: datetime, exclude_experiences=True) -> Newsletter | None:
-        # XXX - this does not currently fetch impressions due to this feature not being needed.
+        # XXX - this does not currently fetch sections/impressions due to this feature not being needed.
         newsletters_table = self.tables["newsletters"]
 
         clauses = [newsletters_table.c.account_id == account_id, newsletters_table.c.created_at >= since]
@@ -231,7 +293,14 @@ class DbNewsletterRepository(DatabaseRepository):
         )
 
     def _fetch_newsletters(
-        self, newsletters_table, impressions_table, articles_table, where_clause=None, excluded_columns=None
+        self,
+        newsletters_table,
+        section_types_table,
+        impressed_sections_table,
+        impressions_table,
+        articles_table,
+        where_clause=None,
+        excluded_columns=None,
     ):
         excluded_columns = excluded_columns or []
 
@@ -244,6 +313,26 @@ class DbNewsletterRepository(DatabaseRepository):
 
         newsletter_result = self.conn.execute(newsletter_query).fetchall()
 
+        sections_query = (
+            select(
+                impressed_sections_table,
+                section_types_table.c.flavor,
+                section_types_table.c.seed,
+                section_types_table.c.personalized,
+                section_types_table.c.title,
+            )
+            .join(
+                section_types_table,
+                impressed_sections_table.c.section_type_id == impressed_sections_table.c.section_type_id,
+            )
+            .join(newsletters_table, impressed_sections_table.c.newsletter_id == newsletters_table.c.newsletter_id)
+            .order_by(impressed_sections_table.c.position)
+        )
+
+        if where_clause is not None:
+            sections_query = sections_query.where(where_clause)
+        sections_result = self.conn.execute(sections_query).fetchall()
+
         impressions_query = (
             self.select_impressions_with_articles(impressions_table, articles_table)
             .join(
@@ -254,7 +343,7 @@ class DbNewsletterRepository(DatabaseRepository):
         )
 
         impressions_result = self.conn.execute(impressions_query).fetchall()
-        return self._convert_to_newsletter_objs(newsletter_result, impressions_result)
+        return self._convert_to_newsletter_objs(newsletter_result, sections_result, impressions_result)
 
     def select_impressions_with_articles(self, impressions_table, articles_table):
         return select(
@@ -270,17 +359,31 @@ class DbNewsletterRepository(DatabaseRepository):
             articles_table.c.preview_image_id,
         )
 
-    def _convert_to_newsletter_objs(self, newsletter_result, impressions_result):
-        impressions_by_newsletter_id = defaultdict(list)
+    def _convert_to_newsletter_objs(self, newsletter_result, sections_result, impressions_result):
+        impressions_by_section_id = defaultdict(list)
         for row in impressions_result:
-            impressions_by_newsletter_id[row.newsletter_id].append(self._convert_to_impression_obj(row))
+            impressions_by_section_id[row.impressed_section_id].append(self._convert_to_impression_obj(row))
+
+        sections_by_newsletter = defaultdict(list)
+        for row in sections_result:
+            sections_by_newsletter[row.newsletter_id].append(
+                ImpressedSection(
+                    section_id=row.section_id,
+                    title=row.title,
+                    flavor=row.flavor,
+                    personalized=row.personalized,
+                    seed_entity_id=row.seed,
+                    position=row.position,
+                    impressions=sorted(impressions_by_section_id[row.position], key=lambda x: x.position_in_section),
+                )
+            )
 
         return [
             Newsletter(
                 newsletter_id=row.newsletter_id,
                 account_id=row.account_id,
                 treatment_id=row.treatment_id,
-                sections=[ImpressedSection(impressions=impressions_by_newsletter_id[row.newsletter_id])],
+                sections=sorted(sections_by_newsletter[row.newsletter_id], key=lambda x: x.position),
                 subject=row.email_subject,
                 body_html=row.html if hasattr(row, "html") else "",
                 created_at=row.created_at,
