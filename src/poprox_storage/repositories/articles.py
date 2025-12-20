@@ -386,15 +386,17 @@ class DbArticleRepository(DatabaseRepository):
             constraint="uq_packages",
         )
 
-        insert_stmt = insert(contents_table).values(
-            [
-                {"package_id": package_id, "article_id": article_id, "position": position}
-                for position, article_id in enumerate(package.article_ids, 1)
-            ]
-        )
+        if package_id:
+            insert_stmt = insert(contents_table).values(
+                [
+                    {"package_id": package_id, "article_id": article_id, "position": position}
+                    for position, article_id in enumerate(package.article_ids, 1)
+                ]
+            )
 
-        self.conn.execute(insert_stmt)
-
+            self.conn.execute(insert_stmt)
+        else:
+            logger.error(" No package inserted skipping package content insertion.")
         return package_id
 
     def store_article_link(self, source_article_id: UUID, target_article_id: UUID, link_text: str):
