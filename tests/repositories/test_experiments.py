@@ -42,6 +42,8 @@ def test_store_and_load_experiment():
             "teams",
             "clicks",
             "web_logins",
+            "impressed_sections",
+            "section_types",
             "newsletters",
             "accounts",
         )
@@ -119,6 +121,8 @@ def _store_experiment(conn, path):
         "teams",
         "clicks",
         "web_logins",
+        "impressed_sections",
+        "section_types",
         "newsletters",
         "accounts",
     )
@@ -200,6 +204,8 @@ def test_non_internal_accounts_cannot_be_added_to_team():
             "teams",
             "clicks",
             "web_logins",
+            "impressed_sections",
+            "section_types",
             "newsletters",
             "accounts",
         )
