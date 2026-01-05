@@ -75,8 +75,10 @@ class DbNewsletterRepository(DatabaseRepository):
 
     def _store_section(self, newsletter: Newsletter, section: ImpressedSection, position):
         impressed_sections_table = self.tables["impressed_sections"]
-        section_id = uuid4()
-        section.section_id = section_id
+        section_id = section.section_id
+        if section_id is None:
+            section_id = uuid4()
+            section.section_id = section_id
 
         section_type_id = self._get_section_type(section)
         stmt = insert(impressed_sections_table).values(
