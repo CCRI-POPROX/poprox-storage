@@ -33,16 +33,16 @@ class DbNewsletterRepository(DatabaseRepository):
         section_num = 0
         newsletter_impression_num = 0
 
-        # sort by position
-        newsletter.sections.sort(key=lambda x: x.position)
+        # sort by position -- note, list.sort is stable -- so this shouldn't change order if no positions are sent.
+        newsletter.sections.sort(key=lambda x: x.position if x.position is not None else 0)
         for section in newsletter.sections:
             section_num += 1
             section.position = section_num
 
             section_impression_num = 0
 
-            # sort by position
-            section.impressions.sort(key=lambda x: x.position_in_section)
+            # sort by position -- note, list.sort is stable -- so this shouldn't change order if no positions are sent.
+            section.impressions.sort(key=lambda x: x.position_in_section if x.position_in_section is not None else 0)
             for impression in section.impressions:
                 section_impression_num += 1
                 newsletter_impression_num += 1
