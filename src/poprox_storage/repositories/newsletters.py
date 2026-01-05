@@ -29,8 +29,24 @@ class DbNewsletterRepository(DatabaseRepository):
             "impressed_sections",
         )
 
+    def renumber_impressions(self, newsletter: Newsletter):
+        section_num = 0
+        newsletter_impression_num = 0
+        for section in newsletter.sections:
+            section_num += 1
+            section.position = section_num
+
+            section_impression_num = 0
+            for impression in section.impressions:
+                section_impression_num += 1
+                newsletter_impression_num += 1
+                impression.position_in_section = section_impression_num
+                impression.position = newsletter_impression_num
+
     def store_newsletter(self, newsletter: Newsletter):
         newsletter_table = self.tables["newsletters"]
+
+        self.renumber_impressions(newsletter)
 
         self.conn.commit()  # End any transaction already in progress
         with self.conn.begin():
@@ -323,7 +339,7 @@ class DbNewsletterRepository(DatabaseRepository):
             )
             .join(
                 section_types_table,
-                impressed_sections_table.c.section_type_id == impressed_sections_table.c.section_type_id,
+                impressed_sections_table.c.section_type_id == section_types_table.c.section_type_id,
             )
             .join(newsletters_table, impressed_sections_table.c.newsletter_id == newsletters_table.c.newsletter_id)
             .order_by(impressed_sections_table.c.position)
@@ -374,7 +390,7 @@ class DbNewsletterRepository(DatabaseRepository):
                     personalized=row.personalized,
                     seed_entity_id=row.seed,
                     position=row.position,
-                    impressions=sorted(impressions_by_section_id[row.position], key=lambda x: x.position_in_section),
+                    impressions=sorted(impressions_by_section_id[row.section_id], key=lambda x: x.position_in_section),
                 )
             )
 
