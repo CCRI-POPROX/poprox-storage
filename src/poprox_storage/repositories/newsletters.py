@@ -32,11 +32,17 @@ class DbNewsletterRepository(DatabaseRepository):
     def renumber_impressions(self, newsletter: Newsletter):
         section_num = 0
         newsletter_impression_num = 0
+
+        # sort by position
+        newsletter.sections.sort(key=lambda x: x.position)
         for section in newsletter.sections:
             section_num += 1
             section.position = section_num
 
             section_impression_num = 0
+
+            # sort by position
+            section.impressions.sort(key=lambda x: x.position_in_section)
             for impression in section.impressions:
                 section_impression_num += 1
                 newsletter_impression_num += 1
