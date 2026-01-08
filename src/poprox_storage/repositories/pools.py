@@ -61,7 +61,7 @@ class DbCandidatePoolRepository(DatabaseRepository):
         links_table = self.tables["article_links"]
 
         # First get the pool attributes
-        pool_query = select(pools_table).where(pools_table.c.pool_id == candidate_pool_id)
+        pool_query = select(pools_table).where(pools_table.c.candidate_pool_id == candidate_pool_id)
         row = self.conn.execute(pool_query).one_or_none()
         pool = CandidatePool(pool_id=row.candidate_pool_id, pool_type=row.pool_type, created_at=row.created_at)
 
