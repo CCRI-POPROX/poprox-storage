@@ -33,7 +33,7 @@ class DbCandidatePoolRepository(DatabaseRepository):
         pool_insert_stmt = (
             insert(candidate_pools_table)
             .values(candidate_pool_id=pool.pool_id, pool_type=pool.pool_type)
-            .returning(candidate_pools_table.c.pool_id)
+            .returning(candidate_pools_table.c.candidate_pool_id)
         )
 
         row = self.conn.execute(pool_insert_stmt).one_or_none()
