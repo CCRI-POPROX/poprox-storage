@@ -398,7 +398,7 @@ class DbNewsletterRepository(DatabaseRepository):
                     personalized=row.personalized,
                     seed_entity_id=row.seed,
                     position=row.position,
-                    impressions=sorted(impressions_by_section_id[row.section_id], key=lambda x: x.position_in_section),
+                    impressions=sorted(impressions_by_section_id[row.section_id], key=lambda x: x.position),
                 )
             )
 
