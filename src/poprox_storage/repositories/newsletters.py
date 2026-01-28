@@ -463,7 +463,7 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
         for section in newsletter.sections:
             for impression in newsletter.impressions:
                 record = {}
-                #--------------------newsletter items--------------------
+                # --------------------newsletter items--------------------
                 record["account_id"] = str(newsletter.account_id)
                 record["newsletter_id"] = str(newsletter.newsletter_id)
                 record["created_at"] = newsletter.created_at
@@ -476,24 +476,20 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
                     record["recommender_version"] = newsletter.recommender_info.version or ""
                     record["recommender_hash"] = newsletter.recommender_info.hash or ""
 
-                #--------------------section items--------------------
+                # --------------------section items--------------------
                 record["section_id"] = str(section.section_id) if section.section_id else ""
                 record["section_title"] = section.title or ""
                 record["section_flavor"] = section.flavor or ""
                 record["section_personalized"] = section.personalized
-                record["section_seed_entity_id"] = (
-                    str(section.seed_entity_id) if section.seed_entity_id else ""
-                )
+                record["section_seed_entity_id"] = str(section.seed_entity_id) if section.seed_entity_id else ""
                 record["section_position"] = section.position
 
-                #--------------------impression items--------------------
+                # --------------------impression items--------------------
                 record["article_id"] = str(impression.article.article_id)
                 record["headline"] = impression.headline
                 record["subhead"] = impression.subhead
                 record["article_preview_image_id"] = (
-                    str(impression.preview_image_id)
-                    if impression.preview_image_id
-                    else ""
+                    str(impression.preview_image_id) if impression.preview_image_id else ""
                 )
                 record["position"] = impression.position
                 record["impression_feedback"] = str(impression.feedback)
