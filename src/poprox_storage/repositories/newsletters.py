@@ -490,7 +490,11 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
                 record["article_id"] = str(impression.article.article_id)
                 record["headline"] = impression.headline
                 record["subhead"] = impression.subhead
-                record["article_preview_image_id"] = str(impression.preview_image_id) if impression.preview_image_id else ""
+                record["article_preview_image_id"] = (
+                    str(impression.preview_image_id)
+                    if impression.preview_image_id
+                    else ""
+                )
                 record["position"] = impression.position
                 record["impression_feedback"] = str(impression.feedback)
 
