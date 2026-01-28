@@ -460,27 +460,42 @@ class S3NewsletterRepository(S3Repository):
 def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool = False) -> list[dict]:
     impression_records = []
     for newsletter in newsletters:
-        records = []
-        for impression in newsletter.impressions:
-            record = {}
-            record["account_id"] = str(newsletter.account_id)
-            record["newsletter_id"] = str(newsletter.newsletter_id)
-            record["article_id"] = str(impression.article.article_id)
-            record["article_preview_image_id"] = str(impression.preview_image_id) if impression.preview_image_id else ""
-            record["position"] = impression.position
-            record["created_at"] = newsletter.created_at
-            record["headline"] = impression.headline
-            record["subhead"] = impression.subhead
-            record["newsletter_feedback"] = str(newsletter.feedback)
-            record["impression_feedback"] = str(impression.feedback)
-            record["recommender_name"] = newsletter.recommender_info.name if newsletter.recommender_info else ""
-            record["recommender_version"] = newsletter.recommender_info.version if newsletter.recommender_info else ""
-            record["recommender_hash"] = newsletter.recommender_info.hash if newsletter.recommender_info else ""
-            if include_treatment:
-                record["treatment_id"] = str(newsletter.treatment_id)
-            if impression.extra:
-                for k, v in impression.extra.items():
-                    record[str(k)] = v
-            records.append(record)
-        impression_records.extend(records)
+        for section in newsletter.sections:
+            for impression in newsletter.impressions:
+                record = {}
+                #--------------------newsletter items--------------------
+                record["account_id"] = str(newsletter.account_id)
+                record["newsletter_id"] = str(newsletter.newsletter_id)
+                record["created_at"] = newsletter.created_at
+                record["newsletter_feedback"] = str(newsletter.feedback)
+
+                if include_treatment:
+                    record["treatment_id"] = str(newsletter.treatment_id)
+                if newsletter.recommender_info:
+                    record["recommender_name"] = newsletter.recommender_info.name or ""
+                    record["recommender_version"] = newsletter.recommender_info.version or ""
+                    record["recommender_hash"] = newsletter.recommender_info.hash or ""
+
+                #--------------------section items--------------------
+                record["section_id"] = str(section.section_id) if section.section_id else ""
+                record["section_title"] = section.title or ""
+                record["section_flavor"] = section.flavor or ""
+                record["section_personalized"] = section.personalized
+                record["section_seed_entity_id"] = (
+                    str(section.seed_entity_id) if section.seed_entity_id else ""
+                )
+                record["section_position"] = section.position
+
+                #--------------------impression items--------------------
+                record["article_id"] = str(impression.article.article_id)
+                record["headline"] = impression.headline
+                record["subhead"] = impression.subhead
+                record["article_preview_image_id"] = str(impression.preview_image_id) if impression.preview_image_id else ""
+                record["position"] = impression.position
+                record["impression_feedback"] = str(impression.feedback)
+
+                if impression.extra:
+                    for k, v in impression.extra.items():
+                        record[str(k)] = v
+                impression_records.append(record)
     return impression_records
