@@ -10,6 +10,7 @@ class S3CompensationRepository(S3Repository):
         self,
         accounts: list[Account],
         active_days: dict[UUID, int],
+        survey_counts: dict[UUID, int],
         file_prefix: str,
         start_time: datetime = None,
     ):
@@ -19,6 +20,7 @@ class S3CompensationRepository(S3Repository):
                 "email": acct.email,
                 "compensation": acct.compensation,
                 "active_days": active_days[acct.account_id],
+                "survey_counts": survey_counts[acct.account_id],
             }
             for acct in accounts
         ]
