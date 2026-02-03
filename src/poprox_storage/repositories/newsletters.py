@@ -108,6 +108,7 @@ class DbNewsletterRepository(DatabaseRepository):
             preview_image_id=preview_image_id,
             position=impression.position,
             extra=impression.extra,
+            label=impression.label,
             headline=impression.headline,
             subhead=impression.subhead,
             position_in_section=impression.position_in_section,
@@ -424,6 +425,7 @@ class DbNewsletterRepository(DatabaseRepository):
         return Impression(
             impression_id=row.impression_id,
             newsletter_id=row.newsletter_id,
+            label=row.label,
             headline=row.headline,
             subhead=row.subhead,
             position=row.position,
@@ -469,6 +471,7 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
             record["article_preview_image_id"] = str(impression.preview_image_id) if impression.preview_image_id else ""
             record["position"] = impression.position
             record["created_at"] = newsletter.created_at
+            record["label"] = impression.label
             record["headline"] = impression.headline
             record["subhead"] = impression.subhead
             record["newsletter_feedback"] = str(newsletter.feedback)
