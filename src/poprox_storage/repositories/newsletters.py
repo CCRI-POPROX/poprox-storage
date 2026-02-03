@@ -108,6 +108,7 @@ class DbNewsletterRepository(DatabaseRepository):
             preview_image_id=preview_image_id,
             position=impression.position,
             extra=impression.extra,
+            label=impression.label,
             headline=impression.headline,
             subhead=impression.subhead,
             position_in_section=impression.position_in_section,
@@ -424,6 +425,7 @@ class DbNewsletterRepository(DatabaseRepository):
         return Impression(
             impression_id=row.impression_id,
             newsletter_id=row.newsletter_id,
+            label=row.label,
             headline=row.headline,
             subhead=row.subhead,
             position=row.position,
@@ -459,6 +461,7 @@ class S3NewsletterRepository(S3Repository):
 
 def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool = False) -> list[dict]:
     impression_records = []
+
     for newsletter in newsletters:
         for section in newsletter.sections:
             for impression in newsletter.impressions:
@@ -471,10 +474,15 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
 
                 if include_treatment:
                     record["treatment_id"] = str(newsletter.treatment_id)
+
                 if newsletter.recommender_info:
-                    record["recommender_name"] = newsletter.recommender_info.name or ""
-                    record["recommender_version"] = newsletter.recommender_info.version or ""
-                    record["recommender_hash"] = newsletter.recommender_info.hash or ""
+                    record["recommender_name"] = newsletter.recommender_info.name
+                    record["recommender_version"] = newsletter.recommender_info.version
+                    record["recommender_hash"] = newsletter.recommender_info.hash
+                else:
+                    record["recommender_name"] = ""
+                    record["recommender_version"] = ""
+                    record["recommender_hash"] = ""
 
                 # --------------------section items--------------------
                 record["section_id"] = str(section.section_id) if section.section_id else ""
@@ -486,6 +494,7 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
 
                 # --------------------impression items--------------------
                 record["article_id"] = str(impression.article.article_id)
+                record["label"] = impression.label
                 record["headline"] = impression.headline
                 record["subhead"] = impression.subhead
                 record["article_preview_image_id"] = (
@@ -497,5 +506,7 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
                 if impression.extra:
                     for k, v in impression.extra.items():
                         record[str(k)] = v
+
                 impression_records.append(record)
+
     return impression_records

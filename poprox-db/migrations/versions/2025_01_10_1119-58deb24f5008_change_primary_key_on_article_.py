@@ -33,7 +33,6 @@ def upgrade() -> None:
         sa.Column(
             "placement_id",
             sa.UUID,
-            primary_key=True,
             server_default=sa.text("gen_random_uuid()"),
         ),
     )
