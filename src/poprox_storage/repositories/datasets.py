@@ -68,42 +68,18 @@ class DbDatasetRepository(DatabaseRepository):
         rows = self.conn.execute(query).fetchall()
         return {row.account_id: row.alias_id for row in rows}
 
-    def fetch_newsletters(self, dataset_id: UUID, start: datetime, end: datetime) -> list[Newsletter]:
-        newsletters_table = self.tables["newsletters"]
+    def fetch_newsletter_impressions(self, newsletter_ids: list[UUID]) -> list[Impression]:
+        """
+        Fetch impressions for a list of newsletters.
+        """
+        if not newsletter_ids:
+            return []
+
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
-        alias_table = self.tables["account_aliases"]
 
-        alias_newsletter_query = (
+        query = (
             select(
-                alias_table.c.account_id,
-                newsletters_table.c.newsletter_id,
-            )
-            .join(newsletters_table, alias_table.c.account_id == newsletters_table.c.account_id)
-            .where(
-                and_(
-                    alias_table.c.dataset_id == dataset_id,
-                    newsletters_table.c.created_at >= start,
-                    newsletters_table.c.created_at <= end,
-                )
-            )
-        ).subquery()
-
-        newsletter_query = select(
-            alias_newsletter_query.c.account_id,
-            newsletters_table.c.newsletter_id,
-            newsletters_table.c.account_id,
-            newsletters_table.c.html,
-            newsletters_table.c.created_at,
-            newsletters_table.c.email_subject,
-            newsletters_table.c.treatment_id,
-        ).join(newsletters_table, newsletters_table.c.newsletter_id == alias_newsletter_query.c.newsletter_id)
-
-        newsletter_result = self.conn.execute(newsletter_query).fetchall()
-
-        impressions_query = (
-            select(
-                alias_newsletter_query.c.newsletter_id,
                 impressions_table.c.impression_id,
                 impressions_table.c.preview_image_id,
                 impressions_table.c.position,
@@ -119,16 +95,58 @@ class DbDatasetRepository(DatabaseRepository):
                 articles_table.c.preview_image_id,
                 articles_table.c.body,
             )
-            .join(impressions_table, alias_newsletter_query.c.newsletter_id == impressions_table.c.newsletter_id)
-            .join(
-                articles_table,
-                articles_table.c.article_id == impressions_table.c.article_id,
+            .join(articles_table, articles_table.c.article_id == impressions_table.c.article_id)
+            .where(impressions_table.c.newsletter_id.in_(newsletter_ids))
+        )
+
+        result = self.conn.execute(query).fetchall()
+
+        impressions = [self._convert_to_impression_obj(row) for row in result]
+
+        return impressions
+
+    def fetch_newsletters(self, dataset_id: UUID, start: datetime, end: datetime) -> list[Newsletter]:
+        """
+        This function does not fetch impressions, see `fetch_newsletter_impressions`
+        for fetching impressions seperately.
+        """
+
+        newsletters_table = self.tables["newsletters"]
+        alias_table = self.tables["account_aliases"]
+
+        query = (
+            select(
+                alias_table.c.account_id,
+                newsletters_table.c.newsletter_id,
+                newsletters_table.c.treatment_id,
+                newsletters_table.c.html,
+                newsletters_table.c.email_subject,
+                newsletters_table.c.created_at,
+            )
+            .join(newsletters_table, alias_table.c.account_id == newsletters_table.c.account_id)
+            .where(
+                and_(
+                    alias_table.c.dataset_id == dataset_id,
+                    newsletters_table.c.created_at >= start,
+                    newsletters_table.c.created_at <= end,
+                )
             )
         )
 
-        impressions_result = self.conn.execute(impressions_query).fetchall()
+        result = self.conn.execute(query).fetchall()
 
-        return self._convert_to_newsletter_objs(newsletter_result, impressions_result)
+        return [
+            Newsletter(
+                newsletter_id=row.newsletter_id,
+                account_id=row.account_id,
+                treatment_id=row.treatment_id,
+                impressions=[],
+                subject=row.email_subject,
+                body_html=row.html,
+                created_at=row.created_at,
+            )
+            for row in result
+        ]
 
     def _convert_to_newsletter_objs(self, newsletter_result, impressions_result):
         impressions_by_newsletter_id = defaultdict(list)
