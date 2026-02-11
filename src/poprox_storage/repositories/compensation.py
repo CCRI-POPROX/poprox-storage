@@ -1,8 +1,45 @@
 from datetime import datetime
 from uuid import UUID
 
-from poprox_concepts.domain import Account
+from sqlalchemy import (
+    Connection,
+    select,
+)
+
+from poprox_concepts.domain import Account, CompensationPeriod
+from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
+
+
+class DbCompensationRepository(DatabaseRepository):
+    def __init__(self, connection: Connection):
+        super().__init__(connection)
+        self.tables = self._load_tables("compensation_periods")
+
+    def store_compensation_period(self, compensation_period: CompensationPeriod) -> UUID | None:
+        return self._insert_model(
+            "compensation_periods",
+            compensation_period,
+            exclude={"compensation_id"},
+            constraint="uq_compensation_periods",
+        )
+
+    def fetch_compensation_period_by_id(self, compensation_id: UUID) -> CompensationPeriod | None:
+        compensation_table = self.tables["compensation_periods"]
+
+        compensation_query = select(compensation_table).where(compensation_table.c.compensation_id == compensation_id)
+
+        result = self.conn.execute(compensation_query).first()
+        if not result:
+            return None
+        else:
+            return CompensationPeriod(
+                compensation_id=result.compensation_id,
+                name=result.name,
+                start_date=result.start_date,
+                end_date=result.end_date,
+                created_at=result.created_at,
+            )
 
 
 class S3CompensationRepository(S3Repository):
