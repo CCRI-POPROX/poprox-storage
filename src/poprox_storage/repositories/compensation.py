@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     Connection,
+    and_,
     select,
 )
 
@@ -24,10 +25,15 @@ class DbCompensationRepository(DatabaseRepository):
             constraint="uq_compensation_periods",
         )
 
-    def fetch_compensation_period_by_id(self, compensation_id: UUID) -> CompensationPeriod | None:
+    def fetch_compensation_period_between(self, start_date: datetime, end_date: datetime) -> CompensationPeriod | None:
         compensation_table = self.tables["compensation_periods"]
 
-        compensation_query = select(compensation_table).where(compensation_table.c.compensation_id == compensation_id)
+        where_clause = and_(
+            compensation_table.c.start_date >= start_date,
+            compensation_table.c.end_date <= end_date,
+        )
+
+        compensation_query = select(compensation_table).where(where_clause)
 
         result = self.conn.execute(compensation_query).first()
         if not result:

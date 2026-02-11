@@ -21,12 +21,11 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.create_table(
         'compensation_periods',
-        sa.Column('compensation_id', sa.UUID(), nullable=False),
+        sa.Column('compensation_id', sa.UUID(), nullable=False, primary_key=True),
         sa.Column('name', sa.String(), nullable=True),
         sa.Column('start_date', sa.Date(), nullable=False),
         sa.Column('end_date', sa.Date(), nullable=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=True),
-        sa.PrimaryKeyConstraint('compensation_id')
     )
 
 
