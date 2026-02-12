@@ -2,9 +2,9 @@ import logging
 from datetime import datetime
 from uuid import UUID
 
+from poprox_concepts.domain import AccountInterest
 from sqlalchemy import Connection, case, func, select
 
-from poprox_concepts.domain import AccountInterest
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
@@ -228,6 +228,36 @@ class DbAccountInterestRepository(DatabaseRepository):
             for row in results
         ]
         return interests
+
+    def fetch_topic_preference_history(self, account_id: UUID) -> list[AccountInterest]:
+        interest_log_tbl = self.tables["account_interest_log"]
+        entity_tbl = self.tables["entities"]
+
+        query = (
+            select(
+                interest_log_tbl.c.entity_id,
+                interest_log_tbl.c.preference,
+                interest_log_tbl.c.frequency,
+                entity_tbl.c.name,
+            )
+            .join(entity_tbl, interest_log_tbl.c.entity_id == entity_tbl.c.entity_id)
+            .where(interest_log_tbl.c.account_id == account_id)
+        )
+
+        results = self.conn.execute(query).all()
+
+        results = [
+            AccountInterest(
+                account_id=account_id,
+                entity_name=row.name,
+                entity_id=row.entity_id,
+                preference=row.preference,
+                frequency=row.frequency,
+            )
+            for row in results
+        ]
+
+        return results
 
 
 class S3AccountInterestRepository(S3Repository):
