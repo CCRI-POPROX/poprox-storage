@@ -2,9 +2,9 @@ import logging
 from datetime import datetime
 from uuid import UUID
 
-from poprox_concepts.domain import AccountInterest
 from sqlalchemy import Connection, case, func, select
 
+from poprox_concepts.domain import AccountInterest
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
 
