@@ -229,6 +229,38 @@ class DbAccountInterestRepository(DatabaseRepository):
         ]
         return interests
 
+    def fetch_topic_preference_history(self, account_id: UUID) -> list[AccountInterest]:
+        interest_log_tbl = self.tables["account_interest_log"]
+        entity_tbl = self.tables["entities"]
+        query = (
+            select(
+                interest_log_tbl.c.entity_id,
+                interest_log_tbl.c.preference,
+                interest_log_tbl.c.frequency,
+                interest_log_tbl.c.created_at,
+                entity_tbl.c.name,
+                entity_tbl.c.entity_type,
+            )
+            .join(entity_tbl, interest_log_tbl.c.entity_id == entity_tbl.c.entity_id)
+            .where(interest_log_tbl.c.account_id == account_id)
+            .order_by(interest_log_tbl.c.created_at.asc())
+        )
+
+        results = self.conn.execute(query).all()
+        interests_logs = [
+            AccountInterest(
+                account_id=account_id,
+                entity_id=row.entity_id,
+                entity_name=row.name,
+                entity_type=row.entity_type,
+                preference=row.preference,
+                frequency=row.frequency,
+                created_at=row.created_at,
+            )
+            for row in results
+        ]
+        return interests_logs
+
 
 class S3AccountInterestRepository(S3Repository):
     def store_as_parquet(
