@@ -135,3 +135,65 @@ def test_store_and_fetch_newsletters(db_engine):
         for impression in user_2_newsletter.impressions:
             expected_id = generate_impression_id(newsletter_2_id, impression.position, impression.article.article_id)
             assert impression.impression_id == expected_id
+
+
+def test_fetch_newsletter_by_id(db_engine):
+    with db_engine.connect() as conn:
+        clear_tables(
+            conn,
+            "impressions",
+            "clicks",
+            "impressed_sections",
+            "section_types",
+            "newsletters",
+            "article_placements",
+            "articles",
+        )
+
+        dbAccountRepository = DbAccountRepository(conn)
+        dbArticleRepository = DbArticleRepository(conn)
+        dbNewsletterRepository = DbNewsletterRepository(conn)
+
+        newsletter_id = uuid4()
+        user_account = dbAccountRepository.store_new_account(email=f"{uuid4()}@example.com", source="test")
+
+        article = Article(
+            headline="headline",
+            subhead="subhead",
+            url="url",
+            external_id="external",
+            source="tests",
+        )
+        dbArticleRepository.store_article(article)
+        article = dbArticleRepository.fetch_articles_by_id([article.article_id])[0]
+
+        newsletter = Newsletter(
+            newsletter_id=newsletter_id,
+            account_id=user_account.account_id,
+            sections=[
+                ImpressedSection(
+                    impressions=[
+                        Impression(
+                            impression_id=generate_impression_id(newsletter_id, 1, article.article_id),
+                            newsletter_id=newsletter_id,
+                            position=1,
+                            article=article,
+                        )
+                    ]
+                )
+            ],
+            subject="fake-subject",
+            body_html="fake-html",
+        )
+        dbNewsletterRepository.store_newsletter(newsletter)
+
+        # Test valid ID
+        fetched_newsletter = dbNewsletterRepository.fetch_newsletter(newsletter_id)
+        assert fetched_newsletter is not None
+        assert fetched_newsletter.newsletter_id == newsletter_id
+        assert len(fetched_newsletter.sections) == 1
+        assert len(fetched_newsletter.impressions) == 1
+        assert fetched_newsletter.impressions[0].article.headline == "headline"
+
+        # Test invalid ID
+        assert dbNewsletterRepository.fetch_newsletter(uuid4()) is None
