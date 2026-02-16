@@ -488,7 +488,7 @@ def extract_and_flatten(newsletters: list[Newsletter], include_treatment: bool =
                 record["section_id"] = str(section.section_id) if section.section_id else ""
                 record["section_title"] = section.title or ""
                 record["section_flavor"] = section.flavor or ""
-                record["section_personalized"] = section.personalized
+                record["section_personalized"] = str(section.personalized)
                 record["section_seed_entity_id"] = str(section.seed_entity_id) if section.seed_entity_id else ""
                 record["section_position"] = section.position
 
