@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from uuid import UUID
 
 from sqlalchemy import (
@@ -25,12 +25,16 @@ class DbCompensationRepository(DatabaseRepository):
             constraint="uq_compensation_periods",
         )
 
-    def fetch_compensation_period_between(self, start_date: datetime, end_date: datetime) -> CompensationPeriod | None:
+    def fetch_compensation_period_between(
+        self, start_date: datetime.date, end_date: datetime.date
+    ) -> CompensationPeriod | None:
         compensation_table = self.tables["compensation_periods"]
+        start_dt = datetime.datetime.combine(start_date, datetime.time.min)
+        end_dt = datetime.datetime.combine(end_date, datetime.time.max)
 
         where_clause = and_(
-            compensation_table.c.start_date <= end_date,
-            compensation_table.c.end_date >= start_date,
+            compensation_table.c.start_date <= end_dt,
+            compensation_table.c.end_date >= start_dt,
         )
 
         compensation_query = select(compensation_table).where(where_clause)
