@@ -29,8 +29,8 @@ class DbCompensationRepository(DatabaseRepository):
         compensation_table = self.tables["compensation_periods"]
 
         where_clause = and_(
-            compensation_table.c.start_date >= start_date,
-            compensation_table.c.end_date <= end_date,
+            compensation_table.c.start_date <= end_date,
+            compensation_table.c.end_date >= start_date,
         )
 
         compensation_query = select(compensation_table).where(where_clause)
