@@ -1,10 +1,9 @@
-from collections import defaultdict
 from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Connection, Table, and_, select
 
-from poprox_concepts.domain import Account, Article, Impression, Newsletter
+from poprox_concepts.domain import Account
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 
 
@@ -19,8 +18,6 @@ class DbDatasetRepository(DatabaseRepository):
             "expt_groups",
             "teams",
             "newsletters",
-            "impressions",
-            "articles",
         )
 
     def store_new_dataset(self, accounts: list[Account], team_id: UUID) -> UUID:
@@ -68,10 +65,8 @@ class DbDatasetRepository(DatabaseRepository):
         rows = self.conn.execute(query).fetchall()
         return {row.account_id: row.alias_id for row in rows}
 
-    def fetch_newsletters(self, dataset_id: UUID, start: datetime, end: datetime) -> list[Newsletter]:
+    def fetch_newsletter_ids(self, dataset_id: UUID, start: datetime, end: datetime) -> list[UUID]:
         newsletters_table = self.tables["newsletters"]
-        impressions_table = self.tables["impressions"]
-        articles_table = self.tables["articles"]
         alias_table = self.tables["account_aliases"]
 
         alias_newsletter_query = (
@@ -87,85 +82,10 @@ class DbDatasetRepository(DatabaseRepository):
                     newsletters_table.c.created_at <= end,
                 )
             )
-        ).subquery()
-
-        newsletter_query = select(
-            alias_newsletter_query.c.account_id,
-            newsletters_table.c.newsletter_id,
-            newsletters_table.c.account_id,
-            newsletters_table.c.html,
-            newsletters_table.c.created_at,
-            newsletters_table.c.email_subject,
-            newsletters_table.c.treatment_id,
-        ).join(newsletters_table, newsletters_table.c.newsletter_id == alias_newsletter_query.c.newsletter_id)
-
-        newsletter_result = self.conn.execute(newsletter_query).fetchall()
-
-        impressions_query = (
-            select(
-                alias_newsletter_query.c.newsletter_id,
-                impressions_table.c.impression_id,
-                impressions_table.c.preview_image_id,
-                impressions_table.c.position,
-                impressions_table.c.extra,
-                articles_table.c.article_id,
-                articles_table.c.headline,
-                articles_table.c.subhead,
-                articles_table.c.url,
-                articles_table.c.published_at,
-                articles_table.c.created_at,
-                articles_table.c.source,
-                articles_table.c.external_id,
-                articles_table.c.preview_image_id,
-                articles_table.c.body,
-            )
-            .join(impressions_table, alias_newsletter_query.c.newsletter_id == impressions_table.c.newsletter_id)
-            .join(
-                articles_table,
-                articles_table.c.article_id == impressions_table.c.article_id,
-            )
         )
 
-        impressions_result = self.conn.execute(impressions_query).fetchall()
-
-        return self._convert_to_newsletter_objs(newsletter_result, impressions_result)
-
-    def _convert_to_newsletter_objs(self, newsletter_result, impressions_result):
-        impressions_by_newsletter_id = defaultdict(list)
-        for row in impressions_result:
-            impressions_by_newsletter_id[row.newsletter_id].append(self._convert_to_impression_obj(row))
-
-        return [
-            Newsletter(
-                newsletter_id=row.newsletter_id,
-                account_id=row.account_id,
-                treatment_id=row.treatment_id,
-                impressions=impressions_by_newsletter_id[row.newsletter_id],
-                subject=row.email_subject,
-                body_html=row.html,
-                created_at=row.created_at,
-            )
-            for row in newsletter_result
-        ]
-
-    def _convert_to_impression_obj(self, row):
-        return Impression(
-            impression_id=row.impression_id,
-            newsletter_id=row.newsletter_id,
-            preview_image_id=row.preview_image_id,
-            position=row.position,
-            extra=row.extra,
-            article=Article(
-                article_id=row.article_id,
-                headline=row.headline,
-                subhead=row.subhead,
-                url=row.url,
-                preview_image_id=row.preview_image_id,
-                published_at=row.published_at,
-                source=row.source,
-                external_id=row.external_id,
-            ),
-        )
+        results = self.conn.execute(alias_newsletter_query).fetchall()
+        return [row.newsletter_id for row in results]
 
     def _insert_dataset(self, team_id: UUID) -> UUID | None:
         return self._upsert_and_return_id(

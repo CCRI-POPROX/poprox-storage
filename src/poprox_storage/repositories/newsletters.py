@@ -155,6 +155,23 @@ class DbNewsletterRepository(DatabaseRepository):
         )
         self.conn.execute(stmt)
 
+    def fetch_newsletters_by_id(self, newsletter_ids: list[UUID]):
+        newsletters_table = self.tables["newsletters"]
+        section_types_table = self.tables["section_types"]
+        impressed_sections_table = self.tables["impressed_sections"]
+        impressions_table = self.tables["impressions"]
+        articles_table = self.tables["articles"]
+
+        return self._fetch_newsletters(
+            newsletters_table,
+            section_types_table,
+            impressed_sections_table,
+            impressions_table,
+            articles_table,
+            newsletters_table.c.newsletter_id.in_(newsletter_ids),
+            excluded_columns=["content", "html"],
+        )
+
     def fetch_newsletters(self, accounts: list[Account]) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
         section_types_table = self.tables["section_types"]
