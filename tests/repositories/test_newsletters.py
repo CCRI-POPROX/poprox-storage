@@ -164,8 +164,8 @@ def test_fetch_newsletter_by_id(db_engine):
             external_id="external",
             source="tests",
         )
-        dbArticleRepository.store_article(article)
-        article = dbArticleRepository.fetch_articles_by_id([article.article_id])[0]
+        article_id = dbArticleRepository.store_article(article)
+        article = dbArticleRepository.fetch_articles_by_id([article_id])[0]
 
         newsletter = Newsletter(
             newsletter_id=newsletter_id,
