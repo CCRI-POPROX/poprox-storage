@@ -243,6 +243,26 @@ class DbNewsletterRepository(DatabaseRepository):
             excluded_columns=["content", "html"],
         )
 
+    def fetch_newsletter(self, newsletter_id: UUID) -> Newsletter | None:
+        newsletters_table = self.tables["newsletters"]
+        section_types_table = self.tables["section_types"]
+        impressed_sections_table = self.tables["impressed_sections"]
+        impressions_table = self.tables["impressions"]
+        articles_table = self.tables["articles"]
+
+        results = self._fetch_newsletters(
+            newsletters_table,
+            section_types_table,
+            impressed_sections_table,
+            impressions_table,
+            articles_table,
+            where_clause=newsletters_table.c.newsletter_id == newsletter_id,
+            excluded_columns=["content", "html"],
+        )
+        if not results:
+            return None
+        return results[0]
+
     def fetch_impressions_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> list[Impression]:
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
