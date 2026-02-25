@@ -217,7 +217,9 @@ class DbNewsletterRepository(DatabaseRepository):
             excluded_columns=["content", "html"],
         )
 
-    def fetch_newsletters_since(self, days_ago=90, accounts: list[Account] | None = None) -> list[Newsletter]:
+    def fetch_newsletters_since(
+        self, days_ago=90, accounts: list[Account] | None = None, shallow=False
+    ) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
         section_types_table = self.tables["section_types"]
         impressed_sections_table = self.tables["impressed_sections"]
@@ -241,6 +243,7 @@ class DbNewsletterRepository(DatabaseRepository):
             articles_table,
             where_clause,
             excluded_columns=["content", "html"],
+            shallow=shallow,
         )
 
     def fetch_newsletters_by_treatment_id(self, expt_treatment_ids: list[UUID]) -> list[Newsletter]:
@@ -363,6 +366,7 @@ class DbNewsletterRepository(DatabaseRepository):
         articles_table,
         where_clause=None,
         excluded_columns=None,
+        shallow=False,
     ):
         excluded_columns = excluded_columns or []
 
@@ -375,36 +379,40 @@ class DbNewsletterRepository(DatabaseRepository):
 
         newsletter_result = self.conn.execute(newsletter_query).fetchall()
 
-        sections_query = (
-            select(
-                impressed_sections_table,
-                section_types_table.c.flavor,
-                section_types_table.c.seed,
-                section_types_table.c.personalized,
-                section_types_table.c.title,
+        if shallow:
+            sections_result = []
+            impressions_result = []
+        else:
+            sections_query = (
+                select(
+                    impressed_sections_table,
+                    section_types_table.c.flavor,
+                    section_types_table.c.seed,
+                    section_types_table.c.personalized,
+                    section_types_table.c.title,
+                )
+                .join(
+                    section_types_table,
+                    impressed_sections_table.c.section_type_id == section_types_table.c.section_type_id,
+                )
+                .join(newsletters_table, impressed_sections_table.c.newsletter_id == newsletters_table.c.newsletter_id)
+                .order_by(impressed_sections_table.c.position)
             )
-            .join(
-                section_types_table,
-                impressed_sections_table.c.section_type_id == section_types_table.c.section_type_id,
+
+            if where_clause is not None:
+                sections_query = sections_query.where(where_clause)
+            sections_result = self.conn.execute(sections_query).fetchall()
+
+            impressions_query = (
+                self.select_impressions_with_articles(impressions_table, articles_table)
+                .join(
+                    impressions_table,
+                    articles_table.c.article_id == impressions_table.c.article_id,
+                )
+                .where(impressions_table.c.newsletter_id.in_([row.newsletter_id for row in newsletter_result]))
             )
-            .join(newsletters_table, impressed_sections_table.c.newsletter_id == newsletters_table.c.newsletter_id)
-            .order_by(impressed_sections_table.c.position)
-        )
 
-        if where_clause is not None:
-            sections_query = sections_query.where(where_clause)
-        sections_result = self.conn.execute(sections_query).fetchall()
-
-        impressions_query = (
-            self.select_impressions_with_articles(impressions_table, articles_table)
-            .join(
-                impressions_table,
-                articles_table.c.article_id == impressions_table.c.article_id,
-            )
-            .where(impressions_table.c.newsletter_id.in_([row.newsletter_id for row in newsletter_result]))
-        )
-
-        impressions_result = self.conn.execute(impressions_query).fetchall()
+            impressions_result = self.conn.execute(impressions_query).fetchall()
         return self._convert_to_newsletter_objs(newsletter_result, sections_result, impressions_result)
 
     def select_impressions_with_articles(self, impressions_table, articles_table):
