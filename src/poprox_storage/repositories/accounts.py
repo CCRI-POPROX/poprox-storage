@@ -93,11 +93,16 @@ class DbAccountRepository(DatabaseRepository):
         query = (
             sqlalchemy.insert(account_tbl)
             .values(email=email, source=source, subsource=subsource, status="new_account")
-            .returning(account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status)
+            .returning(account_tbl.c.account_id, account_tbl.c.email, account_tbl.c.status, account_tbl.c.placebo_id)
         )
         row = self.conn.execute(query).one_or_none()
         return Account(
-            account_id=row.account_id, email=row.email, status=row.status, source=source, subsource=subsource
+            account_id=row.account_id,
+            email=row.email,
+            status=row.status,
+            source=source,
+            subsource=subsource,
+            placebo_id=row.placebo_id,
         )
 
     ######################### storing & fetching the zip code #########################
