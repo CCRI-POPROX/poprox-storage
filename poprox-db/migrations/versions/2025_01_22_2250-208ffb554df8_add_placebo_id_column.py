@@ -19,7 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("accounts", sa.Column("placebo_id", sa.UUID, nullable=True))
+    op.add_column("accounts", sa.Column("placebo_id", sa.String(), nullable=True))
 
 
 def downgrade() -> None:
