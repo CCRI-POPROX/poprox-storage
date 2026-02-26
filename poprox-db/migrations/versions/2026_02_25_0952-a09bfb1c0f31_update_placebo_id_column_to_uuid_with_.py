@@ -26,7 +26,7 @@ def upgrade() -> None:
         sa.Column(
             "placebo_id",
             sa.UUID,
-            nullable=False,
+            nullable=True,
             server_default=sa.text("gen_random_uuid()"),
         ),
     )
