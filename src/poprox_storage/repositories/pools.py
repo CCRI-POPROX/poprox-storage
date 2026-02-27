@@ -1,6 +1,6 @@
 import logging
 from datetime import date, datetime, time
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
     Connection,
@@ -29,6 +29,8 @@ class DbCandidatePoolRepository(DatabaseRepository):
     def store_candidate_pool(self, pool: CandidatePool) -> UUID | None:
         candidate_pools_table = self.tables["candidate_pools"]
         candidate_articles_table = self.tables["candidate_articles"]
+
+        candidate_pool_id: UUID = pool.pool_id or uuid4()
 
         pool_insert_stmt = (
             insert(candidate_pools_table)
