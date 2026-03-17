@@ -261,6 +261,30 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
 
         return self._fetch_clean_responses(where_clause)
 
+    def fetch_clean_responses_sent_between(
+        self, start_date: date, end_date: date, accounts: list[Account] | None = None
+    ) -> list[QualtricsCleanResponse]:
+        instances_table = self.tables["qualtrics_survey_instances"]
+        responses_table = self.tables["qualtrics_clean_responses"]
+
+        response_where_clause = and_(
+            responses_table.c.created_at >= start_date,
+            responses_table.c.created_at <= end_date,
+        )
+
+        survey_where_clause = and_(
+            instances_table.c.created_at >= start_date,
+            instances_table.c.created_at <= end_date,
+        )
+
+        combined_where_clause = and_(response_where_clause, survey_where_clause)
+
+        if accounts:
+            account_ids = [acct.account_id for acct in accounts]
+            final_where_clause = and_(combined_where_clause, instances_table.c.account_id.in_(account_ids))
+
+        return self._fetch_clean_responses(final_where_clause)
+
     def fetch_clean_responses_by_instance_ids(self, instance_ids: list[UUID]) -> list[QualtricsCleanResponse]:
         responses_table = self.tables["qualtrics_clean_responses"]
 
