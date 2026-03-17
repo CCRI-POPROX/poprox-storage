@@ -273,9 +273,9 @@ class DbQualtricsSurveyRepository(DatabaseRepository):
 
         if accounts:
             account_ids = [acct.account_id for acct in accounts]
-            final_where_clause = and_(survey_where_clause, instances_table.c.account_id.in_(account_ids))
+            survey_where_clause = and_(survey_where_clause, instances_table.c.account_id.in_(account_ids))
 
-        return self._fetch_clean_responses(final_where_clause)
+        return self._fetch_clean_responses(survey_where_clause)
 
     def fetch_clean_responses_by_instance_ids(self, instance_ids: list[UUID]) -> list[QualtricsCleanResponse]:
         responses_table = self.tables["qualtrics_clean_responses"]
