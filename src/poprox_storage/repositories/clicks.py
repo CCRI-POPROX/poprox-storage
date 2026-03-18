@@ -110,7 +110,7 @@ class DbClicksRepository(DatabaseRepository):
 
         return self._organize_clicks_by_account(click_result, accounts)
 
-    def filter_clicks_on_newsletters_between(
+    def fetch_clicks_on_newsletters_between(
         self, start_time, end_time, accounts: list[Account] | None
     ) -> dict[UUID, list[Click]]:
         click_table = self.tables["clicks"]
