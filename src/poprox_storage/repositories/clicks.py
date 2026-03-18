@@ -110,6 +110,35 @@ class DbClicksRepository(DatabaseRepository):
 
         return self._organize_clicks_by_account(click_result, accounts)
 
+    def filter_clicks_on_newsletters_between(
+        self, start_time, end_time, accounts: list[Account] | None
+    ) -> dict[UUID, list[Click]]:
+        click_table = self.tables["clicks"]
+        newsletters_table = self.tables["newsletters"]
+
+        click_query = (
+            select(
+                click_table.c.account_id,
+                click_table.c.newsletter_id,
+                click_table.c.impression_id,
+                click_table.c.article_id,
+                click_table.c.created_at,
+            )
+            .select_from(click_table.join(newsletters_table, click_table.c.newsletter_id == newsletters_table.c.id))
+            .where(
+                and_(
+                    click_table.c.account_id.in_([acct.account_id for acct in accounts]),
+                    click_table.c.created_at >= start_time,
+                    click_table.c.created_at <= end_time,
+                    newsletters_table.c.created_at >= start_time,
+                    newsletters_table.c.created_at <= end_time,
+                )
+            )
+        )
+        click_result = self.conn.execute(click_query).fetchall()
+
+        return self._organize_clicks_by_account(click_result, accounts)
+
     def fetch_clicks_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> dict[UUID, list[Click]]:
         click_table = self.tables["clicks"]
 
