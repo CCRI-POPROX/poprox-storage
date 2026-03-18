@@ -124,7 +124,9 @@ class DbClicksRepository(DatabaseRepository):
                 click_table.c.article_id,
                 click_table.c.created_at,
             )
-            .select_from(click_table.join(newsletters_table, click_table.c.newsletter_id == newsletters_table.c.id))
+            .select_from(
+                click_table.join(newsletters_table, click_table.c.newsletter_id == newsletters_table.c.newsletter_id)
+            )
             .where(
                 and_(
                     click_table.c.account_id.in_([acct.account_id for acct in accounts]),
