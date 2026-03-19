@@ -43,7 +43,7 @@ class S3ClicksRepository(S3Repository):
 class DbClicksRepository(DatabaseRepository):
     def __init__(self, connection):
         super().__init__(connection)
-        self.tables = self._load_tables("clicks")
+        self.tables = self._load_tables("clicks", "newsletters")
 
     def store_click(self, newsletter_id, account_id, article_id, headers=None, created_at=None, impression_id=None):
         click_table = self.tables["clicks"]
