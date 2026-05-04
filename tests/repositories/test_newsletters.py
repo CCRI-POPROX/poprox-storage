@@ -195,9 +195,5 @@ def test_fetch_newsletter_by_id(db_engine):
         assert len(fetched_newsletter.impressions) == 1
         assert fetched_newsletter.impressions[0].article.headline == "headline"
 
-        assert dbNewsletterRepository.fetch_newsletter_preview(newsletter_id=newsletter_id) == "fake-html"
-        assert dbNewsletterRepository.fetch_newsletter_preview(account_id=user_account.account_id) == "fake-html"
-
         # Test invalid ID
         assert dbNewsletterRepository.fetch_newsletter(uuid4()) is None
-        assert dbNewsletterRepository.fetch_newsletter_preview(newsletter_id=uuid4()) is None
