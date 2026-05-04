@@ -190,7 +190,7 @@ class DbNewsletterRepository(DatabaseRepository):
         )
 
     def fetch_newsletters_between(
-        self, start_date: datetime, end_date: datetime, accounts: list[Account] | None = None
+        self, start_date: datetime, end_date: datetime, accounts: list[Account] | list[UUID] | None = None
     ) -> list[Newsletter]:
         newsletters_table = self.tables["newsletters"]
         section_types_table = self.tables["section_types"]
@@ -203,9 +203,11 @@ class DbNewsletterRepository(DatabaseRepository):
             newsletters_table.c.created_at <= end_date,
         )
 
-        if accounts:
+        if accounts and len(accounts) > 0 and isinstance(accounts[0], Account):
             account_ids = [a.account_id for a in accounts]
             where_clause = and_(where_clause, newsletters_table.c.account_id.in_(account_ids))
+        elif accounts and len(accounts) > 0 and isinstance(accounts[0], UUID):
+            where_clause = and_(where_clause, newsletters_table.c.account_id.in_(accounts))
 
         return self._fetch_newsletters(
             newsletters_table,
