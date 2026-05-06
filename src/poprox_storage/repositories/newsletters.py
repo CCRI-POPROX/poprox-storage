@@ -457,6 +457,7 @@ class DbNewsletterRepository(DatabaseRepository):
                 subject=row.email_subject,
                 body_html=row.html if hasattr(row, "html") else "",
                 created_at=row.created_at,
+                feedback=row.feedback,
                 recommender_info=RecommenderInfo(
                     name=row.recommender_name,
                     version=row.recommender_version,
