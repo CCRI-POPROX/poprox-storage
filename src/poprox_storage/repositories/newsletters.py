@@ -283,6 +283,29 @@ class DbNewsletterRepository(DatabaseRepository):
             return None
         return results[0]
 
+    def fetch_newsletter_preview(
+        self,
+        newsletter_id: UUID | None = None,
+        account_id: UUID | None = None,
+    ) -> str | None:
+        newsletters_table = self.tables["newsletters"]
+        query = select(newsletters_table.c.html).select_from(newsletters_table)
+
+        if newsletter_id is not None:
+            query = query.where(newsletters_table.c.newsletter_id == newsletter_id)
+        else:
+            query = query.where(newsletters_table.c.html.isnot(None))
+            if account_id is not None:
+                query = query.where(newsletters_table.c.account_id == account_id)
+            query = query.order_by(newsletters_table.c.created_at.desc()).limit(1)
+
+        row = self.conn.execute(query).one_or_none()
+
+        if row is None:
+            return None
+
+        return row.html
+
     def fetch_impressions_by_newsletter_ids(self, newsletter_ids: list[UUID]) -> list[Impression]:
         impressions_table = self.tables["impressions"]
         articles_table = self.tables["articles"]
