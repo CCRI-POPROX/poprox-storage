@@ -88,10 +88,31 @@ class DbArticleRepository(DatabaseRepository):
         query = select(article_table).where(article_table.c.article_id.in_(ids))
         return _fetch_articles(self.conn, query, links_table)
 
+    def fetch_article_packages_ingested_between(self, start_date, end_date) -> list[ArticlePackage]:
+        """Fetch article packages that were injested inbetween a specified date range"""
+        packages_table = self.tables["article_packages"]
+        entities_table = self.tables["entities"]
+
+        # Fetch packages with entity information using LEFT JOIN to avoid N+1 queries
+        packages_query = (
+            select(
+                packages_table,
+                entities_table.c.entity_id.label("seed_entity_id"),
+                entities_table.c.external_id.label("seed_external_id"),
+                entities_table.c.name.label("seed_name"),
+                entities_table.c.entity_type.label("seed_entity_type"),
+                entities_table.c.source.label("seed_source"),
+                entities_table.c.raw_data.label("seed_raw_data"),
+            )
+            .where(and_(packages_table.c.created_at <= end_date, packages_table.c.created_at >= start_date))
+            .outerjoin(entities_table, packages_table.c.entity_id == entities_table.c.entity_id)
+        )
+
+        return self._fetch_article_packages(packages_query)
+
     def fetch_article_packages_ingested_since(self, days_ago=1) -> list[ArticlePackage]:
         """Fetch article packages that were ingested within the specified number of days."""
         packages_table = self.tables["article_packages"]
-        contents_table = self.tables["article_package_contents"]
         entities_table = self.tables["entities"]
 
         cutoff = datetime.now() - timedelta(days=days_ago)
@@ -110,6 +131,12 @@ class DbArticleRepository(DatabaseRepository):
             .where(packages_table.c.created_at > cutoff)
             .outerjoin(entities_table, packages_table.c.entity_id == entities_table.c.entity_id)
         )
+        return self._fetch_article_packages(packages_query)
+
+    def _fetch_article_packages(self, packages_query) -> list[ArticlePackage]:
+        """Fetch article packages that were ingested within the specified number of days."""
+        contents_table = self.tables["article_package_contents"]
+
         packages_result = self.conn.execute(packages_query).fetchall()
 
         package_lookup = {}
