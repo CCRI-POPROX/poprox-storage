@@ -65,7 +65,6 @@ class DbCandidatePoolRepository(DatabaseRepository):
         # First get the pool attributes
         pool_query = select(pools_table).where(pools_table.c.candidate_pool_id == candidate_pool_id)
         row = self.conn.execute(pool_query).one_or_none()
-        pool = CandidatePool(pool_id=row.candidate_pool_id, pool_type=row.pool_type, created_at=row.created_at)
 
         # Then query for the articles and attach to the pool
         query = (
@@ -73,7 +72,12 @@ class DbCandidatePoolRepository(DatabaseRepository):
             .join(candidates_table, candidates_table.c.article_id == articles_table.c.article_id)
             .where(candidates_table.c.candidate_pool_id == candidate_pool_id)
         )
-        pool.articles = _fetch_articles(self.conn, query, links_table)
+        pool = CandidatePool(
+            pool_id=row.candidate_pool_id,
+            pool_type=row.pool_type,
+            created_at=row.created_at,
+            articles=_fetch_articles(self.conn, query, links_table),
+        )
 
         return pool
 
@@ -93,7 +97,9 @@ class DbCandidatePoolRepository(DatabaseRepository):
         rows = self.conn.execute(pool_query).fetchall()
 
         pools = [
-            CandidatePool(pool_id=row.candidate_pool_id, pool_type=row.pool_type, created_at=row.created_at)
+            CandidatePool(
+                pool_id=row.candidate_pool_id, pool_type=row.pool_type, created_at=row.created_at, articles=[]
+            )  # fill in articles later
             for row in rows
         ]
 
