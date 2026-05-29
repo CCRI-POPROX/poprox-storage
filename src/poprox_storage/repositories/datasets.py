@@ -28,6 +28,20 @@ class DbDatasetRepository(DatabaseRepository):
 
         return dataset_id
 
+    def fetch_and_update_dataset(self, accounts: list[Account], team_id: UUID, dataset_id: UUID) -> UUID:
+        # make sure dataset exists.
+        self._upsert_and_return_id(
+            self.conn,
+            self.tables["datasets"],
+            {"dataset_id": dataset_id, "team_id": team_id},
+            commit=False,
+        )
+
+        for account in accounts:
+            self._insert_account_alias(dataset_id, account)
+
+        return dataset_id
+
     def fetch_dataset_id_by_assignment(self, assignment_id: UUID) -> UUID:
         dataset_table = self.tables["datasets"]
         experiment_table = self.tables["experiments"]
@@ -103,5 +117,6 @@ class DbDatasetRepository(DatabaseRepository):
                 "dataset_id": dataset_id,
                 "account_id": account.account_id,
             },
+            constraint="uq_account_aliases",
             commit=False,
         )
