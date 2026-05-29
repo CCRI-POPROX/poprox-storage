@@ -34,6 +34,7 @@ class DbDatasetRepository(DatabaseRepository):
             self.conn,
             self.tables["datasets"],
             {"dataset_id": dataset_id, "team_id": team_id},
+            constraint="datasets_pkey",
             commit=False,
         )
 
