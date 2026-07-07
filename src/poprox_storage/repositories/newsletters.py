@@ -208,6 +208,11 @@ class DbNewsletterRepository(DatabaseRepository):
             where_clause = and_(where_clause, newsletters_table.c.account_id.in_(account_ids))
         elif accounts and len(accounts) > 0 and isinstance(accounts[0], UUID):
             where_clause = and_(where_clause, newsletters_table.c.account_id.in_(accounts))
+        elif accounts and len(accounts) > 0:
+            # something non-empty was passed to accounts, but not UUIDs or Accounts.
+            raise TypeError(
+                f"DbNewsletterRespository.fetch_newsletters_between called with invalid accounts parameter = {accounts}"
+            )
 
         return self._fetch_newsletters(
             newsletters_table,
