@@ -67,7 +67,7 @@ def test_fetch_by_external_id_without_source_is_backward_compatible(db_engine):
 
 
 def test_metadata_only_article_round_trips(db_engine):
-    # A ProPublica-shaped article: body text, canonical url, no images/mentions.
+    # A ProPublica-shaped link-out article: canonical url, no full text, images, or mentions.
     with db_engine.connect() as conn:
         clear_tables(conn, *_TABLES)
         repo = DbArticleRepository(conn)
@@ -77,7 +77,7 @@ def test_metadata_only_article_round_trips(db_engine):
                 url="https://www.propublica.org/article/investigation",
                 source="ProPublica",
                 external_id="pp-meta-1",
-                body="full article text",
+                body=None,
                 images=None,
                 preview_image_id=None,
             )
@@ -88,7 +88,7 @@ def test_metadata_only_article_round_trips(db_engine):
         assert article.headline == "An Investigation"
         assert article.url == "https://www.propublica.org/article/investigation"
         assert article.source == "ProPublica"
-        assert article.body == "full article text"
+        assert article.body is None
         assert not article.images  # None/empty: no images persisted
 
         # metadata-only -> zero image-association and mention rows
