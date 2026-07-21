@@ -179,9 +179,12 @@ class DbArticleRepository(DatabaseRepository):
 
         return list(package_lookup.values())
 
-    def fetch_article_by_external_id(self, id_: str) -> Article | None:
+    def fetch_article_by_external_id(self, id_: str, source: str | None = None) -> Article | None:
         article_table = self.tables["articles"]
-        deduped = self._get_deduped_articles(article_table, article_table.c.external_id == id_)
+        where_clause = article_table.c.external_id == id_
+        if source is not None:
+            where_clause = and_(where_clause, article_table.c.source == source)
+        deduped = self._get_deduped_articles(article_table, where_clause)
         return deduped[0] if deduped else None
 
     def fetch_article_mentions(self, articles: list[Article]) -> list[Article]:
