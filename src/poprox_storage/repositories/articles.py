@@ -640,18 +640,6 @@ class S3ArticleRepository(S3Repository):
         records = extract_and_flatten_links(links)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
-    def extract_and_flatten_links(links: list[ArticleLink]) -> list[dict]:
-        """Flatten article_links rows for parquet export"""
-        return [
-            {
-                "link_id": str(link.link_id),
-                "source_article_id": str(link.source_article_id),
-                "target_article_id": str(link.target_article_id),
-                "link_text": link.link_text,
-            }
-            for link in links
-        ]
-
     def store_mentions_as_parquet(
         self,
         mentions: list[Mention],
@@ -705,6 +693,19 @@ def extract_and_flatten_mentions(mentions):
         return result
 
     return [flatten(mention) for mention in mentions]
+
+
+def extract_and_flatten_links(links: list[ArticleLink]) -> list[dict]:
+    """Flatten article_links rows for parquet export"""
+    return [
+        {
+            "link_id": str(link.link_id),
+            "source_article_id": str(link.source_article_id),
+            "target_article_id": str(link.target_article_id),
+            "link_text": link.link_text,
+        }
+        for link in links
+    ]
 
 
 def extract_and_flatten_packages(packages):
