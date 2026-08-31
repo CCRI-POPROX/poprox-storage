@@ -374,9 +374,23 @@ class DbArticleRepository(DatabaseRepository):
             created_at=package_row.created_at,
         )
 
-    def fetch_all_article_links(self) -> list[ArticleLink]:
+    def fetch_all_article_links_from(self, article_ids: list[UUID]) -> list[ArticleLink]:
         links_table = self.tables["article_links"]
-        query = select(links_table)
+        query = select(links_table).where(links_table.c.source_article_id.in_(article_ids))
+        result = self.conn.execute(query).fetchall()
+        return [
+            ArticleLink(
+                link_id=row.link_id,
+                source_article_id=row.source_article_id,
+                target_article_id=row.target_article_id,
+                link_text=row.link_text,
+            )
+            for row in result
+        ]
+
+    def fetch_all_article_links_to(self, article_ids: list[UUID]) -> list[ArticleLink]:
+        links_table = self.tables["article_links"]
+        query = select(links_table).where(links_table.c.target_article_id.in_(article_ids))
         result = self.conn.execute(query).fetchall()
         return [
             ArticleLink(
