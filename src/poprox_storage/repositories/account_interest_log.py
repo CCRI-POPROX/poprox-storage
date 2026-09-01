@@ -60,12 +60,15 @@ class DbAccountInterestRepository(DatabaseRepository):
 
         exclude_types = exclude_types or []
 
+        # Names don't identify entities uniquely, so return a deterministic match
         query = (
             select(entity_tbl.c.entity_id)
             .where(entity_tbl.c.entity_type.notin_(exclude_types))
             .filter(func.lower(entity_tbl.c.name) == func.lower(entity_name))
+            .order_by(entity_tbl.c.entity_id.asc())
+            .limit(1)
         )
-        result = self.conn.execute(query).one_or_none()
+        result = self.conn.execute(query).first()
 
         if result is not None:
             result = result.entity_id
