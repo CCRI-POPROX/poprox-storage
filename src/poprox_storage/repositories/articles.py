@@ -16,7 +16,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Connection
 from tqdm import tqdm
 
-from poprox_concepts.domain import Article, ArticlePackage, Entity, Mention
+from poprox_concepts.domain import Article, ArticleLink, ArticlePackage, Entity, Mention
 from poprox_storage.aws import DEV_BUCKET_NAME, s3
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.data_stores.s3 import S3Repository
@@ -374,6 +374,34 @@ class DbArticleRepository(DatabaseRepository):
             created_at=package_row.created_at,
         )
 
+    def fetch_all_article_links_from(self, article_ids: list[UUID]) -> list[ArticleLink]:
+        links_table = self.tables["article_links"]
+        query = select(links_table).where(links_table.c.source_article_id.in_(article_ids))
+        result = self.conn.execute(query).fetchall()
+        return [
+            ArticleLink(
+                link_id=row.link_id,
+                source_article_id=row.source_article_id,
+                target_article_id=row.target_article_id,
+                link_text=row.link_text,
+            )
+            for row in result
+        ]
+
+    def fetch_all_article_links_to(self, article_ids: list[UUID]) -> list[ArticleLink]:
+        links_table = self.tables["article_links"]
+        query = select(links_table).where(links_table.c.target_article_id.in_(article_ids))
+        result = self.conn.execute(query).fetchall()
+        return [
+            ArticleLink(
+                link_id=row.link_id,
+                source_article_id=row.source_article_id,
+                target_article_id=row.target_article_id,
+                link_text=row.link_text,
+            )
+            for row in result
+        ]
+
     def store_articles(self, articles: list[Article], *, mentions=False, progress=False):
         failed = 0
 
@@ -616,6 +644,16 @@ class S3ArticleRepository(S3Repository):
         records = extract_and_flatten(articles)
         return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
 
+    def store_article_links_as_parquet(
+        self,
+        links: list[ArticleLink],
+        bucket_name: str,
+        file_prefix: str,
+        start_time: datetime = None,
+    ):
+        records = extract_and_flatten_links(links)
+        return self._write_records_as_parquet(records, bucket_name, file_prefix, start_time)
+
     def store_mentions_as_parquet(
         self,
         mentions: list[Mention],
@@ -669,6 +707,19 @@ def extract_and_flatten_mentions(mentions):
         return result
 
     return [flatten(mention) for mention in mentions]
+
+
+def extract_and_flatten_links(links: list[ArticleLink]) -> list[dict]:
+    """Flatten article_links rows for parquet export"""
+    return [
+        {
+            "link_id": str(link.link_id),
+            "source_article_id": str(link.source_article_id),
+            "target_article_id": str(link.target_article_id),
+            "link_text": link.link_text,
+        }
+        for link in links
+    ]
 
 
 def extract_and_flatten_packages(packages):
