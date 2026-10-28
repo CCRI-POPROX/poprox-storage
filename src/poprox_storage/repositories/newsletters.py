@@ -224,6 +224,26 @@ class DbNewsletterRepository(DatabaseRepository):
             excluded_columns=["content", "html"],
         )
 
+    def fetch_newsletter_dates_between(
+        self, start_date: datetime, end_date: datetime, account_ids: list[UUID] | None = None
+    ) -> list:
+        """
+        Intended for daily stats.
+        Returns lightweight rows (newsletter_id, created_at) rather than full
+        Newsletter objects.
+        """
+        if account_ids is not None and len(account_ids) == 0:
+            return []
+        newsletters_table = self.tables["newsletters"]
+        query = select(newsletters_table.c.newsletter_id, newsletters_table.c.created_at
+                       ).where(and_(newsletters_table.c.created_at >= start_date,
+                               newsletters_table.c.created_at <= end_date))
+        if account_ids is not None:
+            query = query.where(newsletters_table.c.account_id.in_(account_ids))
+
+            return self.conn.execute(query).fetchall()
+    
+
     def fetch_newsletters_since(
         self, days_ago=90, accounts: list[Account] | None = None, shallow=False
     ) -> list[Newsletter]:
