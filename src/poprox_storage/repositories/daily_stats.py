@@ -3,7 +3,6 @@ from datetime import date, datetime, time, timedelta
 
 from poprox_concepts.api.click_filtering import filter_click_histories
 from poprox_storage.concepts.daily_stats import DailyStat
-
 from poprox_storage.repositories.accounts import DbAccountRepository
 from poprox_storage.repositories.clicks import DbClicksRepository
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
