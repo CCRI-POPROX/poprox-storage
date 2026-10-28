@@ -8,6 +8,7 @@ from poprox_storage.repositories.clicks import DbClicksRepository
 from poprox_storage.repositories.data_stores.db import DatabaseRepository
 from poprox_storage.repositories.newsletters import DbNewsletterRepository
 
+
 class DbDailyStatsRepository(DatabaseRepository):
     def __init__(self, connection):
         super().__init__(connection)
