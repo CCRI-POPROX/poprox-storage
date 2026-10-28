@@ -6,6 +6,7 @@ from poprox_storage.repositories.articles import (
 )
 from poprox_storage.repositories.clicks import DbClicksRepository, S3ClicksRepository
 from poprox_storage.repositories.compensation import DbCompensationRepository, S3CompensationRepository
+from poprox_storage.repositories.daily_stats import DbDailyStatsRepository
 from poprox_storage.repositories.datasets import DbDatasetRepository
 from poprox_storage.repositories.demographics import DbDemographicsRepository, S3DemographicsRepository
 from poprox_storage.repositories.experience import DbExperiencesRepository
@@ -16,7 +17,6 @@ from poprox_storage.repositories.experiments import (
 )
 from poprox_storage.repositories.images import DbImageRepository, S3ImageRepository
 from poprox_storage.repositories.newsletters import DbNewsletterRepository, S3NewsletterRepository
-from poprox_storage.repositories.daily_stats import DbDailyStatsRepository
 from poprox_storage.repositories.panel_management import S3PanelManagementRepository
 from poprox_storage.repositories.placements import DbPlacementRepository
 from poprox_storage.repositories.pools import DbCandidatePoolRepository
