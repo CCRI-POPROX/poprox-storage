@@ -15,7 +15,7 @@ db_password = os.environ.get("POPROX_DB_PASSWORD", "")
 
 PROJECT_PATH = Path(__file__).parent.parent.resolve()
 PROJECT_NAME = PROJECT_PATH.stem
-DEFAULT_PG_URL = f"postgresql://postgres:{db_password}@127.0.0.1:5435/poprox"
+DEFAULT_PG_URL = f"postgresql+psycopg2://postgres:{db_password}@127.0.0.1:5435/poprox"
 
 
 def make_alembic_config(cmd_opts: Namespace | SimpleNamespace, base_path: str = PROJECT_PATH) -> Config:
