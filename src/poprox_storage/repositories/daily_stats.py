@@ -19,7 +19,7 @@ class DbDailyStatsRepository(DatabaseRepository):
     def fetch_daily_stats(self, start: date, end: date, include_all: bool = False) -> list[DailyStat]:
         if end < start:
             raise ValueError("Provide a valid date range")
-        
+
         days = [start + timedelta(days=i) for i in range((end - start).days + 1)]
         empty = [DailyStat(day=d) for d in days]
 
@@ -28,7 +28,7 @@ class DbDailyStatsRepository(DatabaseRepository):
             accounts = [a for a in accounts if a.external]
         if not accounts:
             return empty
-        
+
         newsletters = self.newsletter_repo.fetch_newsletter_dates_between(
             start_date=datetime.combine(start, time.min),
             end_date=datetime.combine(end, time.max),
@@ -36,7 +36,6 @@ class DbDailyStatsRepository(DatabaseRepository):
         )
         if not newsletters:
             return empty
-        
 
         clicks_by_account = self.click_repo.fetch_clicks_by_newsletter_ids(
             [newsletter.newsletter_id for newsletter in newsletters]
@@ -55,7 +54,3 @@ class DbDailyStatsRepository(DatabaseRepository):
             clicks_by_day[day] += clicks_per_newsletter[newsletter.newsletter_id]
 
         return [DailyStat(day=d, newsletter_sent=sent[d], clicks=clicks_by_day[d]) for d in days]
-        
-
-
-
