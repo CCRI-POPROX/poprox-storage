@@ -32,7 +32,7 @@ db_host = os.environ.get("POPROX_DB_HOST", "127.0.0.1")
 db_port = os.environ.get("POPROX_DB_PORT", 5432)
 db_name = os.environ.get("POPROX_DB_NAME", "poprox")
 
-DB_URL = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+DB_URL = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 
 def run_migrations_offline() -> None:
