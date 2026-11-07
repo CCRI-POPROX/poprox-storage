@@ -7,7 +7,7 @@ db_user = os.environ.get("POPROX_DB_USER", "postgres")
 db_password = os.environ.get("POPROX_DB_PASSWORD", "")
 db_port = os.environ.get("POPROX_DB_PORT", "5432")
 
-DEFAULT_PG_URL = f"postgresql+psycopg2://{db_user}:{db_password}@127.0.0.1:{db_port}/poprox"
+DEFAULT_PG_URL = f"postgresql://{db_user}:{db_password}@127.0.0.1:{db_port}/poprox"
 
 
 @pytest.fixture(scope="session")
