@@ -509,7 +509,8 @@ class DbArticleRepository(DatabaseRepository):
             .where(article_table.c.external_id.is_not(None))
             .group_by(article_table.c.source, article_table.c.external_id)
             .order_by("updated_at")
-        )
+        ).subquery()
+
         # Select all columns for that subset of the articles
         join_query = article_table.join(
             inner_query,

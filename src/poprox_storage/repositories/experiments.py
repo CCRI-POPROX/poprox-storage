@@ -397,28 +397,30 @@ class DbExperimentRepository(DatabaseRepository):
     def fetch_assignments_by_experiment_id(self, experiment_id: UUID) -> dict[UUID, Assignment]:
         experiment = self.fetch_experiment_by_id(experiment_id)
         group_ids = [group.group_id for group in experiment.groups]
-        group_lookup_by_account = self._fetch_assignments_by_group_ids(group_ids)
+        # keep opted-out accounts so exports include every assigned account, flagged by opted_out
+        group_lookup_by_account = self._fetch_assignments_by_group_ids(group_ids, include_opted_out=True)
 
         return group_lookup_by_account
 
-    def _fetch_assignments_by_group_ids(self, group_ids: list[UUID]) -> dict[UUID, Assignment]:
+    def _fetch_assignments_by_group_ids(
+        self, group_ids: list[UUID], include_opted_out: bool = False
+    ) -> dict[UUID, Assignment]:
         assignments_tbl = self.tables["expt_assignments"]
         group_query = select(
             assignments_tbl.c.assignment_id,
             assignments_tbl.c.account_id,
             assignments_tbl.c.group_id,
-        ).where(
-            and_(
-                assignments_tbl.c.group_id.in_(group_ids),
-                assignments_tbl.c.opted_out is not True,
-            )
-        )
+            assignments_tbl.c.opted_out,
+        ).where(assignments_tbl.c.group_id.in_(group_ids))
+        if not include_opted_out:
+            group_query = group_query.where(assignments_tbl.c.opted_out.is_not(True))
         result = self.conn.execute(group_query).fetchall()
         group_lookup_by_account = {
             row.account_id: Assignment(
                 assignment_id=row.assignment_id,
                 account_id=row.account_id,
                 group_id=row.group_id,
+                opted_out=row.opted_out,
             )
             for row in result
         }
@@ -436,7 +438,7 @@ class DbExperimentRepository(DatabaseRepository):
                 and_(
                     assignments_tbl.c.account_id == account_id,
                     assignments_tbl.c.group_id.in_(group_ids),
-                    assignments_tbl.c.opted_out is False,
+                    assignments_tbl.c.opted_out.is_(False),
                 )
             )
             .values(opted_out=True)
