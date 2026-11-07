@@ -7,7 +7,9 @@ name = "poprox-storage"
 dynamic = ["version"]
 description = ''
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10 < 3.14"
+# kluver 2026-11-06. tests were failing on AWS due to PYo not having 3.14 support
+# it's entirely possible we just need to update something else as that's a transitive dependency
 keywords = []
 authors = [{ name = "Karl Higley", email = "khigley@umn.edu" }]
 dependencies = [
