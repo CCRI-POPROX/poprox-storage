@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import uuid4
 
 from poprox_concepts.domain import Account, Article, Newsletter
@@ -52,8 +53,8 @@ def test_get_click_between(db_engine):
             newsletter.newsletter_id, user_account_1.account_id, article_id_2, "headline-2", "2024-07-14 12:55:22"
         )
 
-        start_time = "2024-06-13 09:55:22"
-        end_time = "2024-07-15 09:55:22"
+        start_time = datetime.strptime("2024-06-13 09:55:22", "%Y-%m-%d %H:%M:%S")
+        end_time = datetime.strptime("2024-07-15 09:55:22", "%Y-%m-%d %H:%M:%S")
         results = dbClicksRepository.fetch_clicks_between(start_time, end_time, accounts)
 
         assert 2 == len(results)
