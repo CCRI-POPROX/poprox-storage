@@ -94,12 +94,12 @@ class S3Repository:
                 if key not in all_fields:
                     if isinstance(value, str):
                         all_fields[key] = pa.string()
+                    elif isinstance(value, bool):
+                        all_fields[key] = pa.bool_()
                     elif isinstance(value, int):
                         all_fields[key] = pa.int64()
                     elif isinstance(value, float):
                         all_fields[key] = pa.float64()
-                    elif isinstance(value, bool):
-                        all_fields[key] = pa.bool_()
                     elif isinstance(value, datetime):
                         all_fields[key] = pa.timestamp("us")
                     else:
